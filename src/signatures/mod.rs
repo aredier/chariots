@@ -12,6 +12,8 @@ pub trait AbstractSignature {
 
 }
 
+/// versioned signature
+/// a signature that implements sementic versioning
 #[derive(Debug, PartialEq)]
 pub struct VersionedSignature {
     major_version: usize,
@@ -25,14 +27,19 @@ impl VersionedSignature {
         VersionedSignature {major_version: major, minor_version: minor, patch_version: patch}
     }
 
+    /// major version change means breaking change (cache must be cleared)
     pub fn major_version (&self) -> usize {
         self.major_version
     }
 
+    /// minor version change means that a feature has been added to the underlying op
+    /// but that the cache is still usable
     pub fn minor_version(&self) -> usize {
         self.minor_version
     }
 
+    /// unexpected/unwanted behaviour has been fixed but for all intents and purposes
+    /// the op is the same
     pub fn patch_version(&self) -> usize {
         self.patch_version
     }
