@@ -14,7 +14,7 @@ pub trait AbstractOp {
     /// with it's `call` method mapped to it
     fn add_to<'a: 's, 's>(&'s mut self, mut runner: runners::Runner<'a, Self::InputDataType, Self::OpSignatureType>)
     // TODO: fix clippy lint
-    -> Result<runners::Runner<'s, runners::RunnerDataBatch<Self::InputDataType, Self::OpSignatureType>, Self::OpSignatureType>, runners::NoMetaDAtaError>
+    -> Result<runners::Runner<'s, Self::InputDataType, Self::OpSignatureType>, runners::NoMetaDAtaError>
     {
         runner.sign(self.signature());
         let unwrap_and_map = move  |x| {
