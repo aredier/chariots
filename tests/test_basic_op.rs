@@ -15,6 +15,7 @@ impl AddOneOp {
 impl AbstractOp for AddOneOp {
     type OpSignatureType = signatures::VersionedSignature;
     type InputDataType = usize;
+    type OutputDataType = usize;
 
     fn signature(&self) -> Self::OpSignatureType {
         self.signature.clone()

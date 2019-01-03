@@ -9,12 +9,13 @@ use super::signatures;
 pub trait AbstractOp {
     type OpSignatureType: signatures::Signature + Clone;
     type InputDataType: Sized;
+    type OutputDataType: Sized;
 
     /// function that adds the op to the runner (consuming it) and returns a new runner
     /// with it's `call` method mapped to it
     fn add_to<'a: 's, 's>(&'s mut self, mut runner: runners::Runner<'a, Self::InputDataType, Self::OpSignatureType>)
     // TODO: fix clippy lint
-    -> Result<runners::Runner<'s, Self::InputDataType, Self::OpSignatureType>, runners::NoMetaDAtaError>
+    -> Result<runners::Runner<'s, Self::OutputDataType, Self::OpSignatureType>, runners::NoMetaDAtaError>
     {
         runner.sign(self.signature());
         let unwrap_and_map = move  |x| {
@@ -34,5 +35,5 @@ pub trait AbstractOp {
     fn signature(&self) -> Self::OpSignatureType;
 
     /// performs the op on a batch
-    fn  call (&self, data: Self::InputDataType) -> Self::InputDataType;
+    fn  call (&self, data: Self::InputDataType) -> Self::OutputDataType;
 }
