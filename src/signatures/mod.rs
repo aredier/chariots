@@ -9,8 +9,8 @@ pub trait Signature {
     fn is_compatible(&self, other: &impl Signature) -> bool {
         self.checksum() == other.checksum()
     }
-
 }
+
 
 pub trait DataSignature {
 
@@ -31,6 +31,8 @@ pub trait Versioned {
     /// the op is the same
     fn patch_version(&self) -> usize;
 }
+
+
 /// versioned signature
 /// a signature that implements sementic versioning
 #[derive(Debug, PartialEq, Clone)]
@@ -81,7 +83,7 @@ mod tests {
         }
     }
 
-
+    /// tests the is_compatible function for the a random implementation of a Signature
     #[test]
     fn test_standard_signature() {
         let fake_sign = FakeSignature{};
@@ -90,6 +92,7 @@ mod tests {
         assert!(!fake_sign.is_compatible(&versioned_signature));
     }
 
+    /// tests the is_compatible function for the versioned signature
     #[test]
     fn test_versioned_signature() {
         let sing_1 = VersionedSignature::new(1, 0, 0);

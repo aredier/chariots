@@ -1,3 +1,6 @@
+/// module that provides the op trait(s) which are at the heart of chariots' framework
+/// an op performs an action on each data batch and returns a signed signature
+
 use super::runners;
 use super::signatures;
 
@@ -7,7 +10,10 @@ pub trait AbstractOp {
     type OpSignatureType: signatures::Signature + Clone;
     type InputDataType: Sized;
 
+    /// function that adds the op to the runner (consuming it) and returns a new runner
+    /// with it's `call` method mapped to it
     fn add_to<'a: 's, 's>(&'s mut self, mut runner: runners::Runner<'a, Self::InputDataType, Self::OpSignatureType>)
+    // TODO: fix clippy lint
     -> Result<runners::Runner<'s, runners::RunnerDataBatch<Self::InputDataType, Self::OpSignatureType>, Self::OpSignatureType>, runners::NoMetaDAtaError>
     {
         runner.sign(self.signature());
@@ -27,6 +33,6 @@ pub trait AbstractOp {
     /// produces the signature of the op
     fn signature(&self) -> Self::OpSignatureType;
 
-    /// updates a batch of s
+    /// performs the op on a batch
     fn  call (&self, data: Self::InputDataType) -> Self::InputDataType;
 }

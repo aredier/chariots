@@ -26,6 +26,7 @@ impl AbstractOp for AddOneOp {
 
 }
 
+///test that we can create an op (that just adds one) and that we can get a subsequent runner
 #[test]
 fn test_basic_op() {
     let mut op = AddOneOp::new();

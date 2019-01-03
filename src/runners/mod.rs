@@ -16,20 +16,24 @@ pub struct Runner<'a, DataType: Sized, OpSignatureType: signatures::Signature + 
 
 impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner<'a, DataType, OpSignatureType> {
 
+    /// produces a new runner with blank metadata
     pub fn new<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter) -> Self
     where IntoIter::IntoIter: 'b {
         Runner {data: Box::new(data.into_iter()), meta_data: RunnerMetaData::new()}
     }
 
+    /// signs the runner with some OpSignature
     pub fn sign (&mut self, signature: OpSignatureType) {
         self.meta_data.sign(signature);
     }
 
+    /// creates a new runner from an existing metadata
     fn new_with_meta<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter, meta_data: RunnerMetaData<OpSignatureType>) -> Self
     where IntoIter::IntoIter: 'b {
         Runner {data: Box::new(data.into_iter()), meta_data}
     }
 
+    /// creates a new Runner from a DataTypeor that has a metadata as it's first element
     pub fn from_runner_iterator<'b, Iter: Iterator<Item=RunnerDataBatch<DataType, OpSignatureType>>> (mut iter: Iter, )
     ->  Result<Runner<'b, RunnerDataBatch<DataType, OpSignatureType>, OpSignatureType>, NoMetaDAtaError>
     where Iter: 'b
@@ -56,12 +60,14 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> IntoIt
 
 
 /// the runner's metatdata
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct RunnerMetaData<OpSignatureType: signatures::Signature + Clone> {
     signatures: Vec<OpSignatureType>,
 }
 
 impl<OpSignatureType: signatures::Signature + Clone> RunnerMetaData<OpSignatureType>{
+
+    /// produces a new MetaData
     pub fn new() -> Self {
         RunnerMetaData {signatures: Vec::new()}
     }
@@ -90,12 +96,14 @@ pub struct RunnerIterator<'a, DataType: Sized, OpSignatureType: signatures::Sign
 
 impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> RunnerIterator<'a, DataType, OpSignatureType>{
 
+    /// produces a new RunnerIterator
     pub fn new<I: Iterator<Item=DataType>>(meta_data:  RunnerMetaData<OpSignatureType>, data_iterator: I) -> Self
     where I: 'a
     {
         RunnerIterator {meta_data,data_iterator: Box::new(data_iterator), is_first_element: true}
     }
 
+    /// produces a new RunnerIterator from a Boxed Iterator
     pub fn new_form_box(meta_data:  RunnerMetaData<OpSignatureType>, data_iterator: Box<Iterator<Item=DataType> + 'a>) -> Self {
         RunnerIterator {meta_data, data_iterator, is_first_element: true}
     }
@@ -118,10 +126,13 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Iterat
     }
 }
 
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// tests that a Runenr can be iterated over
     #[test]
     fn test_runner_iteration() {
         let runner: Runner<usize, signatures::VersionedSignature> = Runner::new(vec!(0, 1, 2));
@@ -139,6 +150,7 @@ mod tests {
         }
     }
 
+    /// tests that a Runner can be mapped and cast back into an other Runner (with the right values)
     #[test]
     fn test_runner_map_conversion() {
         let runner: Runner<usize, signatures::VersionedSignature> = Runner::new(vec!(0, 1, 2));
@@ -165,7 +177,7 @@ mod tests {
             panic!("the metadata is not the right type");
         }
         for (idx, batch) in new_runner_iter.enumerate() {
-            // TODO this is ugly we should have a map at some point that de-intricates this datastructure
+            // TODO this is ugly we should have a map at some point that de-intricates this datastructure (see #3)
             if let RunnerDataBatch::Batch(RunnerDataBatch::Batch(value)) = batch {
                 assert_eq!(idx + 1, value);
             }
