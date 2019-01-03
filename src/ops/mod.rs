@@ -2,7 +2,7 @@ use super::runners;
 use super::signatures;
 
 
-/// an an op that updadtes the Runner's data and the signs the runner
+/// an an op that updadtes the Runner's data and signs the runner
 pub trait AbstractOp {
     type OpSignatureType: signatures::Signature + Clone;
     type InputDataType: Sized;
