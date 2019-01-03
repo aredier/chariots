@@ -40,7 +40,7 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner
             match x {
                 RunnerDataBatch::Batch(data) => {data},
                 RunnerDataBatch::MetaData(_) => {
-                    // TODO Implement multiple errors
+                    // TODO get rid of panic
                     panic!("duplicate metadata error");
                 }
             }
