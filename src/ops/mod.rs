@@ -27,6 +27,6 @@ pub trait AbstractOp {
     /// produces the signature of the op
     fn signature(&self) -> Self::OpSignatureType;
 
-    /// updates a batch of run
+    /// updates a batch of s
     fn  call (&self, data: Self::InputDataType) -> Self::InputDataType;
 }

@@ -4,6 +4,7 @@ use std::clone::Clone;
 
 use super::signatures;
 
+#[derive(Debug)]
 pub struct NoMetaDAtaError;
 
 
@@ -39,7 +40,7 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner
         } else {
             return Err(NoMetaDAtaError)
         }
-        Ok(Runner::new_with_meta(Box::new(iter), meta_data))
+        Ok(Runner::new_with_meta(iter, meta_data))
     }
 }
 
@@ -55,13 +56,13 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> IntoIt
 
 
 /// the runner's metatdata
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RunnerMetaData<OpSignatureType: signatures::Signature + Clone> {
     signatures: Vec<OpSignatureType>,
 }
 
 impl<OpSignatureType: signatures::Signature + Clone> RunnerMetaData<OpSignatureType>{
-    fn new() -> Self {
+    pub fn new() -> Self {
         RunnerMetaData {signatures: Vec::new()}
     }
 
@@ -73,6 +74,7 @@ impl<OpSignatureType: signatures::Signature + Clone> RunnerMetaData<OpSignatureT
 
 /// a batch given to a runnerIterator if it's the first batch, than it is the meta data
 /// otherwise it is the data of the batch itself
+#[derive(Debug)]
 pub enum RunnerDataBatch<DataType: Sized, OpSignatureType: signatures::Signature + Clone> {
     MetaData(RunnerMetaData<OpSignatureType>),
     Batch(DataType),
@@ -112,6 +114,61 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Iterat
                 Some(RunnerDataBatch::Batch(data))
             },
             None => {None}
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_runner_iteration() {
+        let runner: Runner<usize, signatures::VersionedSignature> = Runner::new(vec!(0, 1, 2));
+        let mut runner_iter = runner.into_iter();
+        let meta_data_wraped = runner_iter.next();
+        if let Some(RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
+            assert_eq!(meta_data, RunnerMetaData::new());
+        }else{
+            panic!("the metadata is not the right type");
+        }
+        for (idx, batch) in runner_iter.enumerate() {
+            if let RunnerDataBatch::Batch(value) = batch {
+                assert_eq!(idx, value);
+            }
+        }
+    }
+
+    #[test]
+    fn test_runner_map_conversion() {
+        let runner: Runner<usize, signatures::VersionedSignature> = Runner::new(vec!(0, 1, 2));
+        let runner_iter = runner.into_iter();
+        let mapped_runner = runner_iter.map(|x| {
+            match x {
+                RunnerDataBatch::MetaData(meta_data) => {
+                    RunnerDataBatch::MetaData(meta_data)
+                },
+                RunnerDataBatch::Batch(data) => {
+                    RunnerDataBatch::Batch(data + 1)
+                }
+            }
+        });
+
+        // testing that the new data is as excpected
+        let new_runner: Runner<RunnerDataBatch<usize, signatures::VersionedSignature>, signatures::VersionedSignature> = Runner::from_runner_iterator(mapped_runner).unwrap();
+        let mut new_runner_iter = new_runner.into_iter();
+        let meta_data_wraped: Option<RunnerDataBatch<RunnerDataBatch<usize, signatures::VersionedSignature>, signatures::VersionedSignature>> = new_runner_iter.next();
+        if let Some(RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
+            assert_eq!(meta_data, RunnerMetaData::new());
+        }
+        else{
+            panic!("the metadata is not the right type");
+        }
+        for (idx, batch) in new_runner_iter.enumerate() {
+            // TODO this is ugly we should have a map at some point that de-intricates this datastructure
+            if let RunnerDataBatch::Batch(RunnerDataBatch::Batch(value)) = batch {
+                assert_eq!(idx + 1, value);
+            }
         }
     }
 }
