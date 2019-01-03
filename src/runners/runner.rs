@@ -27,7 +27,7 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner
 
     /// creates a new Runner from a DataTypeor that has a metadata as it's first element
     pub fn from_runner_iterator<'b, Iter: Iterator<Item=RunnerDataBatch<DataType, OpSignatureType>>> (mut iter: Iter, )
-    ->  Result<Runner<'b, RunnerDataBatch<DataType, OpSignatureType>, OpSignatureType>, NoMetaDAtaError>
+    ->  Result<Runner<'b, DataType, OpSignatureType>, NoMetaDAtaError>
     where Iter: 'b
      {
         let meta_data: RunnerMetaData<OpSignatureType>;
@@ -36,7 +36,16 @@ impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner
         } else {
             return Err(NoMetaDAtaError)
         }
-        Ok(Runner::new_with_meta(iter, meta_data))
+        let res_iterator = iter.map(|x| {
+            match x {
+                RunnerDataBatch::Batch(data) => {data},
+                RunnerDataBatch::MetaData(_) => {
+                    // TODO Implement multiple errors
+                    panic!("duplicate metadata error");
+                }
+            }
+        });
+        Ok(Runner::new_with_meta(res_iterator, meta_data))
     }
 }
 

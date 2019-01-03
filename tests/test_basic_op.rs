@@ -46,7 +46,7 @@ fn test_basic_op() {
     }
     for (idx, batch) in new_runner_iter.enumerate() {
         // TODO this is ugly we should have a map at some point that de-intricates this datastructure
-        if let runners::RunnerDataBatch::Batch(runners::RunnerDataBatch::Batch(value)) = batch {
+        if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!(idx + 1, value);
         }
     }
