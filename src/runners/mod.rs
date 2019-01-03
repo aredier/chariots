@@ -169,7 +169,7 @@ mod tests {
         // testing that the new data is as excpected
         let new_runner: Runner<RunnerDataBatch<usize, signatures::VersionedSignature>, signatures::VersionedSignature> = Runner::from_runner_iterator(mapped_runner).unwrap();
         let mut new_runner_iter = new_runner.into_iter();
-        let meta_data_wraped: Option<RunnerDataBatch<RunnerDataBatch<usize, signatures::VersionedSignature>, signatures::VersionedSignature>> = new_runner_iter.next();
+    let meta_data_wraped: Option<RunnerDataBatch<RunnerDataBatch<usize, signatures::VersionedSignature>> = new_runner_iter.next();
         if let Some(RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
             assert_eq!(meta_data, RunnerMetaData::new());
         }
@@ -178,7 +178,7 @@ mod tests {
         }
         for (idx, batch) in new_runner_iter.enumerate() {
             // TODO this is ugly we should have a map at some point that de-intricates this datastructure (see #3)
-            if let RunnerDataBatch::Batch(RunnerDataBatch::Batch(value)) = batch {
+            if let RunnerDataBatch::Batch(value)) = batch {
                 assert_eq!(idx + 1, value);
             }
         }
