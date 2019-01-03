@@ -33,7 +33,7 @@ pub trait Versioned {
 }
 /// versioned signature
 /// a signature that implements sementic versioning
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VersionedSignature {
     major_version: usize,
     minor_version: usize,

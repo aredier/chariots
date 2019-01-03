@@ -1,85 +1,71 @@
 /// module that provides wrappers around iterators in order to carry some metadata
 /// (at th present time the signatures of the ops that ran it) along the data
-use std::iter::FromIterator;
+use std::clone::Clone;
 
 use super::signatures;
 
 pub struct NoMetaDAtaError;
 
 
-/// a simple iterator wrapper
-pub struct IterWrapper<DataType: Sized, Iter: Iterator<Item=DataType>> {
-    iterator: Iter,
-}
-
-impl <DataType: Sized, Iter: Iterator<Item=DataType>> IterWrapper<DataType, Iter> {
-    pub fn new(iterator: Iter) -> Self {
-        IterWrapper{iterator}
-    }
-}
-
-impl <DataType: Sized, Iter: Iterator<Item=DataType>> IntoIterator for IterWrapper<DataType, Iter>{
-    type Item=DataType;
-    type IntoIter=Iter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iterator
-    }
-}
-
-
 /// the actual runner that gets passed to the ops
-pub struct Runner<DataType: Sized, IntoIter: IntoIterator<Item=DataType>, OpSignatureType: signatures::Signature> {
-    meta_data: RunnerMetaData<DataType, OpSignatureType>,
-    data: IntoIter,
-}
-impl<DataType: Sized, IntoIter: IntoIterator<Item=DataType>, OpSignatureType: signatures::Signature> Runner<DataType, IntoIter, OpSignatureType> {
-    pub fn new(data: IntoIter) -> Self {
-        Runner {data, meta_data: RunnerMetaData::new()}
-    }
-
-    pub fn new_with_meta(data:IntoIter, meta_data: RunnerMetaData) -> Self {
-        Runner {data, meta_data}
-    }
+pub struct Runner<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> {
+    meta_data: RunnerMetaData<OpSignatureType>,
+    data: Box<Iterator<Item=DataType> + 'a>,
 }
 
-impl<DataType: Sized, IntoIter: IntoIterator<Item=DataType>, OpSignatureType: signatures::Signature> IntoIterator for Runner<DataType, IntoIter, OpSignatureType> {
-    type Item = DataType;
-    type IntoIter = RunnerIterator;
+impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Runner<'a, DataType, OpSignatureType> {
+
+    pub fn new<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter) -> Self
+    where IntoIter::IntoIter: 'b {
+        Runner {data: Box::new(data.into_iter()), meta_data: RunnerMetaData::new()}
+    }
+
+    pub fn sign (&mut self, signature: OpSignatureType) {
+        self.meta_data.sign(signature);
+    }
+
+    fn new_with_meta<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter, meta_data: RunnerMetaData<OpSignatureType>) -> Self
+    where IntoIter::IntoIter: 'b {
+        Runner {data: Box::new(data.into_iter()), meta_data}
+    }
+
+    pub fn from_runner_iterator<'b, Iter: Iterator<Item=RunnerDataBatch<DataType, OpSignatureType>>> (mut iter: Iter, )
+    ->  Result<Runner<'b, RunnerDataBatch<DataType, OpSignatureType>, OpSignatureType>, NoMetaDAtaError>
+    where Iter: 'b
+     {
+        let meta_data: RunnerMetaData<OpSignatureType>;
+        if let Some(RunnerDataBatch::MetaData(meta)) = iter.next(){
+            meta_data = meta;
+        } else {
+            return Err(NoMetaDAtaError)
+        }
+        Ok(Runner::new_with_meta(Box::new(iter), meta_data))
+    }
+}
+
+impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> IntoIterator for Runner<'a, DataType, OpSignatureType> {
+    type Item = RunnerDataBatch<DataType, OpSignatureType>;
+    type IntoIter = RunnerIterator<'a, DataType, OpSignatureType>;
 
     fn into_iter(self) -> Self::IntoIter {
-        RunnerIterator::new(self.meta_data, self.data.into_iter())
+        RunnerIterator::new_form_box(self.meta_data, self.data)
+
     }
 }
-
-impl<DataType: Sized,
-    IntoIter: IntoIterator<Item=DataType>,
-    OpSignatureType: signatures::Signature> FromIterator<DataType> for Runner<DataType, IntoIter, OpSignatureType> {
-
-     fn from_iter(iter: IntoIter) -> Result<Self, NoMetaDAtaError> {
-         let mut data_iterator = iter.into_iter();
-         let meta_data;
-         if let Some(RunnerDataBatch::MetaData(meta_data)) = data_iterator.next(){
-             meta_data = meta_data;
-         } else {
-             return Err(NoMetaDAtaError)
-         }
-         Runner::new_with_meta(data_iterator, meta_data)
-     }
- }
 
 
 /// the runner's metatdata
-struct RunnerMetaData<DataType: Sized, OpSignatureType: signatures::Signature> {
+#[derive(Clone)]
+pub struct RunnerMetaData<OpSignatureType: signatures::Signature + Clone> {
     signatures: Vec<OpSignatureType>,
 }
 
-impl<DataType: Sized, OpSignatureType: signatures::Signature> RunnerMetaData<DataType, OpSignatureType>{
+impl<OpSignatureType: signatures::Signature + Clone> RunnerMetaData<OpSignatureType>{
     fn new() -> Self {
         RunnerMetaData {signatures: Vec::new()}
     }
 
-    fn sign(&mut self, signature: OpSignatureType) {
+    pub fn sign(&mut self, signature: OpSignatureType) {
         self.signatures.push(signature);
     }
 }
@@ -87,35 +73,41 @@ impl<DataType: Sized, OpSignatureType: signatures::Signature> RunnerMetaData<Dat
 
 /// a batch given to a runnerIterator if it's the first batch, than it is the meta data
 /// otherwise it is the data of the batch itself
-enum RunnerDataBatch<DataType: Sized, OpSignatureType: signatures::Signature> {
-    MetaData(RunnerMetaData<DataType, OpSignatureType>),
+pub enum RunnerDataBatch<DataType: Sized, OpSignatureType: signatures::Signature + Clone> {
+    MetaData(RunnerMetaData<OpSignatureType>),
     Batch(DataType),
 }
 
 
 /// a runner iterator is the iterator on which the Ops will map the call function
-struct RunnerIterator<DataType: Sized, I: Iterator<Item = DataType>, OpSignatureType: signatures::Signature> {
-    meta_data: RunnerMetaData<DataType, OpSignatureType>,
-    data_iterator: I,
+pub struct RunnerIterator<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> {
+    meta_data: RunnerMetaData<OpSignatureType>,
+    data_iterator: Box<Iterator<Item=DataType> + 'a>,
     is_first_element: bool,
 }
 
-impl<DataType: Sized, I: Iterator<Item = DataType>, OpSignatureType: signatures::Signature> RunnerIterator<DataType, I, OpSignatureType>{
+impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> RunnerIterator<'a, DataType, OpSignatureType>{
 
-    fn new(meta_data:  RunnerMetaData<DataType, OpSignatureType>, data_iterator: I) -> Self {
+    pub fn new<I: Iterator<Item=DataType>>(meta_data:  RunnerMetaData<OpSignatureType>, data_iterator: I) -> Self
+    where I: 'a
+    {
+        RunnerIterator {meta_data,data_iterator: Box::new(data_iterator), is_first_element: true}
+    }
+
+    pub fn new_form_box(meta_data:  RunnerMetaData<OpSignatureType>, data_iterator: Box<Iterator<Item=DataType> + 'a>) -> Self {
         RunnerIterator {meta_data, data_iterator, is_first_element: true}
     }
 }
 
-impl<DataType: Sized, I: Iterator<Item = DataType>, OpSignatureType: signatures::Signature> Iterator for RunnerIterator<DataType, I, OpSignatureType> {
+impl<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone> Iterator for RunnerIterator<'a, DataType, OpSignatureType> {
     type Item = RunnerDataBatch<DataType, OpSignatureType>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first_element {
             self.is_first_element = false;
-            return Some(RunnerDataBatch::MetaData(self.meta_data));
+            return Some(RunnerDataBatch::MetaData(self.meta_data.clone()));
         }
-        match self.data_iterator.next() {
+        match (*self.data_iterator).next() {
             Some(data) => {
                 Some(RunnerDataBatch::Batch(data))
             },
