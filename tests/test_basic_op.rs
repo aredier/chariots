@@ -71,7 +71,6 @@ fn test_basic_op_same_type() {
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!(idx + 1, value);
         }
@@ -98,7 +97,6 @@ fn test_basic_op_different_type() {
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!(idx as f32 / 2f32, value);
         }
@@ -126,7 +124,6 @@ fn test_chaining_ops() {
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!((idx + 1) as f32 / 2f32, value);
         }
