@@ -57,7 +57,7 @@ impl AbstractOp for DevideByTwo {
 fn test_basic_op_same_type() {
     let mut op = AddOneOp::new();
     let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
-    let res_runner = op.add_to(runner).unwrap();
+    let res_runner = runner.chain(&mut op).unwrap();
 
     // testing that the new data is as excpected
     let mut new_runner_iter = res_runner.into_iter();
@@ -84,7 +84,7 @@ fn test_basic_op_same_type() {
 fn test_basic_op_different_type() {
     let mut op = DevideByTwo::new();
     let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
-    let res_runner = op.add_to(runner).unwrap();
+    let res_runner = runner.chain(&mut op).unwrap();
 
     // testing that the new data is as excpected
     let mut new_runner_iter = res_runner.into_iter();
