@@ -104,3 +104,31 @@ fn test_basic_op_different_type() {
         }
     }
 }
+
+/// test chaining ops
+#[test]
+fn test_chaining_ops() {
+    let mut op = AddOneOp::new();
+    let mut op2 = DevideByTwo::new();
+    let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
+    let res_runner = runner.chain(&mut op).unwrap().chain(&mut op2).unwrap();
+
+    // testing that the new data is as excpected
+    let mut new_runner_iter = res_runner.into_iter();
+    let meta_data_wraped = new_runner_iter.next();
+    if let Some(runners::RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
+        let mut moc_metadata = runners::RunnerMetaData::new();
+        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
+        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
+        assert_eq!(meta_data, moc_metadata);
+    }
+    else{
+        panic!("the metadata is not the right type");
+    }
+    for (idx, batch) in new_runner_iter.enumerate() {
+        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
+        if let runners::RunnerDataBatch::Batch(value) = batch {
+            assert_eq!((idx + 1) as f32 / 2f32, value);
+        }
+    }
+}

@@ -48,12 +48,12 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
         Ok(Runner::new_with_meta(res_iterator, meta_data))
     }
 
-    pub fn chain<'b: 'a, O: ops::AbstractOp<InputDataType=DataType, OpSignatureType=OpSignatureType>> (mut self, op: &'b mut O)
+    pub fn chain<'b: 'a, O: ops::AbstractOp<InputDataType=DataType, OpSignatureType=OpSignatureType>> (self, op: &'b mut O)
     -> Result<Runner<'a, O::OutputDataType, OpSignatureType>, NoMetaDAtaError>
     where O: 'a
      {
-        self.sign(op.signature());
-        let unwrap_and_map = move  |x| {
+        let signature = op.signature().clone();
+        let unwrap_and_map = move |x| {
             match  x {
                 RunnerDataBatch::MetaData(meta_data) => {
                     RunnerDataBatch::MetaData(meta_data)
@@ -63,8 +63,11 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
                 }
             }
         };
-        Runner::from_runner_iterator(self.into_iter().map(unwrap_and_map))
-
+        let mut res = Runner::from_runner_iterator(self.into_iter().map(unwrap_and_map));
+        if let Ok(res_unwraped) = res.as_mut() {
+            res_unwraped.sign(signature);
+        }
+        res
     }
 }
 
