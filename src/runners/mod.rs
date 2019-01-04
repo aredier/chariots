@@ -9,6 +9,7 @@ mod tests;
 use std::clone::Clone;
 
 use super::signatures;
+use super::ops;
 
 pub use self::runner::Runner;
 pub use self::runner_metadata::RunnerMetaData;
