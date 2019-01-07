@@ -1,4 +1,7 @@
 extern crate chariots;
+
+use std::rc::Rc;
+
 use chariots::*;
 use chariots::ops::AbstractOp;
 
@@ -90,8 +93,11 @@ fn test_merge() {
     let runner1: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2, 3));
     let runner2: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2, 3));
     let mut add1 = AddOneOp::new();
+    let name1 = add1.name.clone();
     let mut add2 = AddTwoOp::new();
+    let name2 = add2.name.clone();
     let mut sum = Sum::new();
+    let name3 = sum.name.clone();
     let left_runner  = runner1.chain(&mut add1).unwrap();
     let right_runner = runner2.chain(&mut add2).unwrap();
     let res_runner = left_runner.merge(right_runner).unwrap().chain(&mut sum).unwrap();
@@ -100,7 +106,13 @@ fn test_merge() {
     let mut new_runner_iter = res_runner.into_iter();
     let meta_data_wraped = new_runner_iter.next();
     if let Some(runners::RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
-        // TODO add implement metadata merge and test here
+        let mut moc_metadata1 = runners::RunnerMetaData::new();
+        moc_metadata1 = runners::RunnerMetaData::sign(&moc_metadata1, signatures::VersionedSignature::new(name1, 0, 1, 0));
+        let mut moc_metadata2 = runners::RunnerMetaData::new();
+        moc_metadata2 = runners::RunnerMetaData::sign(&moc_metadata2, signatures::VersionedSignature::new(name2, 0, 1, 0));
+        let mut moc_metadata = runners::RunnerMetaData::merge(moc_metadata1, moc_metadata2);
+        moc_metadata = runners::RunnerMetaData::sign(&moc_metadata, signatures::VersionedSignature::new(name3, 0, 1, 0));
+        assert_eq!(moc_metadata, meta_data);
     }
     else{
         panic!("the metadata is not the right type");

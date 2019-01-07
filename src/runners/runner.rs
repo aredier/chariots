@@ -114,7 +114,7 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
         });
 
         // TODO find a way to merge the metadatas
-        Ok(Runner::new_with_meta(self_unwrapped_iter.zip(other_unwrapped_iter), self_meta_data))
+        Ok(Runner::new_with_meta(self_unwrapped_iter.zip(other_unwrapped_iter), RunnerMetaData::merge(self_meta_data, other_meta_data)))
     }
 }
 

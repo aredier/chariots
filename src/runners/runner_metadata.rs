@@ -25,4 +25,11 @@ impl<OpSignatureType: signatures::Signature + Clone> RunnerMetaData<OpSignatureT
             last_op_signature: Some(signature),
         })
     }
+
+    pub fn merge(meta_ref_left: Rc<Self>, meta_ref_right: Rc<Self>) -> Rc<Self> {
+        Rc::new(RunnerMetaData{
+            previous_meta_datas: vec!(Some(Rc::clone(&meta_ref_left)), Some(Rc::clone(&meta_ref_right))),
+            last_op_signature: None,
+        })
+    }
 }
