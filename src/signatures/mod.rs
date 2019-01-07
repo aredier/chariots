@@ -20,6 +20,7 @@ pub trait DataSignature {
 
 
 pub trait Versioned {
+
     /// major version change means breaking change (cache must be cleared)
     fn major_version (&self) -> usize;
 
@@ -37,6 +38,7 @@ pub trait Versioned {
 /// a signature that implements sementic versioning
 #[derive(Debug, PartialEq, Clone)]
 pub struct VersionedSignature {
+    name: String,
     major_version: usize,
     minor_version: usize,
     patch_version: usize,
@@ -44,8 +46,8 @@ pub struct VersionedSignature {
 
 impl VersionedSignature {
 
-    pub fn new(major: usize, minor: usize, patch: usize) -> VersionedSignature {
-        VersionedSignature {major_version: major, minor_version: minor, patch_version: patch}
+    pub fn new(name: String, major: usize, minor: usize, patch: usize) -> VersionedSignature {
+        VersionedSignature {name, major_version: major, minor_version: minor, patch_version: patch}
     }
 }
 
@@ -87,7 +89,7 @@ mod tests {
     #[test]
     fn test_standard_signature() {
         let fake_sign = FakeSignature{};
-        let versioned_signature = VersionedSignature::new(1, 0, 0);
+        let versioned_signature = VersionedSignature::new("foo".to_string(), 1, 0, 0);
         assert_eq!(fake_sign.is_compatible(&versioned_signature), versioned_signature.is_compatible(&fake_sign));
         assert!(!fake_sign.is_compatible(&versioned_signature));
     }
@@ -95,9 +97,9 @@ mod tests {
     /// tests the is_compatible function for the versioned signature
     #[test]
     fn test_versioned_signature() {
-        let sing_1 = VersionedSignature::new(1, 0, 0);
-        let sing_2 = VersionedSignature::new(1, 3, 2);
-        let sing_3 = VersionedSignature::new(2, 0, 1);
+        let sing_1 = VersionedSignature::new("foo".to_string(), 1, 0, 0);
+        let sing_2 = VersionedSignature::new("foo".to_string(), 1, 3, 2);
+        let sing_3 = VersionedSignature::new("foo".to_string(), 2, 0, 1);
         assert_eq!(sing_2.is_compatible(&sing_1), sing_1.is_compatible(&sing_2));
         assert!(sing_2.is_compatible(&sing_1));
         assert!(!sing_2.is_compatible(&sing_3));

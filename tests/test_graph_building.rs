@@ -3,12 +3,14 @@ use chariots::*;
 use chariots::ops::AbstractOp;
 
 struct AddOneOp {
+    name: String,
     signature: chariots::signatures::VersionedSignature
 }
 
 impl AddOneOp {
     fn new () -> Self {
-        AddOneOp {signature: signatures::VersionedSignature::new(0, 1, 0)}
+        let name = "add1".to_string();
+        AddOneOp {name: name.clone(), signature: signatures::VersionedSignature::new(name.clone(), 0, 1, 0)}
     }
 }
 
@@ -28,12 +30,14 @@ impl AbstractOp for AddOneOp {
 }
 
 struct AddTwoOp {
+    name: String,
     signature: chariots::signatures::VersionedSignature
 }
 
 impl AddTwoOp {
     fn new () -> Self {
-        AddTwoOp {signature: signatures::VersionedSignature::new(0, 1, 0)}
+        let name = "add2".to_string();
+        AddTwoOp {name: name.clone(), signature: signatures::VersionedSignature::new(name.clone(), 0, 1, 0)}
     }
 }
 
@@ -53,12 +57,14 @@ impl AbstractOp for AddTwoOp {
 }
 
 struct Sum {
+    name: String,
     signature: chariots::signatures::VersionedSignature
 }
 
 impl Sum {
     fn new () -> Self {
-        Sum {signature: signatures::VersionedSignature::new(0, 1, 0)}
+        let name = "sum".to_string();
+        Sum {name: name.clone(), signature: signatures::VersionedSignature::new(name.clone(), 0, 1, 0)}
     }
 }
 
