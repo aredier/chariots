@@ -1,8 +1,10 @@
+use std::rc::Rc;
+
 use super::*;
 
 /// the actual runner that gets passed to the ops
 pub struct Runner<'a, DataType: Sized, OpSignatureType: signatures::Signature + Clone + 'a> {
-    meta_data: RunnerMetaData<OpSignatureType>,
+    meta_data: Rc<RunnerMetaData<OpSignatureType>>,
     data: Box<Iterator<Item=DataType> + 'a>,
 }
 
@@ -16,11 +18,11 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
 
     /// signs the runner with some OpSignature
     pub fn sign (&mut self, signature: OpSignatureType) {
-        self.meta_data.sign(signature);
+        self.meta_data = RunnerMetaData::sign(&self.meta_data, signature);
     }
 
     /// creates a new runner from an existing metadata
-    fn new_with_meta<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter, meta_data: RunnerMetaData<OpSignatureType>) -> Self
+    fn new_with_meta<'b: 'a, IntoIter: IntoIterator<Item=DataType>> (data: IntoIter, meta_data: Rc<RunnerMetaData<OpSignatureType>>) -> Self
     where IntoIter::IntoIter: 'b {
         Runner {data: Box::new(data.into_iter()), meta_data}
     }
@@ -30,7 +32,7 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
     ->  Result<Runner<'b, DataType, OpSignatureType>, NoMetaDAtaError>
     where Iter: 'b, DataType: 'b
      {
-        let meta_data: RunnerMetaData<OpSignatureType>;
+        let meta_data: Rc<RunnerMetaData<OpSignatureType>>;
         if let Some(RunnerDataBatch::MetaData(meta)) = iter.next(){
             meta_data = meta;
         } else {
@@ -68,6 +70,51 @@ impl<'a, DataType: Sized + 'a, OpSignatureType: signatures::Signature + Clone> R
             res_unwraped.sign(signature);
         }
         res
+    }
+
+    pub fn merge<'b: 'a, OtherDataType: Sized> (self, other: Runner<'b, OtherDataType, OpSignatureType>)
+    -> Result<Runner<'a, (DataType, OtherDataType), OpSignatureType>, NoMetaDAtaError>
+    where OtherDataType: 'b
+    {
+        let mut self_iterator = self.into_iter();
+
+        // TODO writ macro for this
+        let self_meta_data: Rc<RunnerMetaData<OpSignatureType>>;
+        if let Some(RunnerDataBatch::MetaData(meta)) = self_iterator.next(){
+            self_meta_data = meta;
+        } else {
+            return Err(NoMetaDAtaError)
+        }
+        let self_unwrapped_iter = self_iterator.map(|x| {
+            match x {
+                RunnerDataBatch::Batch(data) => {data},
+                RunnerDataBatch::MetaData(_) => {
+                    // TODO get rid of panic
+                    panic!("duplicate metadata error");
+                }
+            }
+        });
+
+        let mut other_iterator = other.into_iter();
+        // TODO writ macro for this
+        let other_meta_data: Rc<RunnerMetaData<OpSignatureType>>;
+        if let Some(RunnerDataBatch::MetaData(meta)) = other_iterator.next(){
+            other_meta_data = meta;
+        } else {
+            return Err(NoMetaDAtaError)
+        }
+        let other_unwrapped_iter = other_iterator.map(|x| {
+            match x {
+                RunnerDataBatch::Batch(data) => {data},
+                RunnerDataBatch::MetaData(_) => {
+                    // TODO get rid of panic
+                    panic!("duplicate metadata error");
+                }
+            }
+        });
+
+        // TODO find a way to merge the metadatas
+        Ok(Runner::new_with_meta(self_unwrapped_iter.zip(other_unwrapped_iter), RunnerMetaData::merge(self_meta_data, other_meta_data)))
     }
 }
 

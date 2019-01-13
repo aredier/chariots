@@ -3,12 +3,14 @@ use chariots::*;
 use chariots::ops::AbstractOp;
 
 struct AddOneOp {
+    name: String,
     signature: chariots::signatures::VersionedSignature
 }
 
 impl AddOneOp {
     fn new () -> Self {
-        AddOneOp {signature: signatures::VersionedSignature::new(0, 1, 0)}
+        let name = "add1".to_string();
+        AddOneOp {name: name.clone(), signature: signatures::VersionedSignature::new(name.clone(), 0, 1, 0)}
     }
 }
 
@@ -28,12 +30,14 @@ impl AbstractOp for AddOneOp {
 }
 
 struct DevideByTwo {
+    name: String,
     signature: chariots::signatures::VersionedSignature
 }
 
 impl DevideByTwo {
     fn new () -> Self {
-        DevideByTwo {signature: signatures::VersionedSignature::new(0, 1, 0)}
+        let name = "devide".to_string();
+        DevideByTwo {name: name.clone(), signature: signatures::VersionedSignature::new(name.clone(), 0, 1, 0)}
     }
 }
 
@@ -56,6 +60,7 @@ impl AbstractOp for DevideByTwo {
 #[test]
 fn test_basic_op_same_type() {
     let mut op = AddOneOp::new();
+    let name = op.name.clone();
     let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
     let res_runner = runner.chain(&mut op).unwrap();
 
@@ -64,14 +69,13 @@ fn test_basic_op_same_type() {
     let meta_data_wraped = new_runner_iter.next();
     if let Some(runners::RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
         let mut moc_metadata = runners::RunnerMetaData::new();
-        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
+        moc_metadata = runners::RunnerMetaData::sign(&moc_metadata, signatures::VersionedSignature::new(name, 0, 1, 0));
         assert_eq!(meta_data, moc_metadata);
     }
     else{
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!(idx + 1, value);
         }
@@ -83,6 +87,7 @@ fn test_basic_op_same_type() {
 #[test]
 fn test_basic_op_different_type() {
     let mut op = DevideByTwo::new();
+    let name = op.name.clone();
     let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
     let res_runner = runner.chain(&mut op).unwrap();
 
@@ -91,14 +96,13 @@ fn test_basic_op_different_type() {
     let meta_data_wraped = new_runner_iter.next();
     if let Some(runners::RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
         let mut moc_metadata = runners::RunnerMetaData::new();
-        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
+        moc_metadata = runners::RunnerMetaData::sign(&moc_metadata, signatures::VersionedSignature::new(name, 0, 1, 0));
         assert_eq!(meta_data, moc_metadata);
     }
     else{
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!(idx as f32 / 2f32, value);
         }
@@ -109,7 +113,9 @@ fn test_basic_op_different_type() {
 #[test]
 fn test_chaining_ops() {
     let mut op = AddOneOp::new();
+    let name1 = op.name.clone();
     let mut op2 = DevideByTwo::new();
+    let name2 = op2.name.clone();
     let runner: runners::Runner<usize, signatures::VersionedSignature> = runners::Runner::new(vec!(0, 1, 2));
     let res_runner = runner.chain(&mut op).unwrap().chain(&mut op2).unwrap();
 
@@ -118,15 +124,14 @@ fn test_chaining_ops() {
     let meta_data_wraped = new_runner_iter.next();
     if let Some(runners::RunnerDataBatch::MetaData(meta_data)) = meta_data_wraped {
         let mut moc_metadata = runners::RunnerMetaData::new();
-        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
-        moc_metadata.sign(signatures::VersionedSignature::new(0, 1, 0));
+        moc_metadata = runners::RunnerMetaData::sign(&moc_metadata, signatures::VersionedSignature::new(name1, 0, 1, 0));
+        moc_metadata = runners::RunnerMetaData::sign(&moc_metadata, signatures::VersionedSignature::new(name2, 0, 1, 0));
         assert_eq!(meta_data, moc_metadata);
     }
     else{
         panic!("the metadata is not the right type");
     }
     for (idx, batch) in new_runner_iter.enumerate() {
-        // TODO this is ugly we should have a map at some point that de-intricates this datastructure
         if let runners::RunnerDataBatch::Batch(value) = batch {
             assert_eq!((idx + 1) as f32 / 2f32, value);
         }
