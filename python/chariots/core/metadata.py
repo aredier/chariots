@@ -12,6 +12,9 @@ class Metadata:
     def merge(cls, metadatas: List["Metadata"]) -> "Metadata":
         NotImplemented
 
+    def __bool__(self):
+        return bool(self.roots)
+
     def chain(self, next_op: "BaseOp", node = None):
         if len(self.leafs) > 1 and node is None:
             raise ValueError("cannot leave leaf unspecified when the metadata has multiple leaves")
