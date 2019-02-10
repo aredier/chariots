@@ -5,6 +5,7 @@ base op of chariots
 from abc import ABC
 from abc import abstractmethod
 from typing import Optional
+from functools import partial
 
 from chariots.core.versioning import Signature
 from chariots.core.dataset import DataSet
@@ -18,10 +19,21 @@ class BaseOp(ABC):
     """
 
     signature: Optional[Signature]
+    #TODO: infer this from signature
+    name = "paleceholder"
     
     @abstractmethod
     def _call(self, data_batch: DataBatch) -> DataBatch:
         pass
 
-    def perform(self, dataset: DataSet) -> DataSet:
-        NotImplemented
+    def perform(self, dataset: DataSet, target = None) -> DataSet:
+        prev_meta = dataset.metadata
+        if target and target not in prev_meta.leafs:
+            raise ValueError(f"{target.name} not found in dataset")
+        metadata = prev_meta.chain(self)
+        return DataSet.from_op(map(partial(self._perform_single, target=target), dataset), metadata)
+    
+    def _perform_single(self, data: DataBatch, target):
+        if target is None:
+           return {self.name: self._call(data[next(iter(data))])} 
+        return {self.name: self._call(data[target])}
