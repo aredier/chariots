@@ -1,28 +1,39 @@
-
+import operator
 from typing import List
 
 class Metadata:
     
     def __init__(self):
-        self.roots = set()
-        self.leafs = set()
-        self._edges = {}
+        self.roots = []
+        self.leafs = []
+        self._edges = []
 
     @classmethod
     def merge(cls, metadatas: List["Metadata"]) -> "Metadata":
-        NotImplemented
+        pass
+
+    def _merge_single(self, other: "Metadata"):
+        self.roots.extend(other.roots)
+        self.leafs.extend(other.leafs)
+        self._edges.extend(other._edges)
 
     def __bool__(self):
         return bool(self.roots)
 
-    def chain(self, next_op: "BaseOp", node = None):
-        if len(self.leafs) > 1 and node is None:
-            raise ValueError("cannot leave leaf unspecified when the metadata has multiple leaves")
+    def chain(self, next_op: "BaseOp", previous_ops = None):
         if not self.roots:
-            self.roots.add(next_op)
-            self.leafs.add(next_op)
+            self.roots.append(next_op)
+            self.leafs.append(next_op)
+            self._edges.append([None, next_op])
         else:
-            node = node or self.leafs.pop()
-            self._edges.setdefault(node, []).append(next_op)
-            self.leafs.discard(node)
-            self.leafs.add(next_op)
+            previous_ops = previous_ops or self.leafs
+            self._edges.append((previous_ops, next_op))
+            for previous_op in previous_ops:
+                self.leafs.remove(previous_op)
+            self.leafs.append(next_op)
+
+    def __repr__(self):
+        pretty_edges = [(list(map(operator.attrgetter("signature"), prev)), nxt.signature) if prev is not None else ("og", nxt.signature)
+                        for prev, nxt in self._edges]
+        return f"<Metadata with graph {pretty_edges}>"
+
