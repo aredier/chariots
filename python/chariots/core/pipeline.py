@@ -18,10 +18,10 @@ class Pipeline(AbstractOp):
         self.output_op = output_op
 
     def perform(self, dataset: DataSet, target = None) -> DataSet:
+        if self.previous_op is not None:
+            self.input_op(self.previous_op)
         return self.output_op.perform(dataset)
 
-
-    
     def add(self, other: AbstractOp, head=None):
         """
         chains anoher op to the pipeline
