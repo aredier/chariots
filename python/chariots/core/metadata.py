@@ -2,6 +2,8 @@ import operator
 import copy
 from typing import List
 
+# These are the remains of an old metada that might come andy but that will not be used yet
+
 class Metadata:
     
     def __init__(self):
@@ -11,7 +13,7 @@ class Metadata:
 
     @classmethod
     def merge(cls, metadatas: List["Metadata"]) -> "Metadata":
-        metadatas[0]._merge_single(metadatas[1])
+        NotImplemented
 
     def _merge_single(self, other: "Metadata"):
         self.roots.extend(other.roots)
