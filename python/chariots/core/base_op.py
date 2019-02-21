@@ -63,5 +63,23 @@ class BaseOp(AbstractOp):
     
     def _perform_single(self, data: DataBatch):
         if self.previous_op is None:
-            return self._main(data[ORIGIN])
-        return self._main(data)
+            res = self._main(data[ORIGIN])
+        else:
+            res = self._main(data)
+        return {self.name: res}
+
+class Merge(AbstractOp):
+
+    signature = Signature(name = "merge")
+
+    def __init__(self, *args, **kwargs):
+        self.merged_ops = None
+        super().__init__(*args, **kwargs)
+
+    def perform(self, dataset: DataSet, target = None) -> DataSet:
+        return(zip(*(op.perform(dataset) for op in self.merged_ops)))
+
+    def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
+        self.merged_ops = other
+        return self
+    
