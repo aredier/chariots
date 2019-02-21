@@ -13,11 +13,12 @@ class Pipeline(AbstractOp):
     """
     signature = Signature("pipeline") 
 
-    def __init__(self):
-        self.metadata = Metadata()
+    def __init__(self, input_op: AbstractOp = None, output_op: AbstractOp = None):
+        self.input_op = input_op
+        self.output_op = output_op
 
     def perform(self, dataset: DataSet, target = None) -> DataSet:
-        pass
+        return self.output_op.perform(dataset)
 
 
     
@@ -25,17 +26,13 @@ class Pipeline(AbstractOp):
         """
         chains anoher op to the pipeline
         """
-        self.metadata.chain(other)
+        if self.input_op is None:
+            self.input_op = other
+            self.output_op = other
+        else:
+            self.output_op = other(self.input_op)
 
     @classmethod
     def merge(cls, pipelines: List["Pipeline"]) -> "Pipeline":
-        return cls.from_metadata(Metadata().merge(map(attrgetter("metadata"), pipelines)))
+        NotImplemented
     
-    def _merge_single(self, other):
-        self.metadata._merge_single(other.metadata)
-    
-    @classmethod
-    def from_metadata(cls, metadata: Metadata):
-        res = cls()
-        res.metadata = metadata
-        return res
