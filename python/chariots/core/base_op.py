@@ -7,10 +7,11 @@ from abc import ABC
 from abc import abstractmethod
 from abc import ABCMeta
 from typing import Optional
+from typing import List
 from functools import partial
 
 from chariots.core.versioning import Signature
-from chariots.core.dataset import DataSet
+from chariots.core.dataset import DataSet, ORIGIN
 from chariots.helpers.types import DataBatch
 
 
@@ -21,6 +22,7 @@ class AbstractOp(ABC):
     """
 
     signature: Signature = None
+    previous_op = None
 
     def __new__(cls, *args, **kwargs):
         if cls.signature is None:
@@ -28,6 +30,13 @@ class AbstractOp(ABC):
         instance = super(AbstractOp, cls).__new__(cls, *args, **kwargs)
         # instance.signature.add_fields(random_identifier = str(random.random() // 1e-16))
         return instance
+    
+    def __call__(self, other: "AbstractOp") -> "AbstractOp":
+        if not isinstance(other, AbstractOp):
+            raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
+        self.previous_op = other
+        return self
+        
 
     @property
     def name(self):
@@ -41,18 +50,18 @@ class AbstractOp(ABC):
 class BaseOp(AbstractOp):
 
     @abstractmethod
-    def _call(self, data_batch: DataBatch) -> DataBatch:
+    def _main(self, data_batch: DataBatch) -> DataBatch:
         pass
 
     def perform(self, dataset: DataSet, targets = None) -> DataSet:
-        prev_meta = dataset.metadata
-        targets = targets or prev_meta.leafs
-        metadata = prev_meta.chain(self)
-        return DataSet.from_op(map(partial(self._perform_single, targets=targets), dataset), prev_meta)
+        if self.previous_op is None:
+            return self._map_op(dataset)
+        return self._map_op(self.previous_op.perform(dataset))
     
-    def _perform_single(self, data: DataBatch, targets):
-        if len(targets) > 1:
-            print("foo")
-            return {self.name: self._call({key: value for key, value in data if key in targets})}
-        print
-        return {self.name: self._call(data[next(iter(data))])}
+    def _map_op(self, data_set: DataSet):
+        return DataSet.from_op(map(self._perform_single, data_set))
+    
+    def _perform_single(self, data: DataBatch):
+        if self.previous_op is None:
+            return self._main(data[ORIGIN])
+        return self._main(data)

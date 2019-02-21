@@ -17,17 +17,9 @@ class Pipeline(AbstractOp):
         self.metadata = Metadata()
 
     def perform(self, dataset: DataSet, target = None) -> DataSet:
-        present_nodes = {}
-        for previous_op, next_op in self.metadata._edges:
-            if previous_op is None:
-                res = next_op.perform(dataset)
-            else:
-                data_set = present_nodes.pop(previous_op)
-                res = next_op.perform(data_set)
-            present_nodes.update({next_op: res})
+        pass
 
 
-        return present_nodes
     
     def add(self, other: AbstractOp, head=None):
         """

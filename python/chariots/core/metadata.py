@@ -1,4 +1,5 @@
 import operator
+import copy
 from typing import List
 
 class Metadata:
@@ -10,7 +11,7 @@ class Metadata:
 
     @classmethod
     def merge(cls, metadatas: List["Metadata"]) -> "Metadata":
-        pass
+        metadatas[0]._merge_single(metadatas[1])
 
     def _merge_single(self, other: "Metadata"):
         self.roots.extend(other.roots)
@@ -26,10 +27,10 @@ class Metadata:
             self.leafs.append(next_op)
             self._edges.append([None, next_op])
         else:
-            previous_ops = previous_ops or self.leafs
+            previous_ops = previous_ops or copy.deepcopy(self.leafs)
             self._edges.append((previous_ops, next_op))
             for previous_op in previous_ops:
-                self.leafs.remove(previous_op)
+                self.leafs = [leaf for leaf in self.leafs if not leaf.signature.matches(previous_op.signature)]
             self.leafs.append(next_op)
 
     def __repr__(self):
