@@ -1,7 +1,0 @@
-[package]
-name = "chariots"
-version = "0.0.1"
-authors = ["aredier <antoine.redier2@gmail.com>"]
-edition = "2018"
-
-[dependencies]
