@@ -45,30 +45,26 @@ class AbstractOp(ABC):
         return self.signature.name
     
     @abstractmethod
-    def perform(self, dataset: DataSet, target = None) -> DataSet:
+    def perform(self) -> "DataSet":
         pass
     
 
 class BaseOp(AbstractOp):
 
     @abstractmethod
-    def _main(self, data_batch: DataBatch) -> DataBatch:
+    def _main(self, **kwargs) -> DataBatch:
         pass
 
-    def perform(self, dataset: DataSet, targets = None) -> DataSet:
+    def perform(self) -> "DataSet":
         if self.previous_op is None:
-            return self._map_op(dataset)
-        return self._map_op(self.previous_op.perform(dataset))
+            raise ValueError("this pipeline doesn't seem to have a tap, can't get the data flowing")
+        return self._map_op(self.previous_op.perform())
     
     def _map_op(self, data_set: DataSet):
         return DataSet.from_op(map(self._perform_single, data_set))
     
     def _perform_single(self, data: DataBatch):
-        if self.previous_op is None:
-            res = self._main(data[ORIGIN])
-        else:
-            res = self._main(data)
-        return {self.name: res}
+        return {self.name: self._main(**data)}
     
 class Split(AbstractOp):
 
@@ -83,11 +79,10 @@ class Split(AbstractOp):
         self._pusher = SplitPusher(self._n_splits)
         return [_SplitRes(puller, self) for puller in self._pusher.pullers]
     
-    def perform(self, dataset: DataSet, target = None):
-        if self.previous_op:
-            self._pusher.set_iterator(self.previous_op.perform(dataset))
-        else:
-            self._pusher.set_iterator(dataset)
+    def perform(self):
+        if self.previous_op is None:
+            raise ValueError("this pipeline doesn't seem to have a tap, can't get the data flowing")
+        self._pusher.set_iterator(self.previous_op.perform())
 
     
 class _SplitRes(AbstractOp):
@@ -102,8 +97,8 @@ class _SplitRes(AbstractOp):
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         raise ValueError("split puller should not be called directly")
     
-    def perform(self, dataset: DataSet, target = None) -> DataSet:
-        self.previous_op.perform(dataset)
+    def perform(self) -> DataSet:
+        self.previous_op.perform()
         return DataSet.from_op(self._puller)
 
 class Merge(AbstractOp):
@@ -114,8 +109,15 @@ class Merge(AbstractOp):
         self.merged_ops = None
         super().__init__(*args, **kwargs)
 
-    def perform(self, dataset: DataSet, target = None) -> DataSet:
-        return(zip(*(op.perform(dataset) for op in self.merged_ops)))
+    def perform(self) -> DataSet:
+        ziped = zip(*(op.perform() for op in self.merged_ops))
+        return map(self._perform_single, ziped)
+    
+    def _perform_single(self, ziped):
+        res = {}
+        for partial in ziped:
+            res.update(partial)
+        return res
 
     def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
         self.merged_ops = other
