@@ -1,4 +1,5 @@
 from setuptools import setup
+from setuptools import find_packages
 
 setup(name='chariots',
       version='0.1.0',
@@ -8,4 +9,8 @@ setup(name='chariots',
       author_email='antoine.redier@hec.edu',
       license='MIT',
       packages=['chariots'],
+      extras_require={
+          'tests': ['pytest',
+                    'sure'],
+      },
       zip_safe=False)
