@@ -13,6 +13,8 @@ from functools import partial
 from chariots.core.versioning import Signature
 from chariots.core.dataset import DataSet, ORIGIN
 from chariots.helpers.types import DataBatch
+from chariots.helpers.utils import SplitPuller
+from chariots.helpers.utils import SplitPusher
 
 
 class AbstractOp(ABC):
@@ -67,6 +69,42 @@ class BaseOp(AbstractOp):
         else:
             res = self._main(data)
         return {self.name: res}
+    
+class Split(AbstractOp):
+
+    signature = Signature(name = "split")
+
+    def __init__(self, n_splits: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._n_splits = n_splits
+    
+    def __call__(self, other: "AbstractOp") -> List["_SplitRes"]:
+        self.previous_op = other
+        self._pusher = SplitPusher(self._n_splits)
+        return [_SplitRes(puller, self) for puller in self._pusher.pullers]
+    
+    def perform(self, dataset: DataSet, target = None):
+        if self.previous_op:
+            self._pusher.set_iterator(self.previous_op.perform(dataset))
+        else:
+            self._pusher.set_iterator(dataset)
+
+    
+class _SplitRes(AbstractOp):
+
+    signature = Signature(name = "split_puller")
+
+    def __init__(self, puller: SplitPuller, split_op: Split, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._puller = puller
+        self.previous_op = split_op
+    
+    def __call__(self, other: "AbstractOp") -> "AbstractOp":
+        raise ValueError("split puller should not be called directly")
+    
+    def perform(self, dataset: DataSet, target = None) -> DataSet:
+        self.previous_op.perform(dataset)
+        return DataSet.from_op(self._puller)
 
 class Merge(AbstractOp):
 
