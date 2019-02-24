@@ -2,7 +2,7 @@ import sure
 import pytest
 
 from chariots.core.versioning import Signature
-from chariots.core.base_op import BaseOp
+from chariots.core.ops import BaseOp
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline

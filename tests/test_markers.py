@@ -2,11 +2,11 @@ import pytest
 import sure
 
 from chariots.core.versioning import Signature
-from chariots.core.base_op import BaseOp, Merge
+from chariots.core.ops import BaseOp, Merge
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
-from chariots.core.base_op import Split
+from chariots.core.ops import Split
 from chariots.core.markers import Number, Matrix
 
 class AddOneOp(BaseOp):

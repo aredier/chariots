@@ -1,7 +1,7 @@
 from operator import attrgetter
 from typing import List
 
-from chariots.core.base_op import AbstractOp
+from chariots.core.ops import AbstractOp
 from chariots.core.metadata import Metadata
 from chariots.core.dataset import DataSet
 from chariots.core.versioning import Signature
