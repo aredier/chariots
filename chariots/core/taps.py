@@ -19,4 +19,4 @@ class DataTap(AbstractOp):
         return DataSet.from_op(map(self._preform_single, self._iterator))
     
     def _preform_single(self, batch):
-        return {self.name: batch}
+        return {self.markers[0]: batch}

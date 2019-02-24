@@ -71,7 +71,11 @@ class BaseOp(AbstractOp):
         return DataSet.from_op(map(self._perform_single, data_set))
     
     def _perform_single(self, data: DataBatch):
-        return {self.name: self._main(**data)}
+        args_dict = {arg_name: next(data_batch for data_marker, data_batch in data.items() if data_marker.compatible(marker))
+                     for arg_name, marker in self.requires.items()}
+        print(args_dict)
+        res = self._main(**args_dict)
+        return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
     
 class Split(AbstractOp):
 
