@@ -7,6 +7,9 @@ from chariots.core.dataset import DataSet
 from chariots.core.markers import Marker
 
 class DataTap(AbstractOp):
+    """
+    A data tap represents a source of data that will be used by downstream ops
+    """
 
     signature = Signature("tap")
 
