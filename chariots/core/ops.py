@@ -20,7 +20,10 @@ from chariots.helpers.utils import SplitPusher
 class AbstractOp(ABC):
     """
     base op of a pipeline
-    the main entry point of the op is going to be the call method which will be perfomed on each data batch
+    the main entry point of the op is going to be the perform method.
+    there are several fields that are needed to create an op:
+        - marker : corresponds to the markers of this op, these will be searched by the next op in the pipeline as parameters for their _main method
+        - signature: corresponds to the version of this op (this is what will be used to determine if ops are compatible)
     """
 
     signature: Signature = None
@@ -29,6 +32,9 @@ class AbstractOp(ABC):
     requires = {}
 
     def __new__(cls, *args, **kwargs):
+        """
+        checks that fields are implemented
+        """
         if cls.signature is None:
             raise ValueError(f"no signature was assigned to {cls.__name__}")
         instance = super(AbstractOp, cls).__new__(cls)
@@ -36,6 +42,9 @@ class AbstractOp(ABC):
         return instance
     
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
+        """
+        used to determine the ancestor of an op
+        """
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         missing = next((required for required in self.requires.items()
@@ -49,34 +58,64 @@ class AbstractOp(ABC):
 
     @property
     def name(self):
+        """
+        the name of the op
+        """
         return self.signature.name
     
     @abstractmethod
     def perform(self) -> "DataSet":
+        """
+        the main entry point of an op that should perform the op's ancestors and th op itself and 
+        returns the resulting DataSet
+        """
         pass
     
 
 class BaseOp(AbstractOp):
+    """
+    BaseOp is a simple implementation of an op were _main is performed on each data batch individually
+    in order to do that, a litle magic (not too much I hope) is added to determine wich part of the 
+    data batch should become which argument of the _main method:
+    The key of each requirement is used as the parameter_name of the corresponding argument in _main
+    hence all the arguments of _main must be keys of the required dict
+    """
 
     @abstractmethod
     def _main(self, **kwargs) -> DataBatch:
-        pass
+        """
+        function to be overriden to create an op, the kwargs dict will have the same keys as the 
+        requirements and the values will be the part of the batch corresponding to the marker.
+        """
 
     def perform(self) -> "DataSet":
+        """
+        implementation of perform for the base op
+        """
         if self.previous_op is None:
             raise ValueError("this pipeline doesn't seem to have a tap, can't get the data flowing")
         return self._map_op(self.previous_op.perform())
     
     def _map_op(self, data_set: DataSet):
+        """
+        maps itself to a dataset
+        """
         return DataSet.from_op(map(self._perform_single, data_set))
     
     def _perform_single(self, data: DataBatch):
+        """
+        performs the argument resolution executes the op on a databatch
+        """
         args_dict = {arg_name: next(data_batch for data_marker, data_batch in data.items() if marker.compatible(data_marker))
                      for arg_name, marker in self.requires.items()}
         res = self._main(**args_dict)
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
     
 class Split(AbstractOp):
+    """
+    split operation that creates several downstreams from a single upstream
+    be carefull, splits are not free as they have to do a deepcopy of each batch to prevent data races
+    """
 
     signature = Signature(name = "split")
 
@@ -100,6 +139,9 @@ class Split(AbstractOp):
 
     
 class _SplitRes(AbstractOp):
+    """
+    downstream op of a split (returned by Split.__call__)
+    """
 
     signature = Signature(name = "split_puller")
 
@@ -120,6 +162,9 @@ class _SplitRes(AbstractOp):
         return DataSet.from_op(self._puller)
 
 class Merge(AbstractOp):
+    """
+    Op that merges sevreral pipelines in a single one
+    """
 
     signature = Signature(name = "merge")
 

@@ -1,6 +1,6 @@
 from typing import List
 
-from chariots.core.base_op import AbstractOp
+from chariots.core.ops import AbstractOp
 from chariots.core.versioning import Signature
 from chariots.helpers.types import DataBatch
 from chariots.core.dataset import DataSet
