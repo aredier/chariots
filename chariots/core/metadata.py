@@ -2,7 +2,7 @@ import operator
 import copy
 from typing import List
 
-# These are the remains of an old metada that might come andy but that will not be used yet
+# These are the remains of an old metada that might come andy but that is not be used yet
 
 class Metadata:
     
