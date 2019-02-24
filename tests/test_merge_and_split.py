@@ -34,26 +34,26 @@ class Bar(Number):
     def compatible(self, other):
         return isinstance(other, Bar)
 
-class AddTogether(BaseOp):
+class DevideTogether(BaseOp):
     markers = [Number()]
     requires = {"left": Foo(), "right": Bar()}
     signature = Signature(name="add_together")
 
     def _main(self, left, right):
-        return left +  right
+        return left /  right
 
 @pytest.fixture
 def tap():
     return DataTap(iter(range(10)), Number())
 
 def test_simple_merge():
-    pos = DataTap(iter(range(10)), Foo())
-    neg = DataTap(iter(range(0, -10, -1)), Bar())
-    merged = Merge()([pos, neg])
-    res = AddTogether()(merged)
+    single = DataTap(iter(range(1, 10)), Foo())
+    double = DataTap(iter(range(2, 20, 2)), Bar())
+    merged = Merge()([single, double])
+    res = DevideTogether()(merged)
     for ind in res.perform():
         ind.should.be.a(dict)
-        ind.should.have.key(AddTogether.markers[0]).being.equal(0)
+        ind.should.have.key(DevideTogether.markers[0]).being.equal(0.5)
 
 
 def test_simple_split(tap):
