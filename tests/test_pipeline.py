@@ -6,8 +6,11 @@ from chariots.core.base_op import BaseOp
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
+from chariots.core.markers import Number
 
 class AddOneOp(BaseOp):
+    markers = [Number()]
+    requires = {"input": Number()}
     signature = Signature(name = "add")
 
     def _main(self, tap):
@@ -18,6 +21,8 @@ def add_op():
     return AddOneOp()
 
 class Square(BaseOp):
+    markers = [Number()]
+    requires = {"input": Number()}
     signature = Signature(name = "square")
 
     def _main(self, add):
@@ -29,7 +34,7 @@ def square_op():
 
 @pytest.fixture
 def tap():
-    return DataTap(iter(range(10)))
+    return DataTap(iter(range(10)), Number())
 
 def test_single_op(add_op, tap):
     add = add_op(tap)
