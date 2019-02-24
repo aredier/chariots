@@ -25,6 +25,8 @@ class AbstractOp(ABC):
 
     signature: Signature = None
     previous_op = None
+    markers = []
+    requires = {}
 
     def __new__(cls, *args, **kwargs):
         if cls.signature is None:
@@ -36,6 +38,11 @@ class AbstractOp(ABC):
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
+        missing = next((required for required in self.requires.items()
+                        if all(not required[1].compatible(marker) for marker in other.markers)),
+                       None)
+        if missing is not None:
+            raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
         self.previous_op = other
         return self
         
@@ -74,6 +81,10 @@ class Split(AbstractOp):
         super().__init__(*args, **kwargs)
         self._n_splits = n_splits
     
+    @property
+    def markers(self):
+        return self.previous_op.markers
+    
     def __call__(self, other: "AbstractOp") -> List["_SplitRes"]:
         self.previous_op = other
         self._pusher = SplitPusher(self._n_splits)
@@ -93,6 +104,10 @@ class _SplitRes(AbstractOp):
         super().__init__(*args, **kwargs)
         self._puller = puller
         self.previous_op = split_op
+
+    @property
+    def markers(self):
+        return self.previous_op.markers
     
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         raise ValueError("split puller should not be called directly")
@@ -112,6 +127,10 @@ class Merge(AbstractOp):
     def perform(self) -> DataSet:
         ziped = zip(*(op.perform() for op in self.merged_ops))
         return map(self._perform_single, ziped)
+
+    @property
+    def markers(self):
+        return [marker for op in self.merged_ops for marker in op.markers]
     
     def _perform_single(self, ziped):
         res = {}
