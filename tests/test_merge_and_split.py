@@ -11,50 +11,49 @@ from chariots.core.markers import Number
 
 class AddOneOp(BaseOp):
     markers = [Number()]
-    requires = {"input": Number()}
+    requires = {"input_value": Number()}
     signature = Signature(name = "add")
 
-    def _main(self, tap):
-        return tap + 1
+    def _main(self, input_value):
+        return input_value + 1
 
 
 class Square(BaseOp):
     markers = [Number()]
-    requires = {"input": Number()}
+    requires = {"input_value": Number()}
     signature = Signature(name = "square")
 
-    def _main(self, tap):
-        return tap ** 2
+    def _main(self, input_value):
+        return input_value ** 2
+
+class Foo(Number):
+    def compatible(self, other):
+        return isinstance(other, Foo)
+
+class Bar(Number):
+    def compatible(self, other):
+        return isinstance(other, Bar)
 
 class AddTogether(BaseOp):
     markers = [Number()]
-    requires = {"input": Number()}
+    requires = {"left": Foo(), "right": Bar()}
     signature = Signature(name="add_together")
 
-    def _main(self, tap, idenitity):
-        return tap +  idenitity
-
-class Identity(BaseOp):
-    markers = [Number()]
-    requires = {"input": Number()}
-    signature = Signature(name = "idenitity")
-
-    def _main(self, tap):
-        return tap
+    def _main(self, left, right):
+        return left +  right
 
 @pytest.fixture
 def tap():
     return DataTap(iter(range(10)), Number())
 
 def test_simple_merge():
-    pos = DataTap(iter(range(10)), Number())
-    neg = DataTap(iter(range(0, -10, -1)), Number())
-    neg = Identity()(neg)
+    pos = DataTap(iter(range(10)), Foo())
+    neg = DataTap(iter(range(0, -10, -1)), Bar())
     merged = Merge()([pos, neg])
     res = AddTogether()(merged)
     for ind in res.perform():
         ind.should.be.a(dict)
-        ind.should.have.key("add_together").being.equal(0)
+        ind.should.have.key(AddTogether.markers[0]).being.equal(0)
 
 
 def test_simple_split(tap):
@@ -63,7 +62,7 @@ def test_simple_split(tap):
     square = Square()(split_2)
     for i, ind in enumerate(add.perform()):
         ind.should.be.a(dict)
-        ind.should.have.key("add").being.equal(i + 1)
+        ind.should.have.key(add.markers[0]).being.equal(i + 1)
     for i, ind in enumerate(square.perform()):
         ind.should.be.a(dict)
-        ind.should.have.key("square").being.equal(i ** 2)
+        ind.should.have.key(square.markers[0]).being.equal(i ** 2)
