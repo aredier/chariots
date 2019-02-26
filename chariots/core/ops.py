@@ -5,14 +5,18 @@ base op of chariots
 import random
 from abc import ABC
 from abc import abstractmethod
+from abc import abstractclassmethod
 from abc import ABCMeta
 from typing import Optional
 from typing import List
+from typing import Mapping
 from functools import partial
 
 from chariots.core.versioning import Signature
 from chariots.core.dataset import DataSet, ORIGIN
+from chariots.core.markers import Marker
 from chariots.helpers.types import DataBatch
+from chariots.helpers.types import Requirements
 from chariots.helpers.utils import SplitPuller
 from chariots.helpers.utils import SplitPusher
 
@@ -28,8 +32,8 @@ class AbstractOp(ABC):
 
     signature: Signature = None
     previous_op = None
-    markers = []
-    requires = {}
+    markers: List[Marker] = []
+    requires: Requirements = {}
 
     def __new__(cls, *args, **kwargs):
         """
@@ -47,13 +51,18 @@ class AbstractOp(ABC):
         """
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
-        missing = next((required for required in self.requires.items()
+        self._check_compatibility(other, self.requires)
+        self.previous_op = other
+        return self
+    
+    @staticmethod
+    def _check_compatibility(other: "AbstractOp", requirements: Requirements):
+        print(other.markers)
+        missing = next((required for required in requirements.items()
                         if all(not required[1].compatible(marker) for marker in other.markers)),
                        None)
         if missing is not None:
             raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
-        self.previous_op = other
-        return self
         
 
     @property
@@ -106,10 +115,14 @@ class BaseOp(AbstractOp):
         """
         performs the argument resolution executes the op on a databatch
         """
-        args_dict = {arg_name: next(data_batch for data_marker, data_batch in data.items() if marker.compatible(data_marker))
-                     for arg_name, marker in self.requires.items()}
+        args_dict = self._resolve_arguments(data, self.requires)
         res = self._main(**args_dict)
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
+    
+    def _resolve_arguments(self, data: dict, requirements: Requirements):
+        return {arg_name: next(data_batch for data_marker, data_batch in data.items() if marker.compatible(data_marker))
+                for arg_name, marker in requirements.items()}
+
     
 class Split(AbstractOp):
     """
@@ -189,4 +202,4 @@ class Merge(AbstractOp):
     def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
         self.merged_ops = other
         return self
-    
+
