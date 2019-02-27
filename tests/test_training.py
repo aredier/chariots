@@ -32,18 +32,13 @@ class LinearModel(TrainableOp):
         super().__init__(**kwargs)
         self._model = SGDRegressor(eta0=8e-5, learning_rate="constant", verbose=1)
 
-    def _train_function(self, x, y):
-        x = np.asarray(x).reshape((-1, 1))
-        y = np.asarray(y)
-        idx = np.array(list(range(x.shape[0])))
-        np.random.shuffle(idx)
-        x = x[idx, :]
-        y = y[idx]
-        # print(x,y)
+    def _inner_train(self, x, y):
+        idx = np.random.choice(list(range(len(x))), len(x), replace=False)
+        x = np.asarray(x).reshape((-1, 1))[idx, :]
+        y = np.asarray(y)[idx]
         self._model = self._model.partial_fit(x , np.asarray(y))
     
     def _main(self, x):
-        print(x)
         return self._model.predict(np.asarray(x).reshape(-1, 1))
 
 class XDAta(BaseOp):
