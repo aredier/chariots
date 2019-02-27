@@ -1,11 +1,12 @@
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import SGDRegressor
 import sure
 import numpy as np
 
 from chariots.core.taps import DataTap
-from chariots.core.markers import Marker
+from chariots.core.markers import Marker, Number
 from chariots.core.markers import Matrix
-from chariots.core.ops import Merge
+from chariots.core.ops import Merge, BaseOp, Split
 from chariots.core.versioning import Signature
 from chariots.training.trainable_op import TrainableOp
 
@@ -29,7 +30,7 @@ class LinearModel(TrainableOp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._model = LinearRegression()
+        self._model = SGDRegressor(eta0=8e-5, learning_rate="constant", verbose=1)
 
     def _train_function(self, x, y):
         x = np.asarray(x).reshape((-1, 1))
@@ -38,16 +39,37 @@ class LinearModel(TrainableOp):
         np.random.shuffle(idx)
         x = x[idx, :]
         y = y[idx]
-        self._model.fit(x , np.asarray(y))
+        # print(x,y)
+        self._model = self._model.partial_fit(x , np.asarray(y))
     
     def _main(self, x):
         print(x)
         return self._model.predict(np.asarray(x).reshape(-1, 1))
 
+class XDAta(BaseOp):
+    requires = {"in_value" : Number()}
+    signature = Signature(name = "x")
+    markers = [XMarker()]
+
+    def _main(self, in_value):
+        return np.random.choice(list(range(in_value, in_value + 100)), 80000)
+
+class YDAta(BaseOp):
+    requires = {"in_value" : XMarker()}
+    signature = Signature(name = "y")
+    markers = [YMarker()]
+
+    def _main(self, in_value):
+        return np.array([in_value + 1 for in_value in in_value])
+
 
 def test_training_op():
-    x = DataTap(iter(list(range(0, i + 10)) for i in range(2)), XMarker())
-    y = DataTap(iter(list(range(1, i + 11)) for i in range(2)), YMarker())
+    numbers = np.random.choice(list(range(100)), 10, replace=True)
+
+    data = DataTap(iter(numbers), Number())
+    x = XDAta()(data)
+    x, y = Split(2)(x)
+    y = YDAta()(y)
     training_data =  Merge()([x, y])
     foo = LinearModel()
     foo.fit(training_data)
@@ -56,4 +78,4 @@ def test_training_op():
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
         y_pred_ind.should.have.key(LinearModel.markers[0])
-        float(y_pred_ind[LinearModel.markers[0]][0]).should.equal(i + 1., epsilon=0.0001)
+        float(y_pred_ind[LinearModel.markers[0]][0]).should.equal(i + 1., epsilon=0.01)
