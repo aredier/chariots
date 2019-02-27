@@ -5,7 +5,8 @@ from chariots.core.ops import BaseOp
 from chariots.core.ops import AbstractOp
 
 
-class TrainableOp(BaseOp, meta=ABCMeta):
+class TrainableOp(BaseOp):
+    # TODO find a way to use ABC meta
     """
     abstract base  for all the trainable ops:
     in order to implement you will have to override both the `_main` and `_inner_train`
