@@ -15,7 +15,7 @@ class Foo(Savable):
         temp_file.write(json.dumps(self.seed).encode())        
 
     @classmethod
-    def _deserialize(cls, file: IO):
+    def _deserialize(cls, file: IO) -> "Foo":
         res = cls()
         res.seed = json.load(file)
         return res

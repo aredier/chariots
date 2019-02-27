@@ -11,34 +11,58 @@ from tempfile import TemporaryFile
 
 
 class Saver(ABC):
+    """
+    is responsible for persisting a tempfile (on the file system, remote, over a socket, go wild ...)
+    """
 
     @abstractmethod
     def persist(self, result_file: IO, validity_checksum: Text, **identifiers):
+        """
+        method that determines how the the Saver should persist a file. the identifiers and 
+        validity checksu should be recoverable after the destruction of the Saver by a saver of the
+        class
+        """
         pass
     
     @abstractmethod
     def load(self, **identifiers) -> Tuple[Text, IO]:
+        """
+        loads from identifiers a file. it returns a chacksum and an IO from which to read the data
+        """
         pass
 
 
 class Savable(ABC):
+    """
+    Savable Object
+    """
 
     @abstractmethod
     def _serialize(self, temp_file: IO):
-        pass
+        """
+        how to serialise the object to a file
+        """
     
     def save(self, saver: Saver):
+        """
+        saves the object using the saver's `persist` method
+        """
         with TemporaryFile() as tempfile:
             self._serialize(tempfile)
             tempfile.seek(0)
             saver.persist(tempfile, self.checksum(), **self.identifiers())
     
     @abstractclassmethod
-    def _deserialize(self, file: IO):
-        pass
+    def _deserialize(cls, file: IO) -> "Savable":
+        """
+        how to deserialize a the data and create an object
+        """
 
     @classmethod
-    def load(cls, saver: Saver):
+    def load(cls, saver: Saver) -> "Savable":
+        """
+        creates an instance from the serialized data of the saver
+        """
         old_checksum, saved_io= saver.load(**cls.identifiers())
         if old_checksum != cls.checksum():
             raise ValueError(f"saved {cls.__name__} is deprecated")
@@ -50,10 +74,15 @@ class Savable(ABC):
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
     @abstractclassmethod
     def checksum(self):
-        pass
+        """
+        validity cehcksum that verifies the data saved is still valid
+        """
 
     @classmethod
     def identifiers(self):
+        """
+        identifies the object (in order for the saver to know which data to fetch at loading time)
+        """
         return {}
         
 
