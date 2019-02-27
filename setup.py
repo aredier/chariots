@@ -11,6 +11,9 @@ setup(name='chariots',
       packages=['chariots'],
       extras_require={
           'tests': ['pytest',
-                    'sure'],
+                    'sure',
+                    'numpy',
+                    'sklearn'
+                   ],
       },
       zip_safe=False)
