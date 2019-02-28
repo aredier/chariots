@@ -9,6 +9,7 @@ from chariots.core.markers import Matrix
 from chariots.core.ops import Merge, BaseOp, Split
 from chariots.core.versioning import Signature
 from chariots.training.trainable_op import TrainableOp
+from chariots.training.trainable_pipeline import TrainablePipeline
 
 
 class XMarker(Marker):
@@ -70,6 +71,26 @@ def test_training_op():
     foo.fit(training_data)
     x_test = DataTap(iter([i] for i in range(100)), XMarker())
     y_pred = foo(x_test)
+    for i, y_pred_ind in enumerate(y_pred.perform()):
+        y_pred_ind.should.be.a(dict)
+        y_pred_ind.should.have.key(LinearModel.markers[0])
+        float(y_pred_ind[LinearModel.markers[0]][0]).should.equal(i + 1., epsilon=0.01)
+
+
+def test_trainable_pipeline_single_op():
+    numbers = np.random.choice(list(range(100)), 10, replace=True)
+
+    data = DataTap(iter(numbers), Number())
+    x = XDAta()(data)
+    x, y = Split(2)(x)
+    y = YDAta()(y)
+    training_data =  Merge()([x, y])
+    model = LinearModel()
+    pipe = TrainablePipeline()
+    pipe.add(model)
+    pipe.fit(training_data)
+    x_test = DataTap(iter([i] for i in range(100)), XMarker())
+    y_pred = pipe(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
         y_pred_ind.should.have.key(LinearModel.markers[0])

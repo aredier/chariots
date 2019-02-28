@@ -57,7 +57,6 @@ class AbstractOp(ABC):
     
     @staticmethod
     def _check_compatibility(other: "AbstractOp", requirements: Requirements):
-        print(other.markers)
         missing = next((required for required in requirements.items()
                         if all(not required[1].compatible(marker) for marker in other.markers)),
                        None)
@@ -80,9 +79,9 @@ class AbstractOp(ABC):
         pass
     
     @property
-    def ready():
+    def ready(self):
         if self.previous_op:
-            return self.previous_op.ready()
+            return self.previous_op.ready
         return True
     
 
@@ -203,6 +202,10 @@ class Merge(AbstractOp):
         for partial in ziped:
             res.update(partial)
         return res
+    
+    @property
+    def ready(self):
+        return all([op.ready for op in self.previous_op])
 
     def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
         self.previous_op = other

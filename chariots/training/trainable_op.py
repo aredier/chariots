@@ -45,10 +45,12 @@ class TrainableOp(TrainableTrait, BaseOp):
         """
         method called to train the op on other (which must meet the training requirements)
         """
-        if not isinstance(other, AbstractOp):
+        reconnect = other is not None
+        if reconnect:
+            self.previous_op = other
+        if not isinstance(self.previous_op, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
-        self._check_compatibility(other, self.training_requirements)
-        self.previous_op = other
+        self._check_compatibility(self.previous_op, self.training_requirements)
         for training_batch in self.previous_op.perform():
             args_dict = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
