@@ -63,7 +63,6 @@ class AbstractOp(ABC):
                        None)
         if missing is not None:
             raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
-        
 
     @property
     def name(self):
@@ -79,6 +78,12 @@ class AbstractOp(ABC):
         returns the resulting DataSet
         """
         pass
+    
+    @property
+    def ready():
+        if self.previous_op:
+            return self.previous_op.ready()
+        return True
     
 
 class BaseOp(AbstractOp):
@@ -182,16 +187,16 @@ class Merge(AbstractOp):
     signature = Signature(name = "merge")
 
     def __init__(self, *args, **kwargs):
-        self.merged_ops = None
+        self.previous_op = None
         super().__init__(*args, **kwargs)
 
     def perform(self) -> DataSet:
-        ziped = zip(*(op.perform() for op in self.merged_ops))
+        ziped = zip(*(op.perform() for op in self.previous_op))
         return map(self._perform_single, ziped)
 
     @property
     def markers(self):
-        return [marker for op in self.merged_ops for marker in op.markers]
+        return [marker for op in self.previous_op for marker in op.markers]
     
     def _perform_single(self, ziped):
         res = {}
@@ -200,6 +205,6 @@ class Merge(AbstractOp):
         return res
 
     def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
-        self.merged_ops = other
+        self.previous_op = other
         return self
 

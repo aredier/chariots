@@ -1,11 +1,14 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
+from typing import Optional
+
 from chariots.core.ops import BaseOp
 from chariots.core.ops import AbstractOp
+from chariots.training import TrainableTrait
 
 
-class TrainableOp(BaseOp):
+class TrainableOp(TrainableTrait, BaseOp):
     # TODO find a way to use ABC meta
     """
     abstract base  for all the trainable ops:
@@ -16,15 +19,29 @@ class TrainableOp(BaseOp):
     """
     
     training_requirements = {}
+    _is_fited = False
+
+    @property
+    def fited(self):
+        return self._is_fited
+    
+    @property
+    def ready(self):
+        return self.previous_op.ready and self.fited()
 
     @abstractmethod
     def _inner_train(self, **kwargs):
         """
         method that defines the training behavior of the op
         """
+
+    def perform(self) -> "DataSet":
+        if not self.fited:
+            raise ValueError(f"{self.name} is not fited, cannot perform")
+        return super().perform()
     
 
-    def fit(self, other: AbstractOp):
+    def fit(self, other: Optional[AbstractOp] = None):
         """
         method called to train the op on other (which must meet the training requirements)
         """
@@ -35,3 +52,4 @@ class TrainableOp(BaseOp):
         for training_batch in self.previous_op.perform():
             args_dict = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
+        self._is_fited = True
