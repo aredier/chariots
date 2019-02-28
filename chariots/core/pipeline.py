@@ -22,9 +22,12 @@ class Pipeline(AbstractOp):
         self.output_op = output_op
 
     def perform(self) -> DataSet:
-        if self.previous_op is not None:
-            self.input_op(self.previous_op)
         return self.output_op.perform()
+    
+    def __call__(self, other: "AbstractOp") -> "AbstractOp":
+        if self.input_op is not None:
+            self.input_op.previous_op = other
+        return self
 
     def add(self, other: AbstractOp, head=None):
         """
@@ -51,6 +54,7 @@ class Pipeline(AbstractOp):
                 if not isinstance(previous, list):
                     previous = [previous]
                 queue.extend(previous)
+        return all_ops
 
     @classmethod
     def merge(cls, pipelines: List["Pipeline"]) -> "Pipeline":

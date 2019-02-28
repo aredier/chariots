@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Text
 
 from chariots.core.pipeline import Pipeline
 from chariots.core.ops import AbstractOp
@@ -23,12 +24,13 @@ class TrainablePipeline(TrainableTrait, Pipeline):
             if not isinstance(next_op, TrainableOp):
                 continue
             if not next_op.fited:
-                if next_op.previous_op is not None and next_op.previous_op.ready():
+                if next_op.previous_op is None or next_op.previous_op.ready:
                     next_op.fit()
                     continue
                 
                 # some requirements are not ready, putting the op backa at the back of the queue
                 remaining_for_training.insert(0, next_op)
+            raise
         if reconnect:
             self.previous_op = None
         
