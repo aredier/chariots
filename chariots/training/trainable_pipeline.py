@@ -10,9 +10,17 @@ class TrainablePipeline(TrainableTrait, Pipeline):
 
     @property
     def fited(self):
-        pass
+        """
+        whether or not the pipeline is fited
+        """
 
     def fit(self, other: Optional[AbstractOp] = None, mode: Text = "naive"):
+        """
+        fiting the pipeline
+            :param other:Optional[AbstractOp]=None: optional pipeline or op on which to fit the pipeline
+            :param mode:Text="naive": NotImplemented the mode of training (repartition of the training
+            data in sequential training)
+        """
         if mode != "naive":
             raise NotImplemented(f"mode {mode} is not implemented")
         remaining_for_training = list(self.all_ops)

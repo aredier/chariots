@@ -7,9 +7,15 @@ class TrainableTrait(ABC):
 
     @abstractproperty
     def fited(self):
-        pass
+        """
+        is the Training fited
+        """
 
     @abstractmethod
     def fit(self, *args, **kwargs):
-        pass
+        """
+        fit the trainable object
+            :param *args: positional arguments to be overiden by children
+            :param **kwargs: keywords argments to be overriden by childre 
+        """
 
