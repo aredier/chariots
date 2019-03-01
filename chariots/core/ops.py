@@ -80,6 +80,9 @@ class AbstractOp(ABC):
     
     @property
     def ready(self):
+        """
+        is the op ready to be performed
+        """
         if self.previous_op:
             print(self.name)
             return self.previous_op.ready
