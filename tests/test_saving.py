@@ -6,7 +6,7 @@ import numpy as np
 from chariots.core.saving import FileSaver
 from chariots.core.saving import Savable
 
-class Foo(Savable):
+class SavableObject(Savable):
 
     def __init__(self):
         self.seed = int(np.random.randint(10))
@@ -25,8 +25,8 @@ class Foo(Savable):
         return "foobar"
 
 def test_saving():
-    foo =  Foo()
+    foo =  SavableObject()
     saver = FileSaver()
     foo.save(saver)
-    bar = Foo.load(saver)
+    bar = SavableObject.load(saver)
     foo.seed.should.be.equal(bar.seed)
