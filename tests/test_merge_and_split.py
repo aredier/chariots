@@ -9,22 +9,6 @@ from chariots.core.pipeline import Pipeline
 from chariots.core.ops import Split
 from chariots.core.markers import Number
 
-class AddOneOp(BaseOp):
-    markers = [Number()]
-    requires = {"input_value": Number()}
-    signature = Signature(name = "add")
-
-    def _main(self, input_value):
-        return input_value + 1
-
-
-class Square(BaseOp):
-    markers = [Number()]
-    requires = {"input_value": Number()}
-    signature = Signature(name = "square")
-
-    def _main(self, input_value):
-        return input_value ** 2
 
 class Foo(Number):
     def compatible(self, other):
@@ -42,10 +26,6 @@ class DevideTogether(BaseOp):
     def _main(self, left, right):
         return left /  right
 
-@pytest.fixture
-def tap():
-    return DataTap(iter(range(10)), Number())
-
 def test_simple_merge():
     single = DataTap(iter(range(1, 10)), Foo())
     double = DataTap(iter(range(2, 20, 2)), Bar())
@@ -56,10 +36,10 @@ def test_simple_merge():
         ind.should.have.key(DevideTogether.markers[0]).being.equal(0.5)
 
 
-def test_simple_split(tap):
+def test_simple_split(tap, add_op_cls, square_op_cls):
     split_1, split_2 = Split(2)(tap)
-    add = AddOneOp()(split_1)
-    square = Square()(split_2)
+    add = add_op_cls()(split_1)
+    square = square_op_cls()(split_2)
     for i, ind in enumerate(add.perform()):
         ind.should.be.a(dict)
         ind.should.have.key(add.markers[0]).being.equal(i + 1)
