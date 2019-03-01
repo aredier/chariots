@@ -48,6 +48,8 @@ class TrainableOp(TrainableTrait, BaseOp):
         reconnect = other is not None
         if reconnect:
             self.previous_op = other
+        if self.previous_op is None:
+            raise ValueError(f"other is None and {self.name} is not connected to a pipeline")
         if not isinstance(self.previous_op, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(self.previous_op, self.training_requirements)

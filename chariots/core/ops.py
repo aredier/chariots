@@ -81,6 +81,7 @@ class AbstractOp(ABC):
     @property
     def ready(self):
         if self.previous_op:
+            print(self.name)
             return self.previous_op.ready
         return True
     
