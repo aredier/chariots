@@ -42,6 +42,7 @@ class AbstractOp(ABC):
         """
         if cls.signature is None:
             raise ValueError(f"no signature was assigned to {cls.__name__}")
+        cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
         # instance.signature.add_fields(random_identifier = str(random.random() // 1e-16))
         return instance
