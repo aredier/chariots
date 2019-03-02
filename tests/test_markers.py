@@ -26,3 +26,9 @@ def test_wrong_requires(tap, add_op_cls, square_op_cls):
     array = GenerateArray()(add)
     square = square_op_cls()
     square.when.called_with(array).should.throw(ValueError)
+
+def test_marker_generation(x_marker_cls, y_marker_cls):
+    new_marker_cls = x_marker_cls.new_marker()
+    assert x_marker_cls().compatible(new_marker_cls())
+    assert not new_marker_cls().compatible(x_marker_cls())
+    assert new_marker_cls().compatible(new_marker_cls())
