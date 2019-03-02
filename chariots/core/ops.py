@@ -3,6 +3,7 @@ base op of chariots
 """
 
 import random
+import functools
 from abc import ABC
 from abc import abstractmethod
 from abc import abstractclassmethod
@@ -10,7 +11,7 @@ from abc import ABCMeta
 from typing import Optional
 from typing import List
 from typing import Mapping
-from functools import partial
+from typing import Type
 
 from chariots.core.versioning import Signature
 from chariots.core.dataset import DataSet, ORIGIN
@@ -87,6 +88,16 @@ class AbstractOp(ABC):
             print(self.name)
             return self.previous_op.ready
         return True
+    
+    @classmethod
+    @functools.lru_cache()
+    def as_marker(cls) -> Type[Marker]:
+        """
+        produces a marker that corresponds to this op
+        """
+        if len(cls.markers) != 1:
+            raise ValueError("using more or less than one marker for an op is ambigous to produce marker")
+        return cls.markers[0].new_marker()()
     
 
 class BaseOp(AbstractOp):

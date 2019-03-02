@@ -32,3 +32,9 @@ def test_marker_generation(x_marker_cls, y_marker_cls):
     assert x_marker_cls().compatible(new_marker_cls())
     assert not new_marker_cls().compatible(x_marker_cls())
     assert new_marker_cls().compatible(new_marker_cls())
+
+def test_op_markers(add_op_cls, square_op_cls):
+    assert add_op_cls.markers[0].compatible(add_op_cls.as_marker())
+    assert not square_op_cls.as_marker().compatible(add_op_cls.as_marker())
+    assert not add_op_cls.as_marker().compatible(square_op_cls.as_marker())
+    assert add_op_cls.as_marker().compatible(add_op_cls.as_marker())
