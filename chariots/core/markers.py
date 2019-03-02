@@ -1,5 +1,7 @@
+import uuid
 from abc import ABC
 from abc import abstractmethod
+from typing import Type
 
 class Marker(ABC):
     """
@@ -9,6 +11,18 @@ class Marker(ABC):
     @abstractmethod
     def compatible(self, other: "Marker") -> bool:
         pass 
+    
+    @classmethod
+    def new_marker(cls) -> Type["Marker"]:
+        """
+        creates a unique marker that will be accepted by this class but will only accept itself 
+        """
+        class NewMarker(cls):
+            identifier = uuid.uuid1()
+
+            def compatible(self, other: "Marker") -> bool:
+                return hasattr(other, "identifier") and other.identifier == self.identifier
+        return NewMarker
 
 class Number(Marker):
     def compatible(self, other: Marker) -> bool:
