@@ -56,7 +56,7 @@ class Identity(BaseOp):
 
 
 def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):
-    numbers = np.random.choice(list(range(100)), 10, replace=True)
+    numbers = np.random.choice(list(range(100)), 20, replace=True)
 
     data = DataTap(iter(numbers), Number())
     x = x_op_cls()(data)

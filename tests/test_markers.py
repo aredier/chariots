@@ -17,6 +17,15 @@ class GenerateArray(BaseOp):
     def _main(self, input_value):
         return [input_value for _ in range(5)]
 
+class Sum(BaseOp):
+    markers = [Number()]
+    requires = {"array": GenerateArray}
+    signature = Signature(name="sum_array")
+    
+    def _main(self, array):
+        return sum(array)
+
+
 @pytest.fixture
 def tap():
     return DataTap(iter(range(10)), Number())
@@ -26,6 +35,15 @@ def test_wrong_requires(tap, add_op_cls, square_op_cls):
     array = GenerateArray()(add)
     square = square_op_cls()
     square.when.called_with(array).should.throw(ValueError)
+
+
+def test_op_as_requirement(tap, add_op_cls):
+    array = GenerateArray()(tap)
+    sum_op = Sum()
+    sum_op.when.called_with(array)
+
+    sum_op = Sum()
+    sum_op.when.called_with(tap).should.throw(ValueError)
 
 def test_marker_generation(x_marker_cls, y_marker_cls):
     new_marker_cls = x_marker_cls.new_marker()
