@@ -12,10 +12,11 @@ from typing import Optional
 from typing import List
 from typing import Mapping
 from typing import Type
+from typing import Text
 
-from chariots.core.versioning import Signature
 from chariots.core.dataset import DataSet, ORIGIN
 from chariots.core.markers import Marker
+from chariots.core.versioning import _extract_versions
 from chariots.helpers.types import DataBatch
 from chariots.helpers.types import Requirements
 from chariots.helpers.utils import SplitPuller
@@ -28,11 +29,11 @@ class AbstractOp(ABC):
     the main entry point of the op is going to be the perform method.
     there are several fields that are needed to create an op:
         - marker : corresponds to the markers of this op, these will be searched by the next op in the pipeline as parameters for their _main method
-        - signature: corresponds to the version of this op (this is what will be used to determine if ops are compatible)
     """
 
-    signature: Signature = None
+    name: Text = "NA"
     previous_op = None
+    # TODO these should be part of the major version of the op
     markers: List[Marker] = []
     requires: Requirements = {}
 
@@ -40,11 +41,9 @@ class AbstractOp(ABC):
         """
         checks that fields are implemented
         """
-        if cls.signature is None:
-            raise ValueError(f"no signature was assigned to {cls.__name__}")
+        _extract_versions(cls)
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
-        # instance.signature.add_fields(random_identifier = str(random.random() // 1e-16))
         return instance
     
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
@@ -65,13 +64,6 @@ class AbstractOp(ABC):
         if missing is not None:
             raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
 
-    @property
-    def name(self):
-        """
-        the name of the op
-        """
-        return self.signature.name
-    
     @abstractmethod
     def perform(self) -> "DataSet":
         """
@@ -150,7 +142,7 @@ class Split(AbstractOp):
     be carefull, splits are not free as they have to do a deepcopy of each batch to prevent data races
     """
 
-    signature = Signature(name = "split")
+    name = "split"
 
     def __init__(self, n_splits: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -176,7 +168,7 @@ class _SplitRes(AbstractOp):
     downstream op of a split (returned by Split.__call__)
     """
 
-    signature = Signature(name = "split_puller")
+    name = "split_puller"
 
     def __init__(self, puller: SplitPuller, split_op: Split, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -199,7 +191,7 @@ class Merge(AbstractOp):
     Op that merges sevreral pipelines in a single one
     """
 
-    signature = Signature(name = "merge")
+    name = "merge"
 
     def __init__(self, *args, **kwargs):
         self.previous_op = None

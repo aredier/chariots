@@ -6,14 +6,12 @@ from typing import Optional
 from chariots.core.ops import AbstractOp
 from chariots.core.metadata import Metadata
 from chariots.core.dataset import DataSet
-from chariots.core.versioning import Signature
 
 
 class Pipeline(AbstractOp):
     """
     pipeline of operations that will perform mutliple poerations in a specific order
     """
-    signature = Signature("pipeline") 
 
     def __init__(self, input_op: Optional[AbstractOp] = None, output_op: Optional[AbstractOp] = None):
         if input_op is not None:

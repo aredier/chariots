@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.linear_model import SGDRegressor
 
 from chariots.core.ops import BaseOp
-from chariots.core.versioning import Signature
 from chariots.core.markers import Number
 from chariots.core.markers import Marker
 from chariots.core.markers import Matrix
@@ -15,7 +14,7 @@ from chariots.training.trainable_op import TrainableOp
 class AddOneOp(BaseOp):
     markers = [Number()]
     requires = {"input_value": Number()}
-    signature = Signature(name = "add")
+    name = "add"
 
     def _main(self, input_value):
         return input_value + 1
@@ -29,7 +28,7 @@ def add_op_cls():
 class Square(BaseOp):
     markers = [Number()]
     requires = {"input_value": Number()}
-    signature = Signature(name = "square")
+    name = "square"
 
     def _main(self, input_value):
         return input_value ** 2
@@ -67,7 +66,7 @@ def y_marker_cls():
 class LinearModel(TrainableOp):
     training_requirements = {"x": XMarker(), "y": YMarker()}
     requires ={"x": XMarker()} 
-    signature = Signature(name = "linear_model")
+    name = "linear_model"
     markers = [Matrix((1, 2))]
 
     def __init__(self, **kwargs):
@@ -89,7 +88,7 @@ def linear_model_cls():
 
 class XOp(BaseOp):
     requires = {"in_value" : Number()}
-    signature = Signature(name = "x")
+    name = "x"
     markers = [XMarker()]
 
     def _main(self, in_value):
@@ -102,7 +101,7 @@ def x_op_cls():
 
 class LinearYOp(BaseOp):
     requires = {"in_value" : XMarker()}
-    signature = Signature(name = "y")
+    name = "y"
     markers = [YMarker()]
 
     def _main(self, in_value):

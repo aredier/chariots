@@ -7,7 +7,6 @@ from chariots.core.taps import DataTap
 from chariots.core.markers import Marker, Number
 from chariots.core.markers import Matrix
 from chariots.core.ops import Merge, BaseOp, Split
-from chariots.core.versioning import Signature
 from chariots.training.trainable_op import TrainableOp
 from chariots.training.trainable_pipeline import TrainablePipeline
 
@@ -40,7 +39,7 @@ def right_linear_model_cls(linear_model_cls):
 class Add(BaseOp):
     requires = {"left": LeftMarker(None,), "right": RightMarker(None,)}
     markers = [Matrix(None,)]
-    signature = Signature(name = "add_together")
+    name = "add_together"
 
     def _main(self, left, right):
         return [l + r for l, r in zip(left, right)]
@@ -48,7 +47,7 @@ class Add(BaseOp):
 
 class Identity(BaseOp):
     requires = {"in_value" : Number()}
-    signature = Signature(name = "id")
+    name = "id"
     markers = [Number()]
 
     def _main(self, in_value):
