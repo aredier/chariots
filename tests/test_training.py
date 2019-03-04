@@ -3,7 +3,6 @@ import numpy as np
 from chariots.core.taps import DataTap
 from chariots.core.markers import Number
 from chariots.core.ops import Merge, Split
-from chariots.core.versioning import Signature
 
 
 def test_training_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):

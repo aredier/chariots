@@ -1,17 +1,15 @@
 from typing import List
 
 from chariots.core.ops import AbstractOp
-from chariots.core.versioning import Signature
 from chariots.helpers.types import DataBatch
 from chariots.core.dataset import DataSet
 from chariots.core.markers import Marker
+
 
 class DataTap(AbstractOp):
     """
     A data tap represents a source of data that will be used by downstream ops
     """
-
-    signature = Signature("tap")
 
     def __init__(self, iterator, markers: List[Marker]):
         self._iterator = iterator

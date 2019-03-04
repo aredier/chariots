@@ -1,7 +1,6 @@
 import sure
 import pytest
 
-from chariots.core.versioning import Signature
 from chariots.core.ops import BaseOp, Merge
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
@@ -21,7 +20,7 @@ class Bar(Number):
 class DevideTogether(BaseOp):
     markers = [Number()]
     requires = {"left": Foo(), "right": Bar()}
-    signature = Signature(name="add_together")
+    name = "add_together"
 
     def _main(self, left, right):
         return left /  right

@@ -1,7 +1,6 @@
 import pytest
 import sure
 
-from chariots.core.versioning import Signature
 from chariots.core.ops import BaseOp, Merge
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
@@ -12,7 +11,7 @@ from chariots.core.markers import Number, Matrix
 class GenerateArray(BaseOp):
     markers = [Matrix((5,))]
     requires = {"input_value": Number()}
-    signature = Signature(name="array_gen")
+    name = "array_gen"
 
     def _main(self, input_value):
         return [input_value for _ in range(5)]
@@ -20,7 +19,7 @@ class GenerateArray(BaseOp):
 class Sum(BaseOp):
     markers = [Number()]
     requires = {"array": GenerateArray}
-    signature = Signature(name="sum_array")
+    name = "sum_array"
     
     def _main(self, array):
         return sum(array)
