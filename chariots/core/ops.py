@@ -92,7 +92,7 @@ class AbstractOp(ABC):
     
     @classmethod
     @functools.lru_cache()
-    def as_marker(cls) -> Type[Marker]:
+    def as_marker(cls) -> Marker:
         """
         produces a marker that corresponds to this op
         """
