@@ -59,12 +59,28 @@ class AbstractOp(ABC):
         return self
     
     def __getattribute__(self, attribute: Text) -> Any:
+        """gets the attribute and unwrapts it if it is a `VersionField` instance
+        
+        Arguments:
+            attribute {Text} -- the attribute name
+        
+        Returns:
+            Any -- the attribute's value
+        """
         underlying = object.__getattribute__(self, attribute)
         if isinstance(underlying, VersionField):
             return underlying.value
         return underlying
     
     def __setattr__(self, attribute: Text, value: Any):
+        """sets an attribute or the attriubute's inner value if the attribute is an instance of 
+        class `VersionField`
+        
+        Arguments:
+            attribute {Text} -- the attribute name
+            value {Any} -- the desired value
+        """
+
         try:
             underlying = object.__getattribute__(self, attribute)
             if isinstance(underlying, VersionField):
