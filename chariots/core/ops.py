@@ -13,10 +13,12 @@ from typing import List
 from typing import Mapping
 from typing import Type
 from typing import Text
+from typing import Any
 
 from chariots.core.dataset import DataSet, ORIGIN
 from chariots.core.markers import Marker
-from chariots.core.versioning import _extract_versions
+from chariots.core.versioning import _extract_versioned_fields
+from chariots.core.versioning import VersionField
 from chariots.helpers.types import DataBatch
 from chariots.helpers.types import Requirements
 from chariots.helpers.utils import SplitPuller
@@ -41,7 +43,7 @@ class AbstractOp(ABC):
         """
         checks that fields are implemented
         """
-        _extract_versions(cls)
+        _extract_versioned_fields(cls)
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
         return instance
@@ -55,6 +57,22 @@ class AbstractOp(ABC):
         self._check_compatibility(other, self.requires)
         self.previous_op = other
         return self
+    
+    def __getattribute__(self, attribute: Text) -> Any:
+        underlying = object.__getattribute__(self, attribute)
+        if isinstance(underlying, VersionField):
+            return underlying.value
+        return underlying
+    
+    def __setattr__(self, attribute: Text, value: Any):
+        try:
+            underlying = object.__getattribute__(self, attribute)
+            if isinstance(underlying, VersionField):
+                underlying.set(value)
+            else:
+                object.__setattr__(self, attribute, value)
+        except AttributeError:
+            object.__setattr__(self, attribute, value)
     
     @staticmethod
     def _check_compatibility(other: "AbstractOp", requirements: Requirements):
