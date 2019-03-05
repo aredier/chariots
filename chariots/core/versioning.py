@@ -102,7 +102,7 @@ class VersionField:
     def _update_version(self):
         self._linked_subversion.update_fields(**{self._name: self._inner_value})
 
-def _extract_versions(cls):
+def _extract_versioned_fields(cls):
     version = Version()
     for name, value in cls.__dict__.items():
         if isinstance(value, VersionField):
