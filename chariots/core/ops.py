@@ -82,8 +82,10 @@ class AbstractOp(ABC):
         """
 
         try:
+            print("foo")
             underlying = object.__getattribute__(self, attribute)
             if isinstance(underlying, VersionField):
+                print("bar")
                 underlying.set(value)
             else:
                 object.__setattr__(self, attribute, value)

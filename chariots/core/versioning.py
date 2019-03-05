@@ -17,6 +17,7 @@ class VersionType(Enum):
     MINOR = 2
     MAJOR = 3
 
+
 class SubVersion:
     """
     represents part of the version (major, minor, ...)
@@ -71,11 +72,13 @@ class SubVersion:
         return self.fields_hash ==  other.fields_hash
 
     def __gt__(self, other: "SubVersion") -> bool:
-        return self.last_update_time_stamp > other.last_update_time_stamp
+        return self.fields_hash !=  other.fields_hash and \
+               self.last_update_time_stamp > other.last_update_time_stamp
 
     def __repr__(self):
         return f"{str(self._last_update_time_stamp)[:10]}.{self.fields_hash}"
     
+
 class Version:
     """represents a full version (major, minor and patch)
     """
@@ -89,10 +92,13 @@ class Version:
         return f"<Version {self.major.display_number}.{self.minor.display_number}.{self.patch.display_number}>"
     
     def __eq__(self, other: "Version") -> bool:
-        return self.major == other.major and self.minor == other. major
+        return self.major == other.major and self.minor == other.minor and self.patch == other.patch
     
-    def __ge__(self, other: "Version") -> bool:
-        return self.major >= other.major and self.minor >= other.minor and self.patch >= other.minor
+    def __gt__(self, other: "Version") -> bool:
+        return self.major > other.major or \
+               (self.major == other.major and self.minor > other.minor) or  \
+               (self.major == other.major and self.minor == other.minor and self.patch > other.patch)
+
 
 class VersionField:
     """represents a version field: a field that will be attached to a subversion of a version 
@@ -143,6 +149,7 @@ class VersionField:
         """
         if self._linked_subversion is None:
             raise ValueError("cannot set the value of an unlinked version field")
+        print(self._linked_subversion)
         self._inner_value = value
         self._update_version()
     
@@ -151,6 +158,7 @@ class VersionField:
         """
 
         self._linked_subversion.update_fields(**{self._name: self._inner_value})
+
 
 def _extract_versioned_fields(cls):
     """function to extract the `VersionField`s that might be present as class attributes of a class
