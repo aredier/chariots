@@ -47,12 +47,14 @@ def test_version_comparaison():
     assert other_version.major == version.major
     assert not other_version.major > version.major
 
+
 def test_op_versioned_fields_getting_and_setting():
     op = VersionedOp()
     op.should.have.property("version").being.a(Version)
     op.versioned_field.should.equal(2)
     op.versioned_field = 3
     op.versioned_field.should.equal(3)
+
 
 def test_op_version_evolution():
     op = VersionedOp()
