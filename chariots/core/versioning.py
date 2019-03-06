@@ -1,9 +1,10 @@
 """
 package that provides the signatures of each op
 """
-
 import json
 import time
+from abc import ABC
+from abc import abstractproperty
 from enum import Enum
 from typing import Text
 from hashlib import md5
@@ -18,7 +19,31 @@ class VersionType(Enum):
     MAJOR = 3
 
 
-class SubVersion:
+class AbstractSubversion(ABC):
+    """subversion interface
+    """
+
+
+    @abstractproperty
+    def last_update_time_stamp(self) -> float:
+        pass
+
+   @abstractproperty
+   def fields_hash(self) -> Text:
+       pass
+
+    def __eq__(self, other: "AbstractSubversion") -> bool:
+        return self.fields_hash ==  other.fields_hash
+
+    def __gt__(self, other: "AbstractSubversion") -> bool:
+        return self.fields_hash !=  other.fields_hash and \
+               self.last_update_time_stamp > other.last_update_time_stamp
+
+    def __repr__(self):
+        return f"{str(self._last_update_time_stamp)}_{self.fields_hash}"
+
+
+class SubVersion(AbstractSubversion):
     """
     represents part of the version (major, minor, ...)
     a subversion is considered to be equal to another if their fields are equal and greater if its
@@ -67,16 +92,22 @@ class SubVersion:
         """
 
         self._last_update_time_stamp = time.time()
-    
-    def __eq__(self, other: "SubVersion") -> bool:
-        return self.fields_hash ==  other.fields_hash
 
-    def __gt__(self, other: "SubVersion") -> bool:
-        return self.fields_hash !=  other.fields_hash and \
-               self.last_update_time_stamp > other.last_update_time_stamp
 
-    def __repr__(self):
-        return f"{str(self._last_update_time_stamp)[:10]}.{self.fields_hash}"
+class SubversionString(AbstractSubversion):
+    """this class represents a subversion but is not able to actually be updated,
+    it is supposed to be used to deprecate old ops without having to actually load them
+    """
+
+    def __init__(version_string: Text):
+        self._last_update_time_stamp, self._fields_hash = version_string.split("_")
+        self._last_update_time_stamp = float(self._last_update_time_stamp)
+
+    def last_update_time_stamp(self) -> float:
+        return self._last_update_time_stamp
+
+    def fields_hash(self) -> Text:
+        return self._fields_hash
     
 
 class Version:
@@ -98,6 +129,7 @@ class Version:
         return self.major > other.major or \
                (self.major == other.major and self.minor > other.minor) or  \
                (self.major == other.major and self.minor == other.minor and self.patch > other.patch)
+
 
 
 class VersionField:
