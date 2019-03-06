@@ -23,14 +23,13 @@ class AbstractSubversion(ABC):
     """subversion interface
     """
 
-
     @abstractproperty
     def last_update_time_stamp(self) -> float:
         pass
 
-   @abstractproperty
-   def fields_hash(self) -> Text:
-       pass
+    @abstractproperty
+    def fields_hash(self) -> Text:
+        pass
 
     def __eq__(self, other: "AbstractSubversion") -> bool:
         return self.fields_hash ==  other.fields_hash
@@ -40,7 +39,7 @@ class AbstractSubversion(ABC):
                self.last_update_time_stamp > other.last_update_time_stamp
 
     def __repr__(self):
-        return f"{str(self._last_update_time_stamp)}_{self.fields_hash}"
+        return f"{self.last_update_time_stamp}_{self.fields_hash}"
 
 
 class SubVersion(AbstractSubversion):
@@ -99,13 +98,15 @@ class SubversionString(AbstractSubversion):
     it is supposed to be used to deprecate old ops without having to actually load them
     """
 
-    def __init__(version_string: Text):
+    def __init__(self, version_string: Text):
         self._last_update_time_stamp, self._fields_hash = version_string.split("_")
         self._last_update_time_stamp = float(self._last_update_time_stamp)
 
+    @property
     def last_update_time_stamp(self) -> float:
         return self._last_update_time_stamp
 
+    @property 
     def fields_hash(self) -> Text:
         return self._fields_hash
     
@@ -119,8 +120,13 @@ class Version:
         self.minor = SubVersion()
         self.patch = SubVersion()
     
+    @classmethod
+    def parse(cls, version_string: Text) -> "Version":
+        res = cls()
+        res.major, res.minor, res.patch = map(SubversionString, version_string.split("-"))
+    
     def __repr__(self):
-        return f"<Version {self.major.display_number}.{self.minor.display_number}.{self.patch.display_number}>"
+        return f"{self.major}-{self.minor}-{self.patch}"
     
     def __eq__(self, other: "Version") -> bool:
         return self.major == other.major and self.minor == other.minor and self.patch == other.patch

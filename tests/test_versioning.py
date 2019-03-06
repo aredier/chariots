@@ -4,6 +4,8 @@ from chariots.core.ops import BaseOp
 from chariots.core.versioning import Version
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
+from chariots.core.versioning import SubVersion
+from chariots.core.versioning import SubversionString
 
 
 class VersionedOp(BaseOp):
@@ -69,3 +71,22 @@ def test_op_version_evolution():
     assert op.version.minor == old_version.minor
     assert op.version.patch == old_version.patch
 
+def test_subversion_string():
+    subversion = SubVersion()
+    field = VersionField(VersionType.MINOR, default_value=3)
+    field.link(subversion, "fake_field")
+    version_string = str(subversion)
+    version_string = SubversionString(version_string)
+    version_string.should.equal(subversion)
+    field.set(5)
+    assert subversion > version_string
+    assert version_string < subversion
+
+
+def test_full_version_parsing():
+    version = Version()
+    field = VersionField(VersionType.MAJOR, default_factory=lambda:3)
+    field.link(version.major, "fake_field")
+    version_string = str(version)
+    version_string = Version.parse(version_string)
+    version_string.should.equal(version_string)
