@@ -42,9 +42,12 @@ class AbstractOp(ABC):
     # TODO these should be part of the major version of the op
     markers: List[Marker] = []
     requires: Requirements = {}
-    _ancestors_major_versions_cksum = VersionField(VersionType.MAJOR, default_factory=lambda: None)
-    _ancestors_minor_versions_cksum = VersionField(VersionType.MINOR, default_factory=lambda: None)
-    _ancestors_patch_versions_cksum = VersionField(VersionType.PATCH, default_factory=lambda: None)
+
+    # wether or not  this op should carry on the upstream version changes silently or not
+    # this is `True` by default as basic ops have no accionable way to fix a deprecation
+    # this is different from a trainable op where the op can retrain to cope with the change (most
+    # of the time)
+    _carry_on_verision = True
 
     def __new__(cls, *args, **kwargs):
         """
@@ -62,9 +65,10 @@ class AbstractOp(ABC):
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(other, self.requires)
-        self._ancestors_major_versions_cksum = other.version.major
-        self._ancestors_minor_versions_cksum = other.version.minor
-        self._ancestors_patch_versions_cksum = other.version.patch
+        if self._carry_on_verision:
+            self.version.major.link(other.version.major)
+            self.version.minor.link(other.version.minor)
+            self.version.patch.link(other.version.patch)
         self.previous_op = other
         return self
     

@@ -4,6 +4,7 @@ package that provides the signatures of each op
 import json
 import time
 import copy
+import uuid
 from abc import ABC
 from abc import abstractproperty
 from enum import Enum
@@ -57,6 +58,8 @@ class SubVersion(AbstractSubversion):
         self._fields = {}
         self._update_time()
         self.display_number = display_number
+        self.linked_subversions = set()
+        self._unique_identifier = uuid.uuid1()
     
     @property
     def fields_hash(self) -> Text:
@@ -83,17 +86,33 @@ class SubVersion(AbstractSubversion):
         """Updates the fields of the subversion with paraometers
         the fields' value must be hashable
         """
-
         old_hash = self.fields_hash
         self._fields.update(fields)
         self._update_time()
         if self.fields_hash != old_hash:
             self.display_number += 1
+        
+        # TODO this looks like a rocky implementation
+        for linkded_subversion in self.linked_subversions:
+            linkded_subversion.update_fields(**{
+                str(self._unique_identifier): self.last_update_time_stamp
+                })
 
     def _update_time(self):
         """updates the last updated time stamp
         """
         self._last_update_time_stamp = time.time()
+    
+    def link(self, other: "SubVersion"):
+        """links this version to the next, this means that whenever `other` gets updated
+        this version will evolve as well
+        
+        Arguments:
+            other {SubVersion} -- the version to be linked to 
+        """
+        other.linked_subversions.add(self)
+        other.update_fields()
+
 
 
 class SubversionString(AbstractSubversion):
