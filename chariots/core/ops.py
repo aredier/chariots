@@ -1,7 +1,6 @@
 """
 base op of chariots
 """
-
 import random
 import functools
 from abc import ABC
@@ -34,7 +33,8 @@ class AbstractOp(ABC):
     base op of a pipeline
     the main entry point of the op is going to be the perform method.
     there are several fields that are needed to create an op:
-        - marker : corresponds to the markers of this op, these will be searched by the next op in the pipeline as parameters for their _main method
+        - marker : corresponds to the markers of this op, these will be searched by the next
+          op in the pipeline as parameters for their _main method
     """
     version: Version = None
     name: Text = "NA"
@@ -63,7 +63,8 @@ class AbstractOp(ABC):
         used to determine the ancestor of an op
         """
         if not isinstance(other, AbstractOp):
-            raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
+            raise ValueError("call does only work with single ops. if you want another"\
+                             "behavior, override the __Call__ method") 
         self._check_compatibility(other, self.requires)
         if self._carry_on_verision:
             self._link_versions(other)
@@ -142,15 +143,16 @@ class AbstractOp(ABC):
         produces a marker that corresponds to this op
         """
         if len(cls.markers) != 1:
-            raise ValueError("using more or less than one marker for an op is ambigous to produce marker")
+            raise ValueError("using more or less than one marker for an op is ambigous to"\
+                             " produce marker")
         return cls.markers[0].new_marker()()
     
 
 class BaseOp(AbstractOp):
     """
-    BaseOp is a simple implementation of an op were _main is performed on each data batch individually
-    in order to do that, a litle magic (not too much I hope) is added to determine wich part of the 
-    data batch should become which argument of the _main method:
+    BaseOp is a simple implementation of an op were _main is performed on each data batch 
+    individually in order to do that, a litle magic (not too much I hope) is added to determine
+    wich part of the data batch should become which argument of the _main method:
     The key of each requirement is used as the parameter_name of the corresponding argument in _main
     hence all the arguments of _main must be keys of the required dict
     """
@@ -185,14 +187,16 @@ class BaseOp(AbstractOp):
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
     
     def _resolve_arguments(self, data: dict, requirements: Requirements):
-        return {arg_name: next(data_batch for data_marker, data_batch in data.items() if marker.compatible(data_marker))
+        return {arg_name: next(data_batch for data_marker, data_batch in data.items() 
+                               if marker.compatible(data_marker))
                 for arg_name, marker in requirements.items()}
 
     
 class Split(AbstractOp):
     """
     split operation that creates several downstreams from a single upstream
-    be carefull, splits are not free as they have to do a deepcopy of each batch to prevent data races
+    be carefull, splits are not free as they have to do a deepcopy of each batch to
+    prevent data races
     """
 
     name = "split"
