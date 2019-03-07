@@ -125,5 +125,6 @@ def test_version_ripeling(versioned_op_cls, downstream_op_cls):
     assert version_2.major > version_1.major and version_2.minor > version_1.minor \
            and version_2.patch > version_1.patch
     assert version_3 > version_2
-    assert version_2.major > version_1.major and version_2.minor == version_1.minor \
-           and version_2.patch == version_1.patch
+    assert version_3.major > version_2.major
+    assert version_3.minor == version_2.minor
+    assert version_3.patch == version_2.patch
