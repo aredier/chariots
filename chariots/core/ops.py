@@ -66,11 +66,15 @@ class AbstractOp(ABC):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(other, self.requires)
         if self._carry_on_verision:
-            self.version.major.link(other.version.major)
-            self.version.minor.link(other.version.minor)
-            self.version.patch.link(other.version.patch)
+            self._link_versions(other)
         self.previous_op = other
         return self
+
+    def _link_versions(self, other: "AbstractOp"):
+        self.version.major.link(other.version.major)
+        self.version.minor.link(other.version.minor)
+        self.version.patch.link(other.version.patch)
+
     
     def __getattribute__(self, attribute: Text) -> Any:
         """gets the attribute and unwrapts it if it is a `VersionField` instance
@@ -204,6 +208,7 @@ class Split(AbstractOp):
     def __call__(self, other: "AbstractOp") -> List["_SplitRes"]:
         self.previous_op = other
         self._pusher = SplitPusher(self._n_splits)
+        self._link_versions(other)
         return [_SplitRes(puller, self) for puller in self._pusher.pullers]
     
     def perform(self):
@@ -223,6 +228,7 @@ class _SplitRes(AbstractOp):
         super().__init__(*args, **kwargs)
         self._puller = puller
         self.previous_op = split_op
+        self._link_versions(split_op)
 
     @property
     def markers(self):
@@ -266,5 +272,7 @@ class Merge(AbstractOp):
 
     def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
         self.previous_op = other
+        for other_single_op in other:
+            self._link_versions(other_single_op)
         return self
 
