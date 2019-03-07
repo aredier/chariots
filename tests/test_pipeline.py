@@ -35,7 +35,7 @@ def test_pipeline_init(tap, add_op_cls, square_op_cls):
     add = add_op_cls()(tap)
     square = square_op_cls()(add)
     pipe = Pipeline(tap, square)
-    for i, res in enumerate(pipe(tap).perform()):
+    for i, res in enumerate(pipe.perform()):
         res.should.be.a(dict)
         res.should.have.key(square_op_cls.markers[0]).being((i + 1) ** 2)
 

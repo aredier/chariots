@@ -1,11 +1,14 @@
 from abc import ABCMeta
 from abc import abstractmethod
+import time
 
 from typing import Optional
 
 from chariots.core.ops import BaseOp
 from chariots.core.ops import AbstractOp
 from chariots.training import TrainableTrait
+from chariots.core.versioning import VersionField
+from chariots.core.versioning import VersionType
 
 
 class TrainableOp(TrainableTrait, BaseOp):
@@ -19,6 +22,15 @@ class TrainableOp(TrainableTrait, BaseOp):
     """
     
     training_requirements = {}
+
+    # when a breaking change is made in the previous op(s) data structure, if the markers have
+    # not changed a trainable op should be able to cope with it
+    _carry_on_verision = False
+
+    # which vesion to update when retraining the model 
+    # by default this is minor as in most cases all things being equal a retrain doesn't change much
+    _last_trained_time = VersionField(VersionType.PATCH, default_factory=lambda:None)
+
     _is_fited = False
 
     @property
@@ -57,3 +69,4 @@ class TrainableOp(TrainableTrait, BaseOp):
             args_dict = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
         self._is_fited = True
+        self._last_trained_time = time.time()

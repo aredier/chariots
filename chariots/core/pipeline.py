@@ -1,6 +1,8 @@
 from operator import attrgetter
 from typing import List
 from typing import Set
+from typing import Text
+from typing import Any
 from typing import Optional
 
 from chariots.core.ops import AbstractOp
@@ -18,6 +20,8 @@ class Pipeline(AbstractOp):
             input_op.previous_op = None
         self.input_op = input_op
         self.output_op = output_op
+        if self.output_op is not None:
+            self._link_to_ops
 
     def perform(self) -> DataSet:
         return self.output_op.perform()
@@ -25,6 +29,7 @@ class Pipeline(AbstractOp):
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         if self.input_op is not None:
             self.input_op.previous_op = other
+        self._link_to_ops()
         return self
 
     def add(self, other: AbstractOp, head=None):
@@ -36,6 +41,7 @@ class Pipeline(AbstractOp):
             self.output_op = other
         else:
             self.output_op = other(self.input_op)
+        self._link_to_ops()
     
     @property
     def all_ops(self) -> Set[AbstractOp]:
@@ -46,6 +52,7 @@ class Pipeline(AbstractOp):
         queue = list(all_ops)
         while queue:
             op_of_interest = queue.pop()
+            print(op_of_interest.name)
             all_ops.add(op_of_interest)
             previous = op_of_interest.previous_op
             if previous is not None:
@@ -53,6 +60,10 @@ class Pipeline(AbstractOp):
                     previous = [previous]
                 queue.extend(previous)
         return all_ops
+    
+    def _link_to_ops(self):
+        for op in self.all_ops:
+            self._link_versions(op)
 
     @classmethod
     def merge(cls, pipelines: List["Pipeline"]) -> "Pipeline":
