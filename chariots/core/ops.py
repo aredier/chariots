@@ -19,6 +19,10 @@ from chariots.core.dataset import DataSet, ORIGIN
 from chariots.core.markers import Marker
 from chariots.core.versioning import _extract_versioned_fields
 from chariots.core.versioning import VersionField
+from chariots.core.versioning import _VersionField
+from chariots.core.versioning import Version
+from chariots.core.versioning import VersionType
+from chariots.core.versioning import VERSIONING_PRE
 from chariots.helpers.types import DataBatch
 from chariots.helpers.types import Requirements
 from chariots.helpers.utils import SplitPuller
@@ -32,12 +36,15 @@ class AbstractOp(ABC):
     there are several fields that are needed to create an op:
         - marker : corresponds to the markers of this op, these will be searched by the next op in the pipeline as parameters for their _main method
     """
-
+    version: Version = None
     name: Text = "NA"
     previous_op = None
     # TODO these should be part of the major version of the op
     markers: List[Marker] = []
     requires: Requirements = {}
+    _ancestors_major_versions_cksum = VersionField(VersionType.MAJOR, default_factory=lambda: None)
+    _ancestors_minor_versions_cksum = VersionField(VersionType.MINOR, default_factory=lambda: None)
+    _ancestors_patch_versions_cksum = VersionField(VersionType.PATCH, default_factory=lambda: None)
 
     def __new__(cls, *args, **kwargs):
         """
@@ -55,6 +62,9 @@ class AbstractOp(ABC):
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(other, self.requires)
+        self._ancestors_major_versions_cksum = other.version.major
+        self._ancestors_minor_versions_cksum = other.version.minor
+        self._ancestors_patch_versions_cksum = other.version.patch
         self.previous_op = other
         return self
     
@@ -69,7 +79,8 @@ class AbstractOp(ABC):
         """
         underlying = object.__getattribute__(self, attribute)
         if isinstance(underlying, VersionField):
-            return underlying.value
+            field = object.__getattribute__(self, VERSIONING_PRE + attribute)
+            return field.value
         return underlying
     
     def __setattr__(self, attribute: Text, value: Any):
@@ -82,11 +93,10 @@ class AbstractOp(ABC):
         """
 
         try:
-            print("foo")
             underlying = object.__getattribute__(self, attribute)
             if isinstance(underlying, VersionField):
-                print("bar")
-                underlying.set(value)
+                field = object.__getattribute__(self, VERSIONING_PRE + attribute)
+                field.set(value)
             else:
                 object.__setattr__(self, attribute, value)
         except AttributeError:
@@ -114,7 +124,6 @@ class AbstractOp(ABC):
         is the op ready to be performed
         """
         if self.previous_op:
-            print(self.name)
             return self.previous_op.ready
         return True
     

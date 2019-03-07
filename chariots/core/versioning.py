@@ -3,6 +3,7 @@ package that provides the signatures of each op
 """
 import json
 import time
+import copy
 from abc import ABC
 from abc import abstractproperty
 from enum import Enum
@@ -12,7 +13,7 @@ from typing import Mapping
 from typing import Optional
 from typing import Hashable
 
-
+VERSIONING_PRE = "_versioned_"
 class VersionType(Enum):
     PATCH = 1
     MINOR = 2
@@ -40,6 +41,9 @@ class AbstractSubversion(ABC):
 
     def __repr__(self):
         return f"{self.last_update_time_stamp}_{self.fields_hash}"
+    
+    def __hash__(self):
+        return hash(str(self))
 
 
 class SubVersion(AbstractSubversion):
@@ -89,7 +93,6 @@ class SubVersion(AbstractSubversion):
     def _update_time(self):
         """updates the last updated time stamp
         """
-
         self._last_update_time_stamp = time.time()
 
 
@@ -124,6 +127,7 @@ class Version:
     def parse(cls, version_string: Text) -> "Version":
         res = cls()
         res.major, res.minor, res.patch = map(SubversionString, version_string.split("-"))
+        return res
     
     def __repr__(self):
         return f"{self.major}-{self.minor}-{self.patch}"
@@ -137,8 +141,7 @@ class Version:
                (self.major == other.major and self.minor == other.minor and self.patch > other.patch)
 
 
-
-class VersionField:
+class _VersionField:
     """represents a version field: a field that will be attached to a subversion of a version 
     instance (major, minor patch)
     
@@ -146,12 +149,10 @@ class VersionField:
         ValueError -- if the default factory and the default value are both set
     """
 
-    def __init__(self, subversion: VersionType = VersionType.MINOR, default_value = None,
-                 default_factory = None):
+    def __init__(self, default_value = None, default_factory = None):
         if default_factory is not None and default_value is not None:
             raise ValueError("setting both the default value and the default_factory is wrong, choose please")
         self._inner_value = default_value or default_factory()
-        self.subversion = subversion
         self._linked_subversion: SubVersion = None
         self._name = None
 
@@ -187,15 +188,35 @@ class VersionField:
         """
         if self._linked_subversion is None:
             raise ValueError("cannot set the value of an unlinked version field")
-        print(self._linked_subversion)
         self._inner_value = value
         self._update_version()
     
     def _update_version(self):
         """updates the parent subversion with itself
         """
-
         self._linked_subversion.update_fields(**{self._name: self._inner_value})
+
+
+class VersionField:
+    """class that represents an uninstantiated (but prepared) versioned field
+    """
+    
+    def __init__(self, subversion: VersionType = VersionType.MINOR, default_value = None,
+                 default_factory = None):
+        if default_factory is not None and default_value is not None:
+            raise ValueError("setting both the default value and the default_factory is wrong, choose please")
+        self.default_value = default_value
+        self.default_factory = default_factory
+        self.subversion = subversion
+    
+    def spawn(self) -> _VersionField:
+        """creates a new instance of _VersionField corresponding to this instance's parameters
+        
+        Returns:
+            _VersionField -- the resulting versioned field
+        """
+
+        return _VersionField(default_value=self.default_value, default_factory=self.default_factory)
 
 
 def _extract_versioned_fields(cls):
@@ -215,13 +236,18 @@ def _extract_versioned_fields(cls):
     in order to have a more seemless integration you should look at how `BasicOp` overides the
     `__setattr__` and `__getattribute__` method
     """
+    all_class_attributes = {}
+    for parent_class in cls.__mro__[::-1]:
+        all_class_attributes.update(parent_class.__dict__)
     version = Version()
-    for name, value in cls.__dict__.items():
+    for name, value in all_class_attributes.items():
         if isinstance(value, VersionField):
+            instance = value.spawn()
+            setattr(cls, VERSIONING_PRE + name, instance)
             if value.subversion == VersionType.PATCH:
-                value.link(version.patch, name)
+                instance.link(version.patch, name)
             elif value.subversion == VersionType.MINOR:
-                value.link(version.minor, name)
+                instance.link(version.minor, name)
             elif value.subversion == VersionType.MAJOR:
-                value.link(version.major, name)
+                instance.link(version.major, name)
     cls.version = version
