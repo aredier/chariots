@@ -1,6 +1,8 @@
-from chariots.core.ops import Split, Merge
+from chariots.core.ops import Split
+from chariots.core.ops import Merge
 from chariots.core.ops import BaseOp
 from chariots.training.evaluation import ClassificationMetrics
+from chariots.training.evaluation import RegresionMetrics
 from chariots.core.markers import Number
 from chariots.core.markers import Matrix
 
@@ -52,6 +54,7 @@ def test_classification_metric_correct(tap, add_op_cls):
     evaluation.should.have.key(str(res.version)).being.a(dict)
     evaluation[str(res.version)].should.have.key("accuracy").being.equal(1)
     
+
 def test_classification_metric_false(tap, add_op_cls):
     y_true, y_pred = Split(2)(tap)
     y_true = XOp()(y_true)
@@ -62,3 +65,27 @@ def test_classification_metric_false(tap, add_op_cls):
     evaluation.should.be.a(dict)
     evaluation.should.have.key(str(res.version)).being.a(dict)
     evaluation[str(res.version)].should.have.key("accuracy").being.equal(0)
+
+
+def test_regression_metric_correct(tap, add_op_cls):
+    y_true, y_pred = Split(2)(tap)
+    y_true = XOp()(y_true)
+    y_pred = TrueY()(y_pred)
+    evaluation = RegresionMetrics(XMarker((1, 1)), YMarker((1, 1)), ["mae", "mse"])
+    res = Merge()([y_true, y_pred]) 
+    evaluation = evaluation.evaluate(res)
+    evaluation.should.be.a(dict)
+    evaluation.should.have.key(str(res.version)).being.a(dict)
+    evaluation[str(res.version)].should.have.key("mae").being.equal(0)
+    
+
+def test_regresion_metric_false(tap, add_op_cls):
+    y_true, y_pred = Split(2)(tap)
+    y_true = XOp()(y_true)
+    y_pred = FalseY()(y_pred)
+    evaluation = RegresionMetrics(XMarker((1, 1)), YMarker((1, 1)), ["mae", "mse"])
+    res = Merge()([y_true, y_pred]) 
+    evaluation = evaluation.evaluate(res)
+    evaluation.should.be.a(dict)
+    evaluation.should.have.key(str(res.version)).being.a(dict)
+    evaluation[str(res.version)].should.have.key("mae").being.equal(1)
