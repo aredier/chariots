@@ -26,7 +26,6 @@ class EvaluationMetric(BaseOp):
         self(other)
         grouped = {}
         for batch_report in self.perform():
-            print(batch_report)
             version, report = batch_report[self.markers[0]]
             grouped.setdefault(version, []).append(report)
 
@@ -34,7 +33,6 @@ class EvaluationMetric(BaseOp):
                 for version, reports in grouped.items()}
     
     def _main(self, **kwargs):
-        print(self._evaluate_batch(**kwargs))
         return [str(self.previous_op.version), self._evaluate_batch(**kwargs)]
 
     @abstractmethod
@@ -48,7 +46,7 @@ class EvaluationMetric(BaseOp):
 
 class ClassificationMetrics(EvaluationMetric):
 
-    name = "classification report"
+    name = "classification_report"
     
     def __init__(self, y_true: Marker, y_pred: Marker, metrics: Optional[List[Text]] = None):
         self.metrics = metrics or ["accuracy"]
@@ -66,11 +64,40 @@ class ClassificationMetrics(EvaluationMetric):
         _n = 0
         _correct = 0
         for batch_report in metrics:
-            print(batch_report)
             _n += batch_report["_n"]
             _correct += batch_report["_correct"]
         return {"_n": _n, "_correct": _correct, "accuracy": _correct / _n}
         
 
 class RegresionMetrics(EvaluationMetric):
-    pass
+
+    name = "regression_report"
+    
+    def __init__(self, y_true: Marker, y_pred: Marker, metrics: Optional[List[Text]] = None):
+        self.metrics = metrics or ["mae", "mse"]
+        self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
+
+        # TODO be able to use a subset of the metrics
+        if metrics != ["mae", "mse"]:
+            raise NotImplementedError("regression metrics only account to mae and for now")
+
+    def _evaluate_batch(self, y_true, y_pred) -> Mapping[Text, float]:
+        assert len(y_true) == len(y_pred), "inconsistent data"
+        _n = len(y_true)
+        _absolue_error = sum([abs(true_ind - pred_ind) for true_ind, pred_ind 
+                              in zip(y_true, y_pred)])
+        _squared_error = sum([(true_ind - pred_ind) ** 2 for true_ind, pred_ind 
+                              in zip(y_true, y_pred)])
+        return {"_n": _n, "_absolue_error": _absolue_error, "_squared_error": _squared_error,
+                "mae": _absolue_error / _n, "mse": _squared_error / _n}
+    
+    def _aggregate_evaluations(self, metrics: Iterable[Report]) -> Report:
+        _n = 0
+        _absolue_error = 0
+        _squared_error = 0
+        for batch_report in metrics:
+            _n += batch_report["_n"]
+            _absolue_error += batch_report["_absolue_error"]
+            _squared_error += batch_report["_squared_error"]
+        return {"_n": _n, "_absolue_error": _absolue_error, "_squared_error": _squared_error,
+                "mae": _absolue_error / _n, "mse": _squared_error / _n}
