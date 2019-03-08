@@ -182,6 +182,7 @@ class BaseOp(AbstractOp):
         """
         performs the argument resolution executes the op on a databatch
         """
+        print("foo", self.name, self.requires)
         args_dict = self._resolve_arguments(data, self.requires)
         res = self._main(**args_dict)
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
