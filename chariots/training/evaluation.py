@@ -13,16 +13,31 @@ from chariots.core.versioning import Version
 Report = Mapping[Text, Mapping[Text, float]]
 
 class EvaluationMarker(Marker):
+    """placeholder marker to be attributed to evaluation markers
+    """
 
     def compatible(self, other: "Marker") -> bool:
         return isinstance(other, EvaluationMarker)
 
 
 class EvaluationMetric(BaseOp):
+    """abstract evaluation metric 
+    """
+
 
     markers = [EvaluationMarker]
 
     def evaluate(self, other: AbstractOp) -> Report:
+        """evaluates a full pipeline (this will run through the pipeline) and aggregates the
+        pipeline.
+        
+        Arguments:
+            other {AbstractOp} -- op or pipeline to run through
+        
+        Returns:
+            Report -- the resulting report
+        """
+
         self(other)
         grouped = {}
         for batch_report in self.perform():
@@ -37,11 +52,25 @@ class EvaluationMetric(BaseOp):
 
     @abstractmethod
     def _evaluate_batch(self, **kwargs) -> Mapping[Text, float]:
-        pass
+        """method to evaluate a single batch, this will output a report (in a json file) along with
+        any additional inner data (prepended with _) that might be needed to aggregate future 
+        batches
+        
+        Returns:
+            Mapping[Text, float] -- the json output file
+        """
     
     @abstractmethod
     def _aggregate_evaluations(self, metrics: Iterable[Report]) -> Report:
-        pass
+        """abstract method that aggregates the single reports outputed by `_evaluate_batch`
+        
+        Arguments:
+            metrics {Iterable[Report]} -- the single evaluation json
+        
+        Returns:
+            Report -- the aggregated report
+        """
+
 
 
 class ClassificationMetrics(EvaluationMetric):
