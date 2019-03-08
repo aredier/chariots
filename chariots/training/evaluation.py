@@ -26,13 +26,16 @@ class EvaluationMetric(BaseOp):
         self(other)
         grouped = {}
         for batch_report in self.perform():
+            print(batch_report)
             version, report = batch_report[self.markers[0]]
             grouped.setdefault(version, []).append(report)
 
-        return {version: self._aggregate_evaluations(reports) for version, reprorts in grouped}
+        return {version: self._aggregate_evaluations(reports)
+                for version, reports in grouped.items()}
     
     def _main(self, **kwargs):
-        return (str(self.previous_op.version), self._evaluate_batch(self, **kwargs))
+        print(self._evaluate_batch(**kwargs))
+        return [str(self.previous_op.version), self._evaluate_batch(**kwargs)]
 
     @abstractmethod
     def _evaluate_batch(self, **kwargs) -> Mapping[Text, float]:
@@ -47,8 +50,9 @@ class ClassificationMetrics(EvaluationMetric):
 
     name = "classification report"
     
-    def __init__(self, metrics: Optional[List[Text]] = None):
+    def __init__(self, y_true: Marker, y_pred: Marker, metrics: Optional[List[Text]] = None):
         self.metrics = metrics or ["accuracy"]
+        self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
         if metrics != ["accuracy"]:
             raise NotImplementedError("classification metrics only account to accuracy for now")
 
@@ -62,6 +66,7 @@ class ClassificationMetrics(EvaluationMetric):
         _n = 0
         _correct = 0
         for batch_report in metrics:
+            print(batch_report)
             _n += batch_report["_n"]
             _correct += batch_report["_correct"]
         return {"_n": _n, "_correct": _correct, "accuracy": _correct / _n}
