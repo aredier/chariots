@@ -213,6 +213,9 @@ class _VersionField:
     def _update_version(self):
         """updates the parent subversion with itself
         """
+        if isinstance(self._inner_value, dict):
+            self._linked_subversion.update_fields(**self._inner_value)
+            return 
         self._linked_subversion.update_fields(**{self._name: self._inner_value})
 
 
