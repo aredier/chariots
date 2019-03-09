@@ -53,10 +53,17 @@ class AbstractOp(ABC):
         """
         checks that fields are implemented
         """
-        _extract_versioned_fields(cls)
+        cls.version = cls._build_version()
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
         return instance
+    
+
+    # TODO use class property for those two
+    # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
+    @classmethod
+    def _build_version(cls) -> Version:
+        return _extract_versioned_fields(cls)
     
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         """
@@ -182,7 +189,6 @@ class BaseOp(AbstractOp):
         """
         performs the argument resolution executes the op on a databatch
         """
-        print("foo", self.name, self.requires)
         args_dict = self._resolve_arguments(data, self.requires)
         res = self._main(**args_dict)
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
