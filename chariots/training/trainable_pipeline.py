@@ -38,7 +38,6 @@ class TrainablePipeline(TrainableTrait, Pipeline):
                 
                 # some requirements are not ready, putting the op backa at the back of the queue
                 remaining_for_training.insert(0, next_op)
-            raise
         if reconnect:
             self.previous_op = None
         
