@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer
 
 from chariots.core.markers import Matrix
 from chariots.core.markers import Marker
@@ -24,7 +25,7 @@ class TextVector(Matrix):
 
 class YTrue(BaseOp):
     requires = {"text": TextList()}
-    markers = YMarker((None, 1))
+    markers = [YMarker((None, 1))]
 
     def _main(self, text):
         return [int(sent[-1] == "r") for sent in text]
@@ -33,9 +34,9 @@ class YTrue(BaseOp):
 def count_vectorizer():
     return SingleFitSkTransformer.factory(
         x_marker = TextList(),
-        model_cls = MultinomialNB, 
+        model_cls = CountVectorizer, 
         y_marker = TextVector(()),
-        name = "naive_baise"
+        name = "count_vectorizer"
 ) 
 
 
@@ -56,27 +57,29 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
         "A day may come when the courage of men fails… but it is not THIS day"
     ]
     train_size = 32
-    data = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
-    x_train, y_train = Split(2)(data)
+    train_data = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    vocab = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    x_train, y_train = Split(2)(train_data)
     y_train = YTrue()(y_train)
 
-    model = TrainablePipeline()
     vectorizer = count_vectorizer()
-    model.add(vectorizer)
+    vectorizer.fit(vocab)
+    vectorizer(x_train)
     naive_baise = naive_baise_op()
-    model.add(naive_baise)
 
-    model.fit(Merge()([x_train, y_train]))
+    naive_baise.fit(Merge()([vectorizer, y_train]))
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
                         TextList())
-    x_test, y_test = Split(2)(data)
-    y_test = YTrue()(y_test)
+    x_test = vectorizer(test_data)
+    pred = naive_baise(x_test)
 
-    pred = model(y_test)
     for res in pred.perform():
         res.should.be.a(dict)
-        res.should.have.key(naive_baise.markers[0]).being(1)
+        print(type(res[naive_baise.markers[0]]))
+        res.should.have.key(naive_baise.markers[0])
+        for res_ind in res[naive_baise.markers[0]]:
+            res_ind.should.equal(1)
 
 
 # def test_sklearn_persistance():

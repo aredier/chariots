@@ -269,7 +269,6 @@ class Merge(AbstractOp):
 
     @property
     def markers(self):
-        print([(op.__class__.__name, op.markers) for op in self.previous_op])
         return [marker for op in self.previous_op for marker in op.markers]
     
     def _perform_single(self, ziped):

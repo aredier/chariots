@@ -62,7 +62,7 @@ class OnlineSklearnSupervised(SklearnOp):
     training_requirements = {"y_train": Matrix((None, 1))}
 
     def _inner_train(self, x_train, y_train):
-        self.model.partial_fit(x=x_train, y=y_train)
+        self.model.partial_fit(X=x_train, y=y_train)
         
     def _main(self, x) -> DataBatch:
         return self.model.predict(x)
@@ -79,8 +79,8 @@ class OnlineSklearnSupervised(SklearnOp):
 
 class OnlineSklearnTransformer(SklearnOp):
 
-    def _inner_train(self, x_train, y_train):
-        self.model.partial_fit(x=x_train, y=y_train)
+    def _inner_train(self, x_train):
+        self.model.partial_fit(x=x_train)
         
     def _main(self, x) -> DataBatch:
         return self.model.transform(x)
@@ -93,7 +93,7 @@ class SingleFitSkSupervised(SklearnOp):
 
     # TODO add an error when refiting
     def _inner_train(self, x_train, y_train):
-        self.model.fit(x=x_train, y=y_train)
+        self.model.fit(X=x_train, y=y_train)
         
     def _main(self, x) -> DataBatch:
         return self.model.predict(x)
@@ -110,8 +110,9 @@ class SingleFitSkSupervised(SklearnOp):
 
 class SingleFitSkTransformer(SklearnOp):
 
-    def _inner_train(self, x_train, y_train):
-        self.model.fit(x=x_train, y=y_train)
+    def _inner_train(self, x_train):
+        print(self.model.__class__.__name__)
+        self.model.fit(x_train)
         
     def _main(self, x) -> DataBatch:
         return self.model.transform(x)
