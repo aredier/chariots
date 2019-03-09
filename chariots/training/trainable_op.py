@@ -39,7 +39,7 @@ class TrainableOp(TrainableTrait, BaseOp):
     
     @property
     def ready(self):
-        return self.previous_op.ready and self.fited()
+        return self.previous_op.ready and self.fited
 
     @abstractmethod
     def _inner_train(self, **kwargs):
@@ -57,6 +57,8 @@ class TrainableOp(TrainableTrait, BaseOp):
         """
         method called to train the op on other (which must meet the training requirements)
         """
+
+        # TODO add possibility to fit on unmerged
         reconnect = other is not None
         if reconnect:
             self.previous_op = other

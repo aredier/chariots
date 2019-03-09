@@ -73,13 +73,13 @@ class Savable(ABC):
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
     @abstractclassmethod
-    def checksum(self):
+    def checksum(cls):
         """
         validity cehcksum that verifies the data saved is still valid
         """
 
     @classmethod
-    def identifiers(self):
+    def identifiers(cls):
         """
         identifies the object (in order for the saver to know which data to fetch at loading time)
         """
