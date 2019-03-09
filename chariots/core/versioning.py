@@ -269,4 +269,4 @@ def _extract_versioned_fields(cls):
                 instance.link(version.minor, name)
             elif value.subversion == VersionType.MAJOR:
                 instance.link(version.major, name)
-    cls.version = version
+    return version

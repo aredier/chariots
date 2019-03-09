@@ -52,7 +52,6 @@ class Pipeline(AbstractOp):
         queue = list(all_ops)
         while queue:
             op_of_interest = queue.pop()
-            print(op_of_interest.name)
             all_ops.add(op_of_interest)
             previous = op_of_interest.previous_op
             if previous is not None:
