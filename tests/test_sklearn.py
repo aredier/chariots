@@ -31,25 +31,25 @@ class YTrue(BaseOp):
     def _main(self, text):
         return [int(sent[-1] == "r") for sent in text]
 
+
 @pytest.fixture
 def count_vectorizer():
     return SingleFitSkTransformer.factory(
-        x_marker = TextList(),
-        model_cls = CountVectorizer, 
-        y_marker = TextVector(()),
-        name = "count_vectorizer"
-) 
+        x_marker=TextList(),
+        model_cls=CountVectorizer,
+        y_marker=TextVector(()),
+        name="count_vectorizer"
+    )
 
 
 @pytest.fixture
 def naive_baise_op():
     return SingleFitSkSupervised.factory(
-        x_marker = TextVector(()),
-        model_cls = MultinomialNB, 
-        y_marker = YMarker((None, 1)),
-        name = "naive_baise"
+        x_marker=TextVector(()),
+        model_cls=MultinomialNB,
+        y_marker=YMarker((None, 1)),
+        name="naive_baise"
     )
-
 
 
 def test_sklearn_training(count_vectorizer, naive_baise_op):
@@ -58,8 +58,10 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
         "A day may come when the courage of men fails… but it is not THIS day"
     ]
     train_size = 32
-    train_data = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
-    vocab = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    train_data = DataTap(
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+    vocab = DataTap(
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
     x_train, y_train = Split(2)(train_data)
     y_train = YTrue()(y_train)
 
@@ -89,8 +91,10 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
         "A day may come when the courage of men fails… but it is not THIS day"
     ]
     train_size = 32
-    train_data = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
-    vocab = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    train_data = DataTap(
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+    vocab = DataTap(
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
     x_train, y_train = Split(2)(train_data)
     y_train = YTrue()(y_train)
 
@@ -116,8 +120,6 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
         res.should.have.key(naive_baise.markers[0])
         for res_ind in res[naive_baise.markers[0]]:
             res_ind.should.equal(1)
-
-
 
 
 # def test_sklearn_persisted_major_deprecation():

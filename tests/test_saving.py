@@ -5,6 +5,7 @@ import numpy as np
 
 from chariots.core.saving import FileSaver
 from chariots.core.saving import Savable
+from chariots.core.versioning import Version
 
 class SavableObject(Savable):
 
@@ -22,7 +23,11 @@ class SavableObject(Savable):
     
     @classmethod
     def checksum(self):
-        return "foobar"
+        return Version()
+
+    @classmethod
+    def identifiers(cls):
+        return {"type": "test"}
 
 def test_saving():
     foo =  SavableObject()
