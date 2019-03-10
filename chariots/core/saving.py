@@ -9,6 +9,8 @@ from typing import IO
 from typing import Tuple
 from tempfile import TemporaryFile
 
+from chariots.core.versioning import Version
+
 
 class Saver(ABC):
     """
@@ -63,8 +65,8 @@ class Savable(ABC):
         """
         creates an instance from the serialized data of the saver
         """
-        old_checksum, saved_io= saver.load(**cls.identifiers())
-        if old_checksum != cls.checksum():
+        old_version, saved_io = saver.load(**cls.identifiers())
+        if old_version.major > cls.checksum().major:
             raise ValueError(f"saved {cls.__name__} is deprecated")
         res = cls._deserialize(saved_io)
         saved_io.close()
@@ -73,7 +75,7 @@ class Savable(ABC):
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
     @abstractclassmethod
-    def checksum(cls):
+    def checksum(cls) -> Version:
         """
         validity cehcksum that verifies the data saved is still valid
         """
@@ -96,21 +98,25 @@ class FileSaver(Saver):
         return os.path.join(self.root, *identifiers)
 
 
-    def persist(self, result_file: IO, validity_checksum: Text, **identifiers):
+    def persist(self, result_file: IO, validity_checksum: Version, **identifiers):
         file_str = result_file.read()
         save_dir = self._generate_path(**identifiers)
         os.makedirs(save_dir, exist_ok=True)
-        with open(os.path.join(save_dir, validity_checksum), "w+b") as file:
+        with open(os.path.join(save_dir, str(validity_checksum)), "w+b") as file:
             file.write(file_str)
         
     def load(self, **identifiers) -> Tuple[Text, IO]:
         save_dir = self._generate_path(**identifiers)
         file_ls = os.listdir(save_dir)
-        if len(file_ls) > 1:
-            raise ValueError(f"more than one file with identifiers {identifiers}")
-        checksum = file_ls[0]
-        file = open(os.path.join(save_dir, checksum), "r+b") 
+        versions = [Version.parse(file_name) for file_name in file_ls]
+        latest_version = None
+        latest_model_file = None
+        for file_name, version in zip(file_ls, versions):
+            if latest_version is None or version > latest_version:
+                latest_version = version
+                latest_model_file = file_name
+        file = open(os.path.join(save_dir, latest_model_file), "r+b") 
         #shutil.rmtree(save_dir)
-        return checksum, file 
+        return latest_version, file 
 
 

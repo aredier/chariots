@@ -47,7 +47,7 @@ class SklearnOp(Savable, TrainableOp):
     
     @classmethod
     def checksum(cls):
-        return str(cls._build_version())
+        return cls._build_version()
     
     @classmethod
     def identifiers(cls):
