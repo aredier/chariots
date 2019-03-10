@@ -41,9 +41,12 @@ class SklearnOp(Savable, TrainableOp):
     def _serialize(self, temp_file: IO):
         joblib.dump(self.model, temp_file)
 
+    @classmethod
     def _deserialize(cls, file: IO) -> "Savable":
         res = cls()
         res.model = joblib.load(file)
+        res._is_fited = True
+        return res
     
     @classmethod
     def checksum(cls):

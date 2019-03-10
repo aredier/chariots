@@ -108,6 +108,7 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
     naive_baise.save(saver)
 
     second_naive_baise = naive_baise_op.load(saver)
+    print(type(second_naive_baise))
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
                         TextList())
@@ -116,7 +117,6 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
 
     for res in pred.perform():
         res.should.be.a(dict)
-        print(type(res[naive_baise.markers[0]]))
         res.should.have.key(naive_baise.markers[0])
         for res_ind in res[naive_baise.markers[0]]:
             res_ind.should.equal(1)
