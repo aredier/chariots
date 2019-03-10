@@ -64,6 +64,48 @@ for individual_result in result.perform():
 
 here we can see that the results will be a dictionnary with the marker of the data outputed as keys and the results as value 
 
+
+
+### versioning
+
+if you want some field of your op to be versioned, you can simply add it as `VersionedField`:
+
+```python
+from chariots.core.ops import BaseOp
+from chariots.core import markers
+from chariots.core import versioning
+
+MyCustomMarker = markers.Number.new_marker()
+
+class MyFirstVersionedOp(BaseOp):
+    name = "first_chariot_op"
+    requires = {"input_data": markers.Matrix((10))}
+    markers = [MyCustomMarker()]
+    my_versioned_field = versioning.VersionField(versioning.VersionType.MAJOR,
+                                                 default="hello world")
+    def main(self, input_data):
+        return self.my_versioned_field
+```
+
+
+
+### trainable op
+
+In order to build a trainable op (that represents a model), you can either inherit from `TrainableOp` in a similar way as above exemples or use a factory in one of the `training` submodules:
+
+```python
+from chariots.training import sklearn
+
+naive_baise = sklearn.SingleFitSkTransformer.factory(
+	x_marker=TextList(),
+	model_cls=CountVectorizer,
+	y_marker=TextVector(()),
+	name="count_vectorizer"
+)
+```
+
+
+
 ## Running the tests
 
 to run the tests you can simply run 
