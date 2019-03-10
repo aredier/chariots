@@ -6,9 +6,9 @@ from typing import Optional
 
 from chariots.core.ops import BaseOp
 from chariots.core.ops import AbstractOp
-from chariots.training import TrainableTrait
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
+from chariots.training import TrainableTrait
 
 
 class TrainableOp(TrainableTrait, BaseOp):
@@ -63,8 +63,6 @@ class TrainableOp(TrainableTrait, BaseOp):
         if reconnect:
             self.previous_op = other
 
-        print(self.training_requirements)
-        print(self.previous_op.markers) 
         if self.previous_op is None:
             raise ValueError(f"other is None and {self.name} is not connected to a pipeline")
         if not isinstance(self.previous_op, AbstractOp):
@@ -73,7 +71,6 @@ class TrainableOp(TrainableTrait, BaseOp):
         for training_batch in self.previous_op.perform():
            
             args_dict = self._resolve_arguments(training_batch, self.training_requirements)
-            # print(args_dict)
             self._inner_train(**args_dict)
         self._is_fited = True
-        self._last_trained_time = time.time()
+        # self._last_trained_time = time.time()
