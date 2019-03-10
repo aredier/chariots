@@ -8,10 +8,11 @@ from chariots.core.markers import Marker
 from chariots.core.ops import BaseOp
 from chariots.core.ops import Split
 from chariots.core.ops import Merge
-from chariots.training.trainable_pipeline import TrainablePipeline
+from chariots.core.saving import FileSaver
 from chariots.core.taps import DataTap
 from chariots.training.sklearn import SingleFitSkSupervised
 from chariots.training.sklearn import SingleFitSkTransformer
+from chariots.training.trainable_pipeline import TrainablePipeline
 
 TextList = Marker.new_marker()
 YMarker = Matrix.new_marker()
@@ -82,8 +83,41 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
             res_ind.should.equal(1)
 
 
-# def test_sklearn_persistance():
-#     pass
+def test_sklearn_persistance(count_vectorizer, naive_baise_op):
+    sentences = [
+        "That there’s some good in this world, Mr. Frodo… and it’s worth fighting for",
+        "A day may come when the courage of men fails… but it is not THIS day"
+    ]
+    train_size = 32
+    train_data = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    vocab = DataTap(iter([np.random.choice(sentences, train_size, replace=True)]), TextList()) 
+    x_train, y_train = Split(2)(train_data)
+    y_train = YTrue()(y_train)
+
+    vectorizer = count_vectorizer()
+    vectorizer.fit(vocab)
+    vectorizer(x_train)
+    naive_baise = naive_baise_op()
+
+    naive_baise.fit(Merge()([vectorizer, y_train]))
+    saver = FileSaver()
+    naive_baise.save(saver)
+
+    second_naive_baise = naive_baise_op.load(saver)
+
+    test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
+                        TextList())
+    x_test = vectorizer(test_data)
+    pred = second_naive_baise(x_test)
+
+    for res in pred.perform():
+        res.should.be.a(dict)
+        print(type(res[naive_baise.markers[0]]))
+        res.should.have.key(naive_baise.markers[0])
+        for res_ind in res[naive_baise.markers[0]]:
+            res_ind.should.equal(1)
+
+
 
 
 # def test_sklearn_persisted_major_deprecation():

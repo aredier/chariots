@@ -1,8 +1,13 @@
 from typing import IO
+from typing import Text
+from typing import Optional
+from typing import Type
 
 from sklearn.externals import joblib
+from sklearn.base import BaseEstimator
 
 from chariots.core.markers import Matrix
+from chariots.core.markers import Marker
 from chariots.core.saving import Savable
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
@@ -11,6 +16,9 @@ from chariots.training.trainable_op import TrainableOp
 
 
 class SklearnOp(Savable, TrainableOp):
+    """abstract op that handles sklearn models (saving, factory, ...)
+    """
+
 
     model_cls = VersionField(VersionType.MINOR, default_factory=lambda: None)
     training_params = VersionField(VersionType.MINOR, default_factory=lambda: {})
@@ -46,8 +54,28 @@ class SklearnOp(Savable, TrainableOp):
         return {"name": cls.name, "model_type": "sklearn"}
 
     @classmethod
-    def factory(cls, x_marker, y_marker, model_cls, training_params = None, name = "some_sk_model", 
-                description = ""):
+    def factory(cls, x_marker: Marker, y_marker: Marker, model_cls: BaseEstimator,
+                training_params: Optional[dict] = None, name: Text = "some_sk_model",
+                description: Text = "") -> Type:
+        """creates a new trainable op class inheriting from `cls` this allows to quicly produce
+            ops without having to define a full class by hand
+        
+        Arguments:
+            x_marker {Marker} -- the input marker of the required input data
+            y_markerMarker {[type]} -- the marker of the op (as output data) in cases of supervised
+                this will also be added as the training requirement for y_train
+            model_cls {BaseEstimator} -- the class of the model to instanciate
+        
+        Keyword Arguments:
+            training_params {Optional[dict]} -- the training params of the model (default: {None})
+            name {Text} -- the name of the op (default: {"some_sk_model"})
+            description {Text} --  a short description of the op that will be added 
+            to its docstring (default: {""})
+        
+        Returns:
+            Type -- the resulting class
+        """
+
         resulting_op = type(name, (cls,), {"__doc__": description})
         resulting_op.requires = {"x": x_marker}
         resulting_op.model_cls = model_cls
