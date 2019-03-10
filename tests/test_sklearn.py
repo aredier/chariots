@@ -120,12 +120,3 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
         res.should.have.key(naive_baise.markers[0])
         for res_ind in res[naive_baise.markers[0]]:
             res_ind.should.equal(1)
-
-
-# def test_sklearn_persisted_major_deprecation():
-#     pass
-
-
-# def test_sklearn_persisted_minor_non_deprecation():
-#     # TODO implement
-#     pass
