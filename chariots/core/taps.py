@@ -11,11 +11,13 @@ class DataTap(AbstractOp):
     A data tap represents a source of data that will be used by downstream ops
     """
 
-    def __init__(self, iterator, markers: List[Marker]):
+    def __init__(self, iterator, markers: List[Marker], name="some_tap"):
         self._iterator = iterator
         if not isinstance(markers, list):
             markers = [markers]
         self.markers = markers
+        self.name = name
+
     def perform(self):
         return DataSet.from_op(map(self._preform_single, self._iterator))
     
