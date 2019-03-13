@@ -7,7 +7,7 @@ from sklearn.externals import joblib
 from sklearn.base import BaseEstimator
 
 from chariots.core.markers import Matrix
-from chariots.core.markers import Marker
+from chariots.core.markers import Requirement
 from chariots.core.saving import Savable
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
@@ -57,7 +57,7 @@ class SklearnOp(Savable, TrainableOp):
         return {"name": cls.name, "model_type": "sklearn"}
 
     @classmethod
-    def factory(cls, x_marker: Marker, y_marker: Marker, model_cls: BaseEstimator,
+    def factory(cls, x_marker: Requirement, y_marker: Requirement, model_cls: BaseEstimator,
                 training_params: Optional[dict] = None, name: Text = "some_sk_model",
                 description: Text = "") -> Type:
         """creates a new trainable op class inheriting from `cls` this allows to quicly produce
