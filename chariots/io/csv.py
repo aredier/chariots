@@ -5,6 +5,7 @@ from typing import Any
 from typing import List
 from typing import Mapping
 from typing import Text
+from typing import Optional
 
 import numpy as np
 
@@ -17,9 +18,33 @@ FloatType = np.float32
 ArrayAsListForMarker = Mapping[markers.Marker, List[List[Any]]]
 
 class CSVTap(taps.DataTap):
+    """
+    Tap that specialises in csv reading, this is a lazy and batched tap meaning that the lines in 
+    the file will only be read when required and not kept in memory (allowing to read larger file
+    than system memory)
+    Please note that this tap should be used as context manager
+    """
 
-    def __init__(self, path, name_for_marker: Mapping[markers.Marker, List[Text]],
-                 batch_size = None, batches = None, sep=","):
+
+    def __init__(self, path: Text, name_for_marker: Mapping[markers.Marker, List[Text]],
+                 batch_size: Optional[int] = None, batches: Optional[int] = None, sep: Text = ","):
+        """create a CSV Tap
+        
+        Arguments:
+            path {Text} -- the path of the csv file
+            name_for_marker {Mapping[markers.Marker, List[Text]]} -- a mapping wher a marker is 
+                linked to a list of column. The data linked to this marker are going to be 
+                np.ndarray with shape (batch_size, len(cols)).
+        
+        Keyword Arguments:
+            batch_size {Optional[int]} -- the batch size to use if None their will be a single 
+                batch with all the data (default: {None})
+            batches {Optional[int]} -- the number of batches to produce, if None the Tap will 
+                produce batches until the file is consumed (default: {None})
+            sep {Text} -- the column separator of the file (default: {","})
+        """
+
+
         self.path = path
         self.sep = sep
         self.batch_size = batch_size or np.inf
@@ -94,9 +119,6 @@ class CSVTap(taps.DataTap):
             self._dtype_for_marker[marker] = np.dtype("<U3")
         return final
 
-
-
-    
     def perform(self):
         return taps.DataSet.from_op(self._batch_generator())
     
