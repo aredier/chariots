@@ -13,7 +13,8 @@ setup(name='chariots',
           'tests': ['pytest',
                     'sure',
                     'numpy',
-                    'sklearn'
+                    'sklearn',
+                    'pandas'
                    ],
       },
       zip_safe=False)
