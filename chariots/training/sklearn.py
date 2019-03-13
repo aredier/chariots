@@ -142,7 +142,6 @@ class SingleFitSkSupervised(SklearnOp):
 class SingleFitSkTransformer(SklearnOp):
 
     def _inner_train(self, x_train):
-        print(self.model.__class__.__name__)
         self.model.fit(x_train)
         
     def _main(self, x) -> DataBatch:

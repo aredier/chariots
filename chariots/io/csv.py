@@ -19,7 +19,7 @@ ArrayAsListForMarker = Mapping[markers.Marker, List[List[Any]]]
 class CSVTap(taps.DataTap):
 
     def __init__(self, path, name_for_marker: Mapping[markers.Marker, List[Text]],
-                 batch_size = None, batches = 1, sep=","):
+                 batch_size = None, batches = None, sep=","):
         self.path = path
         self.sep = sep
         self.batch_size = batch_size or np.inf
@@ -39,7 +39,6 @@ class CSVTap(taps.DataTap):
     def _analyse_header(self):
         header = next(self._file_io)
         header_names = header.strip().split(self.sep)
-        print(header_names)
         self._col_for_marker = {
             marker: list(map(header_names.index, names))
             for marker, names in self._name_for_marker.items() 
@@ -49,13 +48,15 @@ class CSVTap(taps.DataTap):
     def _batch_generator(self):
         if not self._file_opened:
             raise ValueError("the CSVTap should be used as context, use `with`")
-        for batch_number in range(self.batches):
-            res = {marker:[] for marker in self.markers}
-            for idx_in_batch, line in enumerate(self._file_io):
-                if idx_in_batch >= self.batch_size:
-                    break
-                self._append_line(res, line)
-            yield  self._with_dtypes(res)
+        res = {marker:[] for marker in self.markers}
+        for idx, line in enumerate(self._file_io):
+            if self.batches is not None and idx >= self.batch_size * self.batches:
+                break
+            if idx and not idx % self.batch_size:
+                yield  self._with_dtypes(res)
+                res = {marker:[] for marker in self.markers}
+            self._append_line(res, line)
+        yield  self._with_dtypes(res)
     
     def _append_line(self, res: ArrayAsListForMarker, line: Text) -> ArrayAsListForMarker:
         values = line.strip().split(self.sep)
