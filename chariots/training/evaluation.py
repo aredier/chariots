@@ -5,14 +5,14 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-from chariots.core.markers import Marker
+from chariots.core.markers import Requirement
 from chariots.core.ops import AbstractOp
 from chariots.core.ops import BaseOp
 from chariots.core.versioning import Version
 
 Report = Mapping[Text, Mapping[Text, float]]
 
-class EvaluationMarker(Marker):
+class EvaluationMarker(Requirement):
     """placeholder marker to be attributed to evaluation markers
     """
 
@@ -77,7 +77,7 @@ class ClassificationMetrics(EvaluationMetric):
 
     name = "classification_report"
     
-    def __init__(self, y_true: Marker, y_pred: Marker, metrics: Optional[List[Text]] = None):
+    def __init__(self, y_true: Requirement, y_pred: Requirement, metrics: Optional[List[Text]] = None):
         self.metrics = metrics or ["accuracy"]
         self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
         if metrics != ["accuracy"]:
@@ -102,7 +102,7 @@ class RegresionMetrics(EvaluationMetric):
 
     name = "regression_report"
     
-    def __init__(self, y_true: Marker, y_pred: Marker, metrics: Optional[List[Text]] = None):
+    def __init__(self, y_true: Requirement, y_pred: Requirement, metrics: Optional[List[Text]] = None):
         self.metrics = metrics or ["mae", "mse"]
         self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
 

@@ -15,7 +15,7 @@ from typing import Text
 from typing import Any
 
 from chariots.core.dataset import DataSet, ORIGIN
-from chariots.core.markers import Marker
+from chariots.core.markers import Requirement
 from chariots.core.versioning import _extract_versioned_fields
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import _VersionField
@@ -40,7 +40,7 @@ class AbstractOp(ABC):
     name: Text = "NA"
     previous_op = None
     # TODO these should be part of the major version of the op
-    markers: List[Marker] = []
+    markers: List[Requirement] = []
     requires: Requirements = {}
 
     # wether or not  this op should carry on the upstream version changes silently or not
@@ -145,7 +145,7 @@ class AbstractOp(ABC):
     
     @classmethod
     @functools.lru_cache()
-    def as_marker(cls) -> Marker:
+    def as_marker(cls) -> Requirement:
         """
         produces a marker that corresponds to this op
         """

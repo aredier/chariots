@@ -4,7 +4,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import CountVectorizer
 
 from chariots.core.markers import Matrix
-from chariots.core.markers import Marker
+from chariots.core.markers import Requirement
 from chariots.core.ops import BaseOp
 from chariots.core.ops import Split
 from chariots.core.ops import Merge
@@ -14,7 +14,7 @@ from chariots.training.sklearn import SingleFitSkSupervised
 from chariots.training.sklearn import SingleFitSkTransformer
 from chariots.training.trainable_pipeline import TrainablePipeline
 
-TextList = Marker.new_marker()
+TextList = Requirement.new_marker()
 YMarker = Matrix.new_marker()
 
 

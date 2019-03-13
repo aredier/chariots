@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
 
 from chariots.core.taps import DataTap
-from chariots.core.markers import Marker, Number
+from chariots.core.markers import Requirement, Number
 from chariots.core.markers import Matrix
 from chariots.core.ops import Merge, BaseOp, Split
 from chariots.training.trainable_op import TrainableOp

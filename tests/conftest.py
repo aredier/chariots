@@ -5,7 +5,7 @@ from sklearn.linear_model import SGDRegressor
 
 from chariots.core.ops import BaseOp
 from chariots.core.markers import Number
-from chariots.core.markers import Marker
+from chariots.core.markers import Requirement
 from chariots.core.markers import Matrix
 from chariots.core.taps import DataTap
 from chariots.training.trainable_op import TrainableOp
@@ -43,7 +43,7 @@ def tap():
     return DataTap(iter(range(10)), Number())
 
 
-class XMarker(Marker):
+class XMarker(Requirement):
 
     def compatible(self, other):
         return isinstance(other, XMarker)
@@ -53,7 +53,7 @@ class XMarker(Marker):
 def x_marker_cls():
     return XMarker
 
-class YMarker(Marker):
+class YMarker(Requirement):
 
     def compatible(self, other):
         return isinstance(other, YMarker)
