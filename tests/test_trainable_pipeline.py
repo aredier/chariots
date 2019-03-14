@@ -50,7 +50,8 @@ class Identity(BaseOp):
         return in_value
 
 
-def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):
+def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cls,
+                                      x_requirement_cls):
     numbers = np.random.choice(list(range(100)), 20, replace=True)
 
     data = DataTap(iter(numbers), Number)
@@ -62,7 +63,7 @@ def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cl
     pipe = TrainablePipeline()
     pipe.add(model)
     pipe.fit(training_data)
-    x_test = DataTap(iter([i] for i in range(100)), x_marker_cls())
+    x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
     y_pred = pipe(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
@@ -70,7 +71,8 @@ def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cl
         float(y_pred_ind[linear_model_cls.markers[0]][0]).should.equal(i + 1., epsilon=0.01)
 
 
-def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):
+def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_model_cls,
+                                            x_requirement_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
     data = DataTap(iter(numbers), Number)
     x_in = x_op_cls()(data)
@@ -80,7 +82,7 @@ def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_mo
     model = linear_model_cls()(training_data)
     pipe = TrainablePipeline(x_in, model)
     pipe.fit(data)
-    x_test = DataTap(iter([i] for i in range(100)), x_marker_cls())
+    x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
     y_pred = pipe(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
@@ -89,7 +91,7 @@ def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_mo
 
 
 def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_model_cls, 
-                                      right_linear_model_cls, x_marker_cls):
+                                      right_linear_model_cls, x_requirement_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
     data = DataTap(iter(numbers), Number)
     data_id = Identity()(data)
@@ -114,7 +116,7 @@ def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_mod
 
     pipe = TrainablePipeline(data_id, res)
     pipe.fit(data)
-    x_test = DataTap(iter([i] for i in range(100)), x_marker_cls())
+    x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
     y_pred = pipe(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
