@@ -12,8 +12,8 @@ from chariots.training.trainable_op import TrainableOp
 
 
 class AddOneOp(BaseOp):
-    markers = [Number()]
-    requires = {"input_value": Number()}
+    markers = [Number]
+    requires = {"input_value": Number}
     name = "add"
 
     def _main(self, input_value):
@@ -26,8 +26,8 @@ def add_op_cls():
 
 
 class Square(BaseOp):
-    markers = [Number()]
-    requires = {"input_value": Number()}
+    markers = [Number]
+    requires = {"input_value": Number}
     name = "square"
 
     def _main(self, input_value):
@@ -40,34 +40,34 @@ def square_op_cls():
 
 @pytest.fixture
 def tap():
-    return DataTap(iter(range(10)), Number())
+    return DataTap(iter(range(10)), Number)
 
 
-class XMarker(Requirement):
+class XRequirement(Requirement):
 
     def compatible(self, other):
-        return isinstance(other, XMarker)
+        return isinstance(other, XRequirement)
 
 
 @pytest.fixture
-def x_marker_cls():
-    return XMarker
+def x_requirement_cls():
+    return XRequirement
 
-class YMarker(Requirement):
+class YRequirement(Requirement):
 
     def compatible(self, other):
-        return isinstance(other, YMarker)
+        return isinstance(other, YRequirement)
 
 @pytest.fixture
-def y_marker_cls():
-    return YMarker
+def y_requirement_cls():
+    return YRequirement
 
 
 class LinearModel(TrainableOp):
-    training_requirements = {"x": XMarker(), "y": YMarker()}
-    requires ={"x": XMarker()} 
+    training_requirements = {"x": XRequirement, "y": YRequirement}
+    requires ={"x": XRequirement} 
     name = "linear_model"
-    markers = [Matrix((1, 2))]
+    markers = [Matrix.with_shape_and_dtype((None, 1), np.float32)]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -87,9 +87,9 @@ def linear_model_cls():
     return LinearModel
 
 class XOp(BaseOp):
-    requires = {"in_value" : Number()}
+    requires = {"in_value" : Number}
     name = "x"
-    markers = [XMarker()]
+    markers = [XRequirement]
 
     def _main(self, in_value):
         return np.random.choice(list(range(in_value, in_value + 100)), 80000)
@@ -100,9 +100,9 @@ def x_op_cls():
     return XOp
 
 class LinearYOp(BaseOp):
-    requires = {"in_value" : XMarker()}
+    requires = {"in_value" : XRequirement}
     name = "y"
-    markers = [YMarker()]
+    markers = [YRequirement]
 
     def _main(self, in_value):
         return np.array([in_value + 1 for in_value in in_value])
