@@ -129,7 +129,7 @@ class Matrix(Requirement):
         
     @classmethod
     def parse(cls, data: Any) -> Any:
-        if dtype is not None:
+        if cls.dtype is not None:
             return np.asarray(data, dtype=cls.dtype)
         try:
             return np.asarray(array_as_list, FloatType)
