@@ -3,13 +3,13 @@ from chariots.core.ops import Merge
 from chariots.core.ops import BaseOp
 from chariots.training.evaluation import ClassificationMetrics
 from chariots.training.evaluation import RegresionMetrics
-from chariots.core.markers import Number
-from chariots.core.markers import Matrix
-from chariots.core.markers import FloatType
+from chariots.core.requirements import Number
+from chariots.core.requirements import Matrix
+from chariots.core.requirements import FloatType
 
-YMarker = Matrix.new_marker()
-YPred = Matrix.new_marker() 
-XMarker = Matrix.new_marker()
+YMarker = Matrix.create_child()
+YPred = Matrix.create_child() 
+XMarker = Matrix.create_child()
 
 class TrueY(BaseOp):
     requires = {"input_number": Number}

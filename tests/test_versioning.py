@@ -4,7 +4,7 @@ import time
 import pytest
 
 from chariots.core.ops import BaseOp
-from chariots.core.markers import Number
+from chariots.core.requirements import Number
 from chariots.core.versioning import Version
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import _VersionField

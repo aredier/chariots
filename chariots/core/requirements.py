@@ -42,7 +42,7 @@ class Requirement(ABC):
         return issubclass(other, cls)
     
     @classmethod
-    def new_marker(cls) -> Type["Marker"]:
+    def create_child(cls) -> Type["Marker"]:
         """
         creates a unique marker that will be accepted by this class but will only accept itself 
         """
@@ -121,7 +121,7 @@ class Matrix(Requirement):
     
     @classmethod
     def with_shape_and_dtype(cls, shape: Tuple[int], dtype: Type) ->Type["Matrix"]:
-        res = cls.new_marker()
+        res = cls.create_child()
         res.shape = shape
         res.dtype = dtype
         res.parent_class = cls

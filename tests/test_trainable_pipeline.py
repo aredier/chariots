@@ -4,17 +4,17 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
 
 from chariots.core.taps import DataTap
-from chariots.core.markers import Requirement, Number
-from chariots.core.markers import Matrix
+from chariots.core.requirements import Requirement, Number
+from chariots.core.requirements import Matrix
 from chariots.core.ops import Merge, BaseOp, Split
 from chariots.training.trainable_op import TrainableOp
 from chariots.training.trainable_pipeline import TrainablePipeline
 
 
-LeftMarker = Matrix.new_marker()
+LeftMarker = Matrix.create_child()
 
 
-RightMarker = Matrix.new_marker()
+RightMarker = Matrix.create_child()
 
 @pytest.fixture
 def left_linear_model_cls(linear_model_cls):

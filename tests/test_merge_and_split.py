@@ -6,10 +6,10 @@ from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
 from chariots.core.ops import Split
-from chariots.core.markers import Number
+from chariots.core.requirements import Number
 
-Foo = Number.new_marker()
-Bar = Number.new_marker()
+Foo = Number.create_child()
+Bar = Number.create_child()
 
 class DevideTogether(BaseOp):
     markers = [Number]

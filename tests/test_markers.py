@@ -6,9 +6,9 @@ from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
 from chariots.core.ops import Split
-from chariots.core.markers import Number
-from chariots.core.markers import Matrix
-from chariots.core.markers import FloatType
+from chariots.core.requirements import Number
+from chariots.core.requirements import Matrix
+from chariots.core.requirements import FloatType
 
 class GenerateArray(BaseOp):
     markers = [Matrix.with_shape_and_dtype((5,), FloatType)]
@@ -47,7 +47,7 @@ def test_op_as_requirement(tap, add_op_cls):
     sum_op.when.called_with(tap).should.throw(ValueError)
 
 def test_marker_generation(x_requirement_cls, y_requirement_cls):
-    new_marker_cls = x_requirement_cls.new_marker()
+    new_marker_cls = x_requirement_cls.create_child()
     assert x_requirement_cls.compatible(new_marker_cls)
     assert not new_marker_cls.compatible(y_requirement_cls)
     assert new_marker_cls.compatible(new_marker_cls)
