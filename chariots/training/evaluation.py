@@ -86,6 +86,7 @@ class ClassificationMetrics(EvaluationMetric):
     def _evaluate_batch(self, y_true, y_pred) -> Mapping[Text, float]:
         assert len(y_true) == len(y_pred), "inconsistent data"
         _n = len(y_true)
+        print(y_true, y_pred)
         _correct = sum(true_ind == pred_ind for true_ind, pred_ind in zip(y_true, y_pred))
         return {"_n": _n, "_correct": _correct, "accuracy": _correct / _n}
     

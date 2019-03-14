@@ -47,7 +47,7 @@ class Requirement(ABC):
         creates a unique marker that will be accepted by this class but will only accept itself 
         """
         return type(f"{cls.__name__}-sub", (cls,), 
-                    {"__doc__", f"automaticly generated marker generated from {cls.__name__}"})
+                    {"__doc__": f"automaticly generated marker generated from {cls.__name__}"})
     
     @classmethod
     def parse(cls, data: Any) -> Any:
@@ -77,6 +77,13 @@ class Requirement(ABC):
         """
 
         raise NotImplementedError(f"{cls.__name__} does not implement combine logic")
+    
+    @classmethod
+    def as_marker(cls):
+        """helper function that returns this type to provide a common interface with ops"""
+
+        return cls
+
 
 
 class Number(Requirement):
@@ -93,11 +100,15 @@ class Matrix(Requirement):
     """
     
     shape = None
+    parent_class = None 
 
     @classmethod
     def compatible(cls, other: Type["Requirement"]) -> bool:
         """will check that the type and shape are compatible"""
-        if not super().compatible(other):
+        if cls.parent_class is not None:
+            if not cls.parent_class.compatible(other):
+                return False
+        elif not super().compatible(other):
             return False
         if cls.shape is None:
             return True
@@ -113,6 +124,7 @@ class Matrix(Requirement):
         res = cls.new_marker()
         res.shape = shape
         res.dtype = dtype
+        res.parent_class = cls
         return res
         
     @classmethod
