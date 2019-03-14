@@ -50,7 +50,7 @@ class CSVTap(taps.DataTap):
         self.batch_size = batch_size or np.inf
         self.batches = batches
         self._name_for_marker = name_for_marker
-        self._dtype_for_marker = {}
+        self._typed = False
 
     def __enter__(self):
         self._file_opened = True
@@ -91,32 +91,14 @@ class CSVTap(taps.DataTap):
         return res
 
     def _with_dtypes(self, res_mapping: ArrayAsListForMarker) -> Mapping[markers.Requirement, np.ndarray]:
-        if self._dtype_for_marker:
-            return {
-                marker: np.array(res_mapping[marker], dtype)
-                for marker, dtype in self._dtype_for_marker.items()
-            }
+        if self._typed :
+            return {marker: marker.parse(data) for marker, data in res_mapping.items()}
         final = {}
         for marker, array_as_list in  res_mapping.items():
-            try:
-                array = np.array(array_as_list, IntType)
-                self._dtype_for_marker[marker] = IntType
-                final[marker] = array
-                continue
-            except ValueError:
-                # casting to int failed, trying something else
-                pass
-            try:
-                array = np.array(array_as_list, IntType)
-                self._dtype_for_marker[marker] = FloatType
-                final[marker] = array
-                continue
-            except ValueError:
-                # casting to int failed, trying something else
-                pass
-            array = np.array(array_as_list)
-            final[marker] = array
-            self._dtype_for_marker[marker] = np.dtype("<U3")
+            data = marker.parse(array_as_list)
+            marker.dtype = data.dtype 
+            final[marker] = data
+        self._typed = True
         return final
 
     def perform(self):
