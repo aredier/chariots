@@ -8,26 +8,20 @@ from chariots.core.pipeline import Pipeline
 from chariots.core.ops import Split
 from chariots.core.markers import Number
 
-
-class Foo(Number):
-    def compatible(self, other):
-        return isinstance(other, Foo)
-
-class Bar(Number):
-    def compatible(self, other):
-        return isinstance(other, Bar)
+Foo = Number.new_marker()
+Bar = Number.new_marker()
 
 class DevideTogether(BaseOp):
-    markers = [Number()]
-    requires = {"left": Foo(), "right": Bar()}
+    markers = [Number]
+    requires = {"left": Foo, "right": Bar}
     name = "add_together"
 
     def _main(self, left, right):
         return left /  right
 
 def test_simple_merge():
-    single = DataTap(iter(range(1, 10)), Foo())
-    double = DataTap(iter(range(2, 20, 2)), Bar())
+    single = DataTap(iter(range(1, 10)), Foo)
+    double = DataTap(iter(range(2, 20, 2)), Bar)
     merged = Merge()([single, double])
     res = DevideTogether()(merged)
     for ind in res.perform():

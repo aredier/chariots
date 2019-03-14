@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 from chariots.core.markers import Matrix
 from chariots.core.markers import Requirement
+from chariots.core.markers import FloatType
 from chariots.core.ops import BaseOp
 from chariots.core.ops import Split
 from chariots.core.ops import Merge
@@ -14,30 +15,25 @@ from chariots.training.sklearn import SingleFitSkSupervised
 from chariots.training.sklearn import SingleFitSkTransformer
 from chariots.training.trainable_pipeline import TrainablePipeline
 
+
 TextList = Requirement.new_marker()
 YMarker = Matrix.new_marker()
-
-
-class TextVector(Matrix):
-
-    def compatible(self, other):
-        return isinstance(other, TextVector)
+TextVector = Matrix.new_marker()
 
 
 class YTrue(BaseOp):
-    requires = {"text": TextList()}
-    markers = [YMarker((None, 1))]
+    requires = {"text": TextList}
+    markers = [YMarker.with_shape_and_dtype((None, 1), FloatType)]
 
     def _main(self, text):
         return [int(sent[-1] == "r") for sent in text]
 
-
 @pytest.fixture
 def count_vectorizer():
     return SingleFitSkTransformer.factory(
-        x_marker=TextList(),
+        x_marker=TextList,
         model_cls=CountVectorizer,
-        y_marker=TextVector(()),
+        y_marker=TextVector,
         name="count_vectorizer"
     )
 
@@ -45,9 +41,9 @@ def count_vectorizer():
 @pytest.fixture
 def naive_baise_op():
     return SingleFitSkSupervised.factory(
-        x_marker=TextVector(()),
+        x_marker=TextVector,
         model_cls=MultinomialNB,
-        y_marker=YMarker((None, 1)),
+        y_marker=YMarker.with_shape_and_dtype((None, 1), FloatType),
         name="naive_baise"
     )
 
@@ -59,9 +55,9 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
     ]
     train_size = 32
     train_data = DataTap(
-        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     vocab = DataTap(
-        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     x_train, y_train = Split(2)(train_data)
     y_train = YTrue()(y_train)
 
@@ -73,7 +69,7 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
     naive_baise.fit(Merge()([vectorizer, y_train]))
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
-                        TextList())
+                        TextList)
     x_test = vectorizer(test_data)
     pred = naive_baise(x_test)
 
@@ -91,9 +87,9 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
     ]
     train_size = 32
     train_data = DataTap(
-        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     vocab = DataTap(
-        iter([np.random.choice(sentences, train_size, replace=True)]), TextList())
+        iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     x_train, y_train = Split(2)(train_data)
     y_train = YTrue()(y_train)
 
@@ -109,7 +105,7 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
     second_naive_baise = naive_baise_op.load(saver)
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
-                        TextList())
+                        TextList)
     x_test = vectorizer(test_data)
     pred = second_naive_baise(x_test)
 

@@ -11,19 +11,15 @@ from chariots.training.trainable_op import TrainableOp
 from chariots.training.trainable_pipeline import TrainablePipeline
 
 
-class LeftMarker(Matrix):
-    def compatible(self, other):
-        return isinstance(other, LeftMarker)
+LeftMarker = Matrix.new_marker()
 
 
-class RightMarker(Matrix):
-    def compatible(self, other):
-        return isinstance(other, RightMarker)
+RightMarker = Matrix.new_marker()
 
 @pytest.fixture
 def left_linear_model_cls(linear_model_cls):
     class LinearModelL(linear_model_cls):
-        markers = [LeftMarker(None,)]
+        markers = [LeftMarker]
     
     return LinearModelL
 
@@ -31,14 +27,14 @@ def left_linear_model_cls(linear_model_cls):
 @pytest.fixture
 def right_linear_model_cls(linear_model_cls):
     class LinearModelR(linear_model_cls):
-        markers = [RightMarker((None,))]
+        markers = [RightMarker]
     
     return LinearModelR
 
 
 class Add(BaseOp):
-    requires = {"left": LeftMarker(None,), "right": RightMarker(None,)}
-    markers = [Matrix(None,)]
+    requires = {"left": LeftMarker, "right": RightMarker}
+    markers = [Matrix]
     name = "add_together"
 
     def _main(self, left, right):
@@ -46,9 +42,9 @@ class Add(BaseOp):
 
 
 class Identity(BaseOp):
-    requires = {"in_value" : Number()}
+    requires = {"in_value" : Number}
     name = "id"
-    markers = [Number()]
+    markers = [Number]
 
     def _main(self, in_value):
         return in_value
@@ -57,7 +53,7 @@ class Identity(BaseOp):
 def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):
     numbers = np.random.choice(list(range(100)), 20, replace=True)
 
-    data = DataTap(iter(numbers), Number())
+    data = DataTap(iter(numbers), Number)
     x = x_op_cls()(data)
     x, y = Split(2)(x)
     y = linear_y_op_cls()(y)
@@ -76,7 +72,7 @@ def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cl
 
 def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_model_cls, x_marker_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
-    data = DataTap(iter(numbers), Number())
+    data = DataTap(iter(numbers), Number)
     x_in = x_op_cls()(data)
     x, y = Split(2)(x_in)
     y = linear_y_op_cls()(y)
@@ -95,7 +91,7 @@ def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_mo
 def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_model_cls, 
                                       right_linear_model_cls, x_marker_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
-    data = DataTap(iter(numbers), Number())
+    data = DataTap(iter(numbers), Number)
     data_id = Identity()(data)
     data_1, data_2 = Split(2)(data_id)
 
