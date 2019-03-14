@@ -18,7 +18,7 @@ def versioned_op_cls():
     class VersionedOp(BaseOp):
         name = "fake_op"
         versioned_field = VersionField(VersionType.MAJOR, default_value=2)
-        markers = [Number()]
+        markers = [Number]
         def _main():
             return self.versioned_field
     return VersionedOp
@@ -26,9 +26,9 @@ def versioned_op_cls():
 @pytest.fixture
 def downstream_op_cls(versioned_op_cls):
     class FakeDown(BaseOp):
-        requires = {"fake_dep": Number()}
+        requires = {"fake_dep": Number}
         name = "fake_down"
-        markers = [Number()]
+        markers = [Number]
         
         def _main(fake_dep):
             pass

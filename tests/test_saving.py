@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import IO
 
 import numpy as np
@@ -7,18 +8,24 @@ from chariots.core.saving import FileSaver
 from chariots.core.saving import Savable
 from chariots.core.versioning import Version
 
+
+test_uuid = str(uuid.uuid1())
+
+
 class SavableObject(Savable):
 
     def __init__(self):
-        self.seed = int(np.random.randint(10))
+        self.seed = int(np.random.randint(1000))
     
     def _serialize(self, temp_file: IO):
+        print(self.seed)
         temp_file.write(json.dumps(self.seed).encode())        
 
     @classmethod
     def _deserialize(cls, file: IO) -> "Foo":
         res = cls()
         res.seed = json.load(file)
+        print(res.seed)
         return res
     
     @classmethod
@@ -27,7 +34,7 @@ class SavableObject(Savable):
 
     @classmethod
     def identifiers(cls):
-        return {"type": "test"}
+        return {"type": "test", "instance": test_uuid}
 
 def test_saving():
     foo =  SavableObject()
