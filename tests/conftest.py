@@ -43,20 +43,14 @@ def tap():
     return DataTap(iter(range(10)), Number)
 
 
-class XRequirement(Requirement):
-
-    def compatible(self, other):
-        return isinstance(other, XRequirement)
+XRequirement = Requirement.new_marker()
+YRequirement = Requirement.new_marker()
 
 
 @pytest.fixture
 def x_requirement_cls():
     return XRequirement
 
-class YRequirement(Requirement):
-
-    def compatible(self, other):
-        return isinstance(other, YRequirement)
 
 @pytest.fixture
 def y_requirement_cls():

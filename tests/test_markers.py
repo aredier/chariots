@@ -6,18 +6,20 @@ from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
 from chariots.core.ops import Split
-from chariots.core.markers import Number, Matrix
+from chariots.core.markers import Number
+from chariots.core.markers import Matrix
+from chariots.core.markers import FloatType
 
 class GenerateArray(BaseOp):
-    markers = [Matrix((5,))]
-    requires = {"input_value": Number()}
+    markers = [Matrix.with_shape_and_dtype((5,), FloatType)]
+    requires = {"input_value": Number}
     name = "array_gen"
 
     def _main(self, input_value):
         return [input_value for _ in range(5)]
 
 class Sum(BaseOp):
-    markers = [Number()]
+    markers = [Number]
     requires = {"array": GenerateArray}
     name = "sum_array"
     
@@ -27,7 +29,7 @@ class Sum(BaseOp):
 
 @pytest.fixture
 def tap():
-    return DataTap(iter(range(10)), Number())
+    return DataTap(iter(range(10)), Number)
 
 def test_wrong_requires(tap, add_op_cls, square_op_cls):
     add = add_op_cls()(tap)
@@ -44,11 +46,11 @@ def test_op_as_requirement(tap, add_op_cls):
     sum_op = Sum()
     sum_op.when.called_with(tap).should.throw(ValueError)
 
-def test_marker_generation(x_marker_cls, y_marker_cls):
-    new_marker_cls = x_marker_cls.new_marker()
-    assert x_marker_cls().compatible(new_marker_cls())
-    assert not new_marker_cls().compatible(x_marker_cls())
-    assert new_marker_cls().compatible(new_marker_cls())
+def test_marker_generation(x_requirement_cls, y_requirement_cls):
+    new_marker_cls = x_requirement_cls.new_marker()
+    assert x_requirement_cls.compatible(new_marker_cls)
+    assert not new_marker_cls.compatible(y_requirement_cls)
+    assert new_marker_cls.compatible(new_marker_cls)
 
 def test_op_markers(add_op_cls, square_op_cls):
     assert add_op_cls.markers[0].compatible(add_op_cls.as_marker())
