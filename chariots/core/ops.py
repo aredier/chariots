@@ -152,7 +152,7 @@ class AbstractOp(ABC):
         if len(cls.markers) != 1:
             raise ValueError("using more or less than one marker for an op is ambigous to"\
                              " produce marker")
-        return cls.markers[0].new_marker()()
+        return cls.markers[0].new_marker()
     
 
 class BaseOp(AbstractOp):
