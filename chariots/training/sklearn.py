@@ -8,6 +8,7 @@ from sklearn.base import BaseEstimator
 
 from chariots.core.markers import Matrix
 from chariots.core.markers import Requirement
+from chariots.core.markers import FloatType
 from chariots.core.saving import Savable
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
@@ -24,8 +25,8 @@ class SklearnOp(Savable, TrainableOp):
     training_params = VersionField(VersionType.MINOR, default_factory=lambda: {})
 
     # these have to be overiden when inheriting
-    markers = [Matrix((None, 1))]
-    requires = {"x": Matrix(())}
+    markers = [Matrix.with_shape_and_dtype((None, 1), FloatType)]
+    requires = {"x": Matrix}
     training_requirements = {}
 
     def __init__(self):
@@ -90,7 +91,7 @@ class SklearnOp(Savable, TrainableOp):
 class OnlineSklearnSupervised(SklearnOp):
 
     # these have to be overiden when inheriting
-    training_requirements = {"y_train": Matrix((None, 1))}
+    training_requirements = {"y_train": Matrix.with_shape_and_dtype((None, 1), FloatType)}
 
     def _inner_train(self, x_train, y_train):
         self.model.partial_fit(X=x_train, y=y_train)
@@ -120,7 +121,7 @@ class OnlineSklearnTransformer(SklearnOp):
 
 class SingleFitSkSupervised(SklearnOp):
     # these have to be overiden when inheriting
-    training_requirements = {"y_train": Matrix((None, 1))}
+    training_requirements = {"y_train": Matrix.with_shape_and_dtype((None, 1), FloatType)}
 
     # TODO add an error when refiting
     def _inner_train(self, x_train, y_train):
