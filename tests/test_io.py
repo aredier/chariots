@@ -6,7 +6,7 @@ import numpy as np
 
 from chariots.io import csv
 from chariots.core import ops
-from chariots.core.markers import Matrix, Number
+from chariots.core.markers import Matrix, Number, FloatType
 
 XMarker = Matrix.new_marker()
 YMarker = Matrix.new_marker()
@@ -14,22 +14,24 @@ XYMarker = Matrix.new_marker()
 ZMarker = Matrix.new_marker()
 
 class UnwrapOp(ops.BaseOp):
-    markers = [Number()]
-    requires = {"input_data": Matrix((None, 1))}
+    markers = [Number]
+    requires = {"input_data": Matrix.with_shape_and_dtype((None, 1), FloatType)}
 
     def _main(self, input_data):
         return sum(input_data.flatten())
 
 class SumOp(ops.BaseOp):
-    markers = [Number()]
-    requires= {"left": XMarker((None, 1)), "right": YMarker((None, 1))}
+    markers = [Number]
+    requires= {"left": XMarker.with_shape_and_dtype((None, 1), FloatType),
+               "right": YMarker.with_shape_and_dtype((None, 1), FloatType)}
 
     def _main(self, left, right):
         return sum(l + r for l, r in zip(left, right))
 
 class GroupedSumOp(ops.BaseOp):
-    markers = [Number()]
-    requires= {"xy": XYMarker((None, 1)), "z": ZMarker((None, 1))}
+    markers = [Number]
+    requires= {"xy": XYMarker.with_shape_and_dtype((None, 1), FloatType),
+               "z": ZMarker.with_shape_and_dtype((None, 1), FloatType)}
 
     def _main(self, xy, z):
         xy_sum = sum(x + y for x, y in xy)
@@ -48,7 +50,7 @@ def csv_file(tmp_path):
 
 
 def test_csv_tap_no_batch_single_col(csv_file):
-    with csv.CSVTap(csv_file, {Matrix((None, 1)): ["x"]}) as tap:
+    with csv.CSVTap(csv_file, {Matrix.with_shape_and_dtype((None, 1), FloatType): ["x"]}) as tap:
         res = UnwrapOp()(tap)
         res_as_a_list = list(res.perform())
         res_as_a_list.should.have.length_of(1)
@@ -58,8 +60,8 @@ def test_csv_tap_no_batch_single_col(csv_file):
 
 
 def test_csv_tap_no_batch_multiple_cols(csv_file):
-    with csv.CSVTap(csv_file, {XMarker((None, 1)): ["x"],
-                                          YMarker((None, 1)): ["y"]}) as tap:
+    with csv.CSVTap(csv_file, {XMarker.with_shape_and_dtype((None, 1), FloatType): ["x"],
+                               YMarker.with_shape_and_dtype((None, 1), FloatType): ["y"]}) as tap:
         res = SumOp()(tap)
         res_as_a_list = list(res.perform())
         res_as_a_list.should.have.length_of(1)
@@ -68,8 +70,8 @@ def test_csv_tap_no_batch_multiple_cols(csv_file):
         int(res_as_a_list[0][SumOp.markers[0]]).should.be.equal(3 * sum(range(10)))
 
 def test_csv_tap_no_batch_grouped_cols(csv_file):
-    with csv.CSVTap(csv_file, {XYMarker((None, 1)): ["x", "y"],
-                                          ZMarker((None, 1)): ["z"]}) as tap:
+    with csv.CSVTap(csv_file, {XYMarker.with_shape_and_dtype((None, 1), FloatType): ["x", "y"],
+                               ZMarker.with_shape_and_dtype((None, 1), FloatType): ["z"]}) as tap:
         res = GroupedSumOp()(tap)
         res_as_a_list = list(res.perform())
         res_as_a_list.should.have.length_of(1)
@@ -78,7 +80,8 @@ def test_csv_tap_no_batch_grouped_cols(csv_file):
         int(res_as_a_list[0][GroupedSumOp.markers[0]]).should.be.equal(2 * sum(range(10)))
 
 def test_csv_tap_batched_single_col(csv_file):
-    with csv.CSVTap(csv_file, {Matrix((None, 1)): ["x"]}, batch_size=1, batches=10) as tap:
+    with csv.CSVTap(csv_file, {Matrix.with_shape_and_dtype((None, 1), FloatType): ["x"]},
+                               batch_size=1, batches=10) as tap:
         res = UnwrapOp()(tap)
         for i, res_ind in enumerate(res.perform()):
             res_ind.should.be.a(dict)
@@ -87,9 +90,9 @@ def test_csv_tap_batched_single_col(csv_file):
 
 
 def test_csv_tap_batched_multiple_cols(csv_file):
-    with csv.CSVTap(csv_file,
-                    {XMarker((None, 1)): ["x"], YMarker((None, 1)): ["y"]},
-                    batch_size=1, batches=10) as tap:
+    with csv.CSVTap(csv_file, {XMarker.with_shape_and_dtype((None, 1), FloatType): ["x"],
+                               YMarker.with_shape_and_dtype((None, 1), FloatType): ["y"]},
+                               batch_size=1, batches=10) as tap:
         res = SumOp()(tap)
         for i, res_ind in enumerate(res.perform()):
             res_ind.should.be.a(dict)
@@ -97,9 +100,9 @@ def test_csv_tap_batched_multiple_cols(csv_file):
             int(res_ind[SumOp.markers[0]]).should.be.equal(3 * i)
 
 def test_csv_tap_batched_grouped_cols(csv_file):
-    with csv.CSVTap(csv_file, 
-                    {XYMarker((None, 1)): ["x", "y"], ZMarker((None, 1)): ["z"]},
-                    batch_size=1, batches=10) as tap:
+    with csv.CSVTap(csv_file, {XYMarker.with_shape_and_dtype((None, 1), FloatType): ["x", "y"],
+                               ZMarker.with_shape_and_dtype((None, 1), FloatType): ["z"]},
+                               batch_size=1, batches=10) as tap:
         res = GroupedSumOp()(tap)
         for i, res_ind in enumerate(res.perform()):
             res_ind.should.be.a(dict)
