@@ -1,7 +1,7 @@
 import numpy as np
 
 from chariots.core.taps import DataTap
-from chariots.core.markers import Number
+from chariots.core.requirements import Number
 from chariots.core.ops import Merge, Split
 
 

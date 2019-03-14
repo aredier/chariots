@@ -3,7 +3,7 @@ from typing import List
 from chariots.core.ops import AbstractOp
 from chariots.helpers.types import DataBatch
 from chariots.core.dataset import DataSet
-from chariots.core.markers import Requirement
+from chariots.core.requirements import Requirement
 
 
 class DataTap(AbstractOp):

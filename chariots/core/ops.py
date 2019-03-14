@@ -15,7 +15,7 @@ from typing import Text
 from typing import Any
 
 from chariots.core.dataset import DataSet, ORIGIN
-from chariots.core.markers import Requirement
+from chariots.core.requirements import Requirement
 from chariots.core.versioning import _extract_versioned_fields
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import _VersionField
@@ -152,7 +152,7 @@ class AbstractOp(ABC):
         if len(cls.markers) != 1:
             raise ValueError("using more or less than one marker for an op is ambigous to"\
                              " produce marker")
-        return cls.markers[0].new_marker()
+        return cls.markers[0].create_child()
     
 
 class BaseOp(AbstractOp):

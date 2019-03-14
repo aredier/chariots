@@ -6,9 +6,9 @@ from typing import Type
 from sklearn.externals import joblib
 from sklearn.base import BaseEstimator
 
-from chariots.core.markers import Matrix
-from chariots.core.markers import Requirement
-from chariots.core.markers import FloatType
+from chariots.core.requirements import Matrix
+from chariots.core.requirements import Requirement
+from chariots.core.requirements import FloatType
 from chariots.core.saving import Savable
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType

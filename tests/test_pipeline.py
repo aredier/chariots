@@ -5,7 +5,7 @@ from chariots.core.ops import BaseOp
 from chariots.core.dataset import DataSet
 from chariots.core.taps import DataTap
 from chariots.core.pipeline import Pipeline
-from chariots.core.markers import Number
+from chariots.core.requirements import Number
 
 
 def test_single_op(add_op_cls, tap):

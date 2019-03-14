@@ -4,9 +4,9 @@ import numpy as np
 from sklearn.linear_model import SGDRegressor
 
 from chariots.core.ops import BaseOp
-from chariots.core.markers import Number
-from chariots.core.markers import Requirement
-from chariots.core.markers import Matrix
+from chariots.core.requirements import Number
+from chariots.core.requirements import Requirement
+from chariots.core.requirements import Matrix
 from chariots.core.taps import DataTap
 from chariots.training.trainable_op import TrainableOp
 
@@ -43,8 +43,8 @@ def tap():
     return DataTap(iter(range(10)), Number)
 
 
-XRequirement = Requirement.new_marker()
-YRequirement = Requirement.new_marker()
+XRequirement = Requirement.create_child()
+YRequirement = Requirement.create_child()
 
 
 @pytest.fixture

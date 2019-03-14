@@ -10,12 +10,12 @@ from typing import Optional
 import numpy as np
 
 from chariots.core import taps
-from chariots.core import markers
+from chariots.core import requirements
 from chariots.core import taps
 
 IntType = np.int32
 FloatType = np.float32
-ArrayAsListForMarker = Mapping[markers.Requirement, List[List[Any]]]
+ArrayAsListForMarker = Mapping[requirements.Requirement, List[List[Any]]]
 
 class CSVTap(taps.DataTap):
     """
@@ -26,7 +26,7 @@ class CSVTap(taps.DataTap):
     """
 
 
-    def __init__(self, path: Text, name_for_marker: Mapping[markers.Requirement, List[Text]],
+    def __init__(self, path: Text, name_for_marker: Mapping[requirements.Requirement, List[Text]],
                  batch_size: Optional[int] = None, batches: Optional[int] = None, sep: Text = ","):
         """create a CSV Tap
         
@@ -90,7 +90,7 @@ class CSVTap(taps.DataTap):
             res[marker].append(matrix_row)
         return res
 
-    def _with_dtypes(self, res_mapping: ArrayAsListForMarker) -> Mapping[markers.Requirement, np.ndarray]:
+    def _with_dtypes(self, res_mapping: ArrayAsListForMarker) -> Mapping[requirements.Requirement, np.ndarray]:
         if self._typed :
             return {marker: marker.parse(data) for marker, data in res_mapping.items()}
         final = {}

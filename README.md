@@ -22,7 +22,7 @@ here is an example of an Op:
 
 ```python
 from chariots.core.ops import BaseOp
-from chariots.core import markers
+from chariots.core import requirements
 
 MyCustomMarker = markers.Number.new_marker()
 
@@ -72,7 +72,7 @@ if you want some field of your op to be versioned, you can simply add it as `Ver
 
 ```python
 from chariots.core.ops import BaseOp
-from chariots.core import markers
+from chariots.core import requirements
 from chariots.core import versioning
 
 MyCustomMarker = markers.Number.new_marker()

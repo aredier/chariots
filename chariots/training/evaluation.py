@@ -5,7 +5,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-from chariots.core.markers import Requirement
+from chariots.core.requirements import Requirement
 from chariots.core.ops import AbstractOp
 from chariots.core.ops import BaseOp
 from chariots.core.versioning import Version
