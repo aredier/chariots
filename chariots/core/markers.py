@@ -3,6 +3,8 @@ from abc import ABC
 from abc import abstractclassmethod
 from typing import Type
 from typing import List
+from typing import Any
+from typing import Tuple
 
 import numpy as np
 
@@ -61,12 +63,12 @@ class Requirement(ABC):
             Any -- the parsed data
         """
 
-        if cls.dtype = None:
+        if cls.dtype is None:
             return data
         return cls.dtype(data)
 
     @classmethod
-    def combine(cls, left: Any, right: Any) -> Any
+    def combine(cls, left: Any, right: Any) -> Any:
         """
         how to combine two instances of the underlying type(s)
         
@@ -105,6 +107,13 @@ class Matrix(Requirement):
             if self_ind is not None and self_ind != other_ind:
                 return False
         return True
+    
+    @classmethod
+    def with_shape_and_dtype(cls, shape: Tuple[int], dtype: Type) ->Type["Matrix"]:
+        res = cls.new_marker()
+        res.shape = shape
+        res.dtype = dtype
+        return res
         
     @classmethod
     def parse(cls, data: Any) -> Any:
@@ -116,7 +125,7 @@ class Matrix(Requirement):
             return np.asarray(array_as_list)
         
     @classmethod
-    def combine(cls, left: Any, right: Any) -> Any
+    def combine(cls, left: Any, right: Any) -> Any:
         """will combine the data along the first dimension"""
         return np.concatenate((np.asarray(left), np.asarray(right)))
         
