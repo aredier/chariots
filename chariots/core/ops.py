@@ -77,7 +77,7 @@ class AbstractOp(ABC):
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another"\
                              "behavior, override the __Call__ method") 
-        self._check_compatibility(other, self.requires)
+        # self._check_compatibility(other, self.requires)
         if self._carry_on_verision:
             self._link_versions(other)
         self.previous_op = other

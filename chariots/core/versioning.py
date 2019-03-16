@@ -86,6 +86,7 @@ class SubVersion(AbstractSubversion):
         """Updates the fields of the subversion with paraometers
         the fields' value must be hashable
         """
+        
         old_hash = self.fields_hash
         self._fields.update(fields)
         self._update_time()
@@ -110,6 +111,7 @@ class SubVersion(AbstractSubversion):
         Arguments:
             other {SubVersion} -- the version to be linked to 
         """
+        print(self)
         other.linked_subversions.add(self)
         other.update_fields()
 
