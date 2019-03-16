@@ -38,7 +38,6 @@ class Add(BaseOp):
     name = "add_together"
 
     def _main(self, left, right):
-        print(left, right)
         return [l + r for l, r in zip(left, right)]
 
 
