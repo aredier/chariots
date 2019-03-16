@@ -9,6 +9,7 @@ from chariots.core.ops import AbstractOp
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import VersionType
 from chariots.training import TrainableTrait
+from chariots.training import evaluation
 
 
 class TrainableOp(TrainableTrait, BaseOp):
@@ -32,6 +33,7 @@ class TrainableOp(TrainableTrait, BaseOp):
     _last_trained_time = VersionField(VersionType.PATCH, default_factory=lambda:None)
 
     _is_fited = False
+    evaluation_metric = None
 
     @property
     def fited(self):
@@ -51,6 +53,18 @@ class TrainableOp(TrainableTrait, BaseOp):
         if not self.fited:
             raise ValueError(f"{self.name} is not fited, cannot perform")
         return super().perform()
+    
+    def attach_evaluation(self, evaluation: evaluation.EvaluationMetric):
+        self.evaluation_metric = evaluation
+    
+    def evaluate(self, data: AbstractOp):
+        if self.evaluation_metric is None:
+            raise ValueError("cannot evaluate a trainable op with no metric linked to it,"\
+                             " use `attach_evaluation`")
+        self(data)
+        evaluation_res = self.evaluation_metric.evaluate(self)
+        self.previous_op = None
+        return evaluation_res
     
 
     def fit(self, other: Optional[AbstractOp] = None):

@@ -86,7 +86,7 @@ class ClassificationMetrics(EvaluationMetric):
     def __init__(self, y_true: Requirement, y_pred: Requirement, metrics: Optional[List[Text]] = None):
         self.metrics = metrics or ["accuracy"]
         self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
-        if metrics != ["accuracy"]:
+        if self.metrics != ["accuracy"]:
             raise NotImplementedError("classification metrics only account to accuracy for now")
 
     def _evaluate_batch(self, y_true, y_pred) -> Mapping[Text, float]:
@@ -113,7 +113,7 @@ class RegresionMetrics(EvaluationMetric):
         self.requires = {"y_true": y_true.as_marker(), "y_pred": y_pred.as_marker()}
 
         # TODO be able to use a subset of the metrics
-        if metrics != ["mae", "mse"]:
+        if self.metrics != ["mae", "mse"]:
             raise NotImplementedError("regression metrics only account to mae and for now")
 
     def _evaluate_batch(self, y_true, y_pred) -> Mapping[Text, float]:

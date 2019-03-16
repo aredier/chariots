@@ -6,7 +6,6 @@ from typing import Any
 from typing import Optional
 
 from chariots.core.ops import AbstractOp
-from chariots.core.metadata import Metadata
 from chariots.core.dataset import DataSet
 
 
