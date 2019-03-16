@@ -65,7 +65,7 @@ class LinearModel(TrainableOp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._model = SGDRegressor(eta0=8e-5, learning_rate="constant", verbose=1)
+        self._model = SGDRegressor(eta0=8e-5, learning_rate="constant")
 
     def _inner_train(self, x, y):
         idx = np.random.choice(list(range(len(x))), len(x), replace=False)

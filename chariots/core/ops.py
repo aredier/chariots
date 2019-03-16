@@ -203,9 +203,13 @@ class BaseOp(AbstractOp):
         return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
     
     def _resolve_arguments(self, data: dict, requirements: Requirements):
-        return {arg_name: next(data_batch for data_marker, data_batch in data.items() 
-                               if marker.compatible(data_marker))
-                for arg_name, marker in requirements.items()}
+        res = {}
+        for arg_name, marker in requirements.items():
+            for data_marker, data_batch in data.items():
+                if marker.compatible(data_marker):
+                    res[arg_name] = data_batch  
+                    break
+        return res
     
     @classmethod
     def _interpret_signature(cls):
