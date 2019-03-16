@@ -111,7 +111,6 @@ class SubVersion(AbstractSubversion):
         Arguments:
             other {SubVersion} -- the version to be linked to 
         """
-        print(self)
         other.linked_subversions.add(self)
         other.update_fields()
 

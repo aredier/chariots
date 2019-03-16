@@ -18,14 +18,12 @@ class SavableObject(Savable):
         self.seed = int(np.random.randint(1000))
     
     def _serialize(self, temp_file: IO):
-        print(self.seed)
         temp_file.write(json.dumps(self.seed).encode())        
 
     @classmethod
     def _deserialize(cls, file: IO) -> "Foo":
         res = cls()
         res.seed = json.load(file)
-        print(res.seed)
         return res
     
     @classmethod

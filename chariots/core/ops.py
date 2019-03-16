@@ -77,11 +77,20 @@ class AbstractOp(ABC):
         if not isinstance(other, AbstractOp):
             raise ValueError("call does only work with single ops. if you want another"\
                              "behavior, override the __Call__ method") 
-        # self._check_compatibility(other, self.requires)
+        self._check_compatibility(other, self.requires)
         if self._carry_on_verision:
             self._link_versions(other)
         self.previous_op = other
         return self
+
+    @property
+    def compounded_markers(self):
+        if self.previous_op is None:
+            return self.markers
+        print(self.previous_op.compounded_markers)
+        return [*self.markers, *[marker for marker in self.previous_op.compounded_markers
+                                 if not any(requirement.compatible(marker)
+                                            for requirement in self.requires.values())]]
 
     def _link_versions(self, other: "AbstractOp"):
         self.version.major.link(other.version.major)
@@ -126,7 +135,8 @@ class AbstractOp(ABC):
     @staticmethod
     def _check_compatibility(other: "AbstractOp", requirements: Requirements):
         missing = next((required for required in requirements.items()
-                        if all(not required[1].compatible(marker) for marker in other.markers)),
+                        if all(not required[1].compatible(marker)
+                               for marker in other.compounded_markers)),
                        None)
         if missing is not None:
             raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
@@ -267,7 +277,8 @@ class Split(AbstractOp):
     
     def perform(self):
         if self.previous_op is None:
-            raise ValueError("this pipeline doesn't seem to have a tap, can't get the data flowing")
+            raise ValueError("this pipeline doesn't seem to have a tap, can't get"\
+                             " the data flowing")
         self._pusher.set_iterator(self.previous_op.perform())
 
     
@@ -319,6 +330,15 @@ class Merge(AbstractOp):
         for partial in ziped:
             res.update(partial)
         return res
+
+    @property
+    def compounded_markers(self):
+        if self.previous_op is None:
+            return self.markers
+        return [*self.markers, *[marker for op in self.previous_op 
+                                 for marker in op.compounded_markers 
+                                 if not any(requirement.compatible(marker)
+                                            for requirement in self.requires.values())]]
     
     @property
     def ready(self):
