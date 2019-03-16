@@ -2,7 +2,6 @@
 from typing import Iterable
 from typing import Optional
 
-from chariots.core.metadata import Metadata
 
 ORIGIN = "original"
 
