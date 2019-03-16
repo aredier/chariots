@@ -41,8 +41,8 @@ class AbstractOp(ABC):
     name: Text = None
     previous_op = None
     # TODO these should be part of the major version of the op
-    markers: List[Requirement] = []
-    requires: Requirements = {}
+    markers: List[Requirement] = None
+    requires: Requirements = None
 
     # wether or not  this op should carry on the upstream version changes silently or not
     # this is `True` by default as basic ops have no accionable way to fix a deprecation
@@ -56,6 +56,9 @@ class AbstractOp(ABC):
         """
         cls.name = cls.name or cls.__name__
         cls.version = cls._build_version()
+        cls.markers = cls.markers or []
+        
+        cls.requires = cls.requires or {}
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
         return instance
@@ -207,7 +210,8 @@ class BaseOp(AbstractOp):
     @classmethod
     def _interpret_signature(cls):
         main_sig = inspect.signature(cls._main)
-        if cls.requires == {}:
+        if cls.requires is None:
+            cls.requires = {}
             # markers and requires has not been updated manually so we have to try to interpret
             for arg_name, arg in main_sig.parameters.items():
                 if arg_name == "self":
@@ -220,7 +224,8 @@ class BaseOp(AbstractOp):
                                     "subclass of Requirements, cannot infer previous op requirement")
                 cls.requires[arg_name] = arg.annotation
         
-        if cls.markers == []:
+        if cls.markers is None:
+            cls.marker = []
             if main_sig.return_annotation is inspect.Signature.empty:
                 raise ValueError("the markers of this op are not set manually and no return type "\
                                  "is set on _main, cannot infer markers")

@@ -27,6 +27,9 @@ class EvaluationMetric(BaseOp):
 
     markers = [EvaluationMarker]
 
+    def __new__(cls , *args, **kwargs):
+        return AbstractOp.__new__(cls, *args, **kwargs)
+
     def evaluate(self, other: AbstractOp) -> Report:
         """evaluates a full pipeline (this will run through the pipeline) and aggregates the
         pipeline.
@@ -48,6 +51,9 @@ class EvaluationMetric(BaseOp):
                 for version, reports in grouped.items()}
     
     def _main(self, **kwargs):
+
+        # using dict doesn't work as they are used internally by the framework
+        # TODO fix
         return [str(self.previous_op.version), self._evaluate_batch(**kwargs)]
 
     @abstractmethod
