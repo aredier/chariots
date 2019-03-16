@@ -3,6 +3,7 @@ base op of chariots
 """
 import random
 import functools
+import inspect
 from abc import ABC
 from abc import abstractmethod
 from abc import abstractclassmethod
@@ -37,7 +38,7 @@ class AbstractOp(ABC):
           op in the pipeline as parameters for their _main method
     """
     version: Version = None
-    name: Text = "NA"
+    name: Text = None
     previous_op = None
     # TODO these should be part of the major version of the op
     markers: List[Requirement] = []
@@ -53,6 +54,7 @@ class AbstractOp(ABC):
         """
         checks that fields are implemented
         """
+        cls.name = cls.name or cls.__name__
         cls.version = cls._build_version()
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super(AbstractOp, cls).__new__(cls)
@@ -163,6 +165,10 @@ class BaseOp(AbstractOp):
     The key of each requirement is used as the parameter_name of the corresponding argument in _main
     hence all the arguments of _main must be keys of the required dict
     """
+    def __new__(cls, *args, **kwargs):
+        cls._interpret_signature()
+        instance = super().__new__(cls)
+        return instance 
 
     @abstractmethod
     def _main(self, **kwargs) -> DataBatch:
@@ -197,6 +203,32 @@ class BaseOp(AbstractOp):
         return {arg_name: next(data_batch for data_marker, data_batch in data.items() 
                                if marker.compatible(data_marker))
                 for arg_name, marker in requirements.items()}
+    
+    @classmethod
+    def _interpret_signature(cls):
+        main_sig = inspect.signature(cls._main)
+        if cls.requires == {}:
+            # markers and requires has not been updated manually so we have to try to interpret
+            for arg_name, arg in main_sig.parameters.items():
+                if arg_name == "self":
+                    continue
+                if arg.annotation is inspect.Signature.empty:
+                    raise ValueError("requirements were not set mannually and type annotation is empty,"\
+                                    " cannot infer previous ops requirements")
+                if not issubclass(arg.annotation, Requirement):
+                    raise ValueError("requirements were not set mannually and type annotation is  not"\
+                                    "subclass of Requirements, cannot infer previous op requirement")
+                cls.requires[arg_name] = arg.annotation
+        
+        if cls.markers == []:
+            if main_sig.return_annotation is inspect.Signature.empty:
+                raise ValueError("the markers of this op are not set manually and no return type "\
+                                 "is set on _main, cannot infer markers")
+            if not issubclass(main_sig.return_annotation, Requirement):
+                raise ValueError("the markers of this op are not set manually and the return type"\
+                                 "set on _main is not a Requirement, cannot infer markers")
+            cls.markers = [main_sig.return_annotation]
+
 
     
 class Split(AbstractOp):
