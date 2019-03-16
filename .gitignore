@@ -7,3 +7,4 @@ Cargo.lock
 .vscode/
 __pycache__/
 /chariots.egg-info/
+.pytest_cache/
