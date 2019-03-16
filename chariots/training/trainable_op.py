@@ -70,7 +70,7 @@ class TrainableOp(TrainableTrait, BaseOp):
         self._check_compatibility(self.previous_op, self.training_requirements)
         for training_batch in self.previous_op.perform():
            
-            args_dict = self._resolve_arguments(training_batch, self.training_requirements)
+            args_dict, _ = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
         self._is_fited = True
         # self._last_trained_time = time.time()
