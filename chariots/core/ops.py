@@ -198,18 +198,20 @@ class BaseOp(AbstractOp):
         """
         performs the argument resolution executes the op on a databatch
         """
-        args_dict = self._resolve_arguments(data, self.requires)
-        res = self._main(**args_dict)
-        return dict(zip(self.markers, res if isinstance(res, tuple) else (res,)))
+        args_dict, unused_data = self._resolve_arguments(data, self.requires)
+        op_res = self._main(**args_dict)
+        wraped_res = dict(zip(self.markers, op_res if isinstance(op_res, tuple) else (op_res,)))
+        wraped_res.update(unused_data)
+        return wraped_res
     
     def _resolve_arguments(self, data: dict, requirements: Requirements):
         res = {}
         for arg_name, marker in requirements.items():
             for data_marker, data_batch in data.items():
                 if marker.compatible(data_marker):
-                    res[arg_name] = data_batch  
+                    res[arg_name] = data.pop(data_marker) 
                     break
-        return res
+        return res, data
     
     @classmethod
     def _interpret_signature(cls):
