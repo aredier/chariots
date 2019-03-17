@@ -28,10 +28,10 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
     _model: models.Model = None
 
     def __init__(self):
-        self._model = self._model or self._build_model
+        self._model = self._model or self._build_model()
 
-    def _main(self, model_input: KerasInput):
-        return self._model(model_input)
+    def _main(self, model_input: KerasInput) -> KerasOutput:
+        return self._model.predict(model_input)
     
     def _inner_train(self, model_input: KerasInput, model_output: KerasOutput) -> KerasOutput:
         self._model.train_on_batch(model_input, model_output)
@@ -68,12 +68,14 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
     
     @classmethod
     def factory(cls, build_function, name, doc="", inputs_marker = None, output_marker = None):
-        return type(name, (cls,), {
-            "training_requirements": {
-                "model_input": inputs_marker,
-                "model_output": output_marker
-                },
-            "markers": output_marker,
-            "__doc__": doc,
-        })
+        res_cls = type(name, (cls,), {"__doc__": doc})
+        if inputs_marker is not None and output_marker is not None:
+            res_cls.training_requirements = {"model_input": inputs_marker, 
+                                             "model_output": output_marker}
+            res_cls.requires = {"model_input": inputs_marker}
+            res_cls.markers = [output_marker]
+        def _build_model(self):
+            return build_function()
+        res_cls._build_model = _build_model
+        return res_cls
 
