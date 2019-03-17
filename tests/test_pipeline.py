@@ -48,6 +48,7 @@ def test_jumping_ops():
     right_tap = DataTap(iter(range(10)), RightNumber)
     full_tap = Merge()([left_tap, right_tap])
     left = FirstOp()(full_tap)
+    print("foo", left.markers)
     right = SecondOp()(left)
     res = Sum()(right)
     for i, batch in enumerate(res.perform()):

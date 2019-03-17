@@ -1,6 +1,7 @@
+import inspect
+import time
 from abc import ABCMeta
 from abc import abstractmethod
-import time
 
 from typing import Optional
 
@@ -22,7 +23,7 @@ class TrainableOp(TrainableTrait, BaseOp):
     and their names should correspond to `_inner_train`'s arguments
     """
     
-    training_requirements = {}
+    training_requirements = None
 
     # when a breaking change is made in the previous op(s) data structure, if the markers have
     # not changed a trainable op should be able to cope with it
@@ -34,6 +35,14 @@ class TrainableOp(TrainableTrait, BaseOp):
 
     _is_fited = False
     evaluation_metric = None
+
+    @classmethod
+    def _interpret_signature(cls):
+        super()._interpret_signature()
+        if cls.training_requirements is None:
+            training_sig = inspect.signature(cls._inner_train)
+            cls.training_requirements = cls._find_valid_requirements(training_sig)
+
 
     @property
     def fited(self):
