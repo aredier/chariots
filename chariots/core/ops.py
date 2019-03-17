@@ -87,7 +87,6 @@ class AbstractOp(ABC):
     def compounded_markers(self):
         if self.previous_op is None:
             return self.markers
-        print(self.previous_op.compounded_markers)
         return [*self.markers, *[marker for marker in self.previous_op.compounded_markers
                                  if not any(requirement.compatible(marker)
                                             for requirement in self.requires.values())]]
