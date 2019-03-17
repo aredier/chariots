@@ -217,39 +217,48 @@ class BaseOp(AbstractOp):
     def _resolve_arguments(self, data: dict, requirements: Requirements):
         res = {}
         for arg_name, marker in requirements.items():
-            for data_marker, data_batch in data.items():
+            for data_marker in data:
                 if marker.compatible(data_marker):
                     res[arg_name] = data.pop(data_marker) 
                     break
         return res, data
     
+    @staticmethod
+    def _find_valid_requirements(signature: inspect.Signature) -> Mapping[Text, Type[Requirement]]:
+        requirements = {}
+
+        # markers and requires has not been updated manually so we have to try to interpret
+        for arg_name, arg in signature.parameters.items():
+            if arg_name == "self":
+                continue
+            if arg.annotation is inspect.Signature.empty:
+                raise ValueError("requirements were not set mannually and type annotation is empty,"\
+                                " cannot infer previous ops requirements")
+            if not issubclass(arg.annotation, Requirement):
+                raise ValueError("requirements were not set mannually and type annotation is  not"\
+                                "subclass of Requirements, cannot infer previous op requirement")
+            requirements[arg_name] = arg.annotation
+        return requirements
+    
+    @staticmethod
+    def _find_marker(signature: inspect.Signature) -> Type[Requirement]:
+        if signature.return_annotation is inspect.Signature.empty:
+            raise ValueError("the markers of this op are not set manually and no return type "\
+                                "is set on _main, cannot infer markers")
+        if not issubclass(signature.return_annotation, Requirement):
+            raise ValueError("the markers of this op are not set manually and the return type"\
+                                "set on _main is not a Requirement, cannot infer markers")
+        return signature.return_annotation
+
+
     @classmethod
     def _interpret_signature(cls):
         main_sig = inspect.signature(cls._main)
         if cls.requires is None:
-            cls.requires = {}
-            # markers and requires has not been updated manually so we have to try to interpret
-            for arg_name, arg in main_sig.parameters.items():
-                if arg_name == "self":
-                    continue
-                if arg.annotation is inspect.Signature.empty:
-                    raise ValueError("requirements were not set mannually and type annotation is empty,"\
-                                    " cannot infer previous ops requirements")
-                if not issubclass(arg.annotation, Requirement):
-                    raise ValueError("requirements were not set mannually and type annotation is  not"\
-                                    "subclass of Requirements, cannot infer previous op requirement")
-                cls.requires[arg_name] = arg.annotation
+            cls.requires = cls._find_valid_requirements(main_sig)
         
         if cls.markers is None:
-            cls.marker = []
-            if main_sig.return_annotation is inspect.Signature.empty:
-                raise ValueError("the markers of this op are not set manually and no return type "\
-                                 "is set on _main, cannot infer markers")
-            if not issubclass(main_sig.return_annotation, Requirement):
-                raise ValueError("the markers of this op are not set manually and the return type"\
-                                 "set on _main is not a Requirement, cannot infer markers")
-            cls.markers = [main_sig.return_annotation]
-
+            cls.markers = [cls._find_marker(main_sig)]
 
     
 class Split(AbstractOp):
