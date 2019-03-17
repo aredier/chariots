@@ -1,5 +1,8 @@
+import os
 from typing import Any
 from typing import Optional
+from typing import IO
+from tempfile import TemporaryDirectory
 
 from keras import models
 
@@ -43,3 +46,34 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
     @classmethod
     def identifiers(cls):
         return {"name": cls.name, "model_type": "sklearn"}
+
+    def _serialize(self, temp_file: IO):
+        with TemporaryDirectory() as temp_directory:
+            transition_file = os.path.join(temp_directory, "model.h5")
+            self._model.save(transition_file)
+            with open(transition_file, "r") as transition_file:
+                temp_file.write(transition_file.read())
+
+
+    @classmethod
+    def _deserialize(cls, file: IO) -> "Savable":
+        with TemporaryDirectory() as temp_directory:
+            transition_file = os.path.join(temp_directory, "model.h5")
+            with open(transition_file, "r") as transition_file:
+                transition_file.write(file.read)
+            model = models.load_model(transition_file)
+        res = cls()
+        res._model = model
+        return res
+    
+    @classmethod
+    def factory(cls, build_function, name, doc="", inputs_marker = None, output_marker = None):
+        return type(name, (cls,), {
+            "training_requirements": {
+                "model_input": inputs_marker,
+                "model_output": output_marker
+                },
+            "markers": output_marker,
+            "__doc__": doc,
+        })
+
