@@ -14,7 +14,9 @@ setup(name='chariots',
                     'sure',
                     'numpy',
                     'sklearn',
-                    'pandas'
+                    'pandas',
+                    'tensorflow',
+                    'keras',
                    ],
       },
       zip_safe=False)

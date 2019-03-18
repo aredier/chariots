@@ -6,6 +6,7 @@ from keras import models
 from chariots.core import ops
 from chariots.core import taps
 from chariots.core import requirements
+from chariots.core import saving
 from chariots.training import keras
 
 
@@ -72,3 +73,20 @@ def test_keras_model_factory(model):
         float(y_pred[keras.KerasOutput][0][0]).should.equal(i + 1., epsilon = 0.1)
 
         
+def test_keras_model_saving(model):
+    KerasLinear = keras.KerasOp.factory(build_function=lambda: model, name="KerasLinear")
+    x_train = taps.DataTap(iter(range(1000)), requirements.Number)
+    x_train = XTrain()(x_train)
+    x_train, y_train = ops.Split(2)(x_train)
+    y_train = YTrain()(y_train)
+    model_op = KerasLinear()
+    model_op.fit(ops.Merge()([x_train, y_train]))
+    saver = saving.FileSaver()
+    model_op.save(saver)
+
+    del(model_op)
+    model_op = KerasLinear.load(saver)
+    x_test = taps.DataTap(iter(range(10)), requirements.Number)
+    x_test = XTest()(x_test)
+    for i, y_pred in enumerate(model_op(x_test).perform()):
+        float(y_pred[keras.KerasOutput][0][0]).should.equal(i + 1., epsilon = 0.1)
