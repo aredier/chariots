@@ -1,6 +1,7 @@
+import os
 import json
 import uuid
-from typing import IO
+from typing import IO, Text
 
 import numpy as np
 
@@ -17,13 +18,15 @@ class SavableObject(Savable):
     def __init__(self):
         self.seed = int(np.random.randint(1000))
     
-    def _serialize(self, temp_file: IO):
-        temp_file.write(json.dumps(self.seed).encode())        
+    def _serialize(self, temp_dir: Text):
+        with open(os.path.join(temp_dir, "model.json"), "w") as file:
+            json.dump(self.seed, file)        
 
     @classmethod
-    def _deserialize(cls, file: IO) -> "Foo":
+    def _deserialize(cls, dir: Text) -> "Savable":
         res = cls()
-        res.seed = json.load(file)
+        with open(os.path.join(dir, "model.json"), "r") as file:
+            res.seed = json.load(file)        
         return res
     
     @classmethod
