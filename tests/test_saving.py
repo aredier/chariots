@@ -6,17 +6,26 @@ from typing import IO, Text
 import numpy as np
 
 from chariots.core.saving import FileSaver
+from chariots.core.ops import BaseOp
+from chariots.core.requirements import Number
 from chariots.core.saving import Savable
-from chariots.core.versioning import Version
+from chariots.core.versioning import Version, VersionField, VersionType
 
 
 test_uuid = str(uuid.uuid1())
 
 
-class SavableObject(Savable):
+class SavableObject(Savable, BaseOp):
+
+    foo = VersionField(VersionType.MINOR, default_value=3)
+    
+    def _main(self) -> Number:
+        raise ValueError("not executable")
 
     def __init__(self):
+        self.unique = int(np.random.randint(1000))
         self.seed = int(np.random.randint(1000))
+        self.foo = int(np.random.randint(1000))
     
     def _serialize(self, temp_dir: Text):
         with open(os.path.join(temp_dir, "model.json"), "w") as file:
@@ -43,3 +52,5 @@ def test_saving():
     foo.save(saver)
     bar = SavableObject.load(saver)
     foo.seed.should.be.equal(bar.seed)
+    foo.foo.should.be.equal(bar.foo)
+    foo.unique.should_not.be.equal(bar.seed)

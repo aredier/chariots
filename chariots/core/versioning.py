@@ -8,7 +8,7 @@ import uuid
 from abc import ABC
 from abc import abstractproperty
 from enum import Enum
-from typing import Text
+from typing import Text, Any 
 from hashlib import md5
 from typing import Mapping
 from typing import Optional
@@ -81,6 +81,18 @@ class SubVersion(AbstractSubversion):
             float -- the time stamp 
         """
         return self._last_update_time_stamp
+    
+    @property
+    def fields(self) -> Mapping[Text, Any]:
+        """
+        all the fields that compose this subversion
+
+        Returns:
+            said fields
+        """
+        return self._fields
+        
+
 
     def update_fields(self, **fields):
         """Updates the fields of the subversion with paraometers
@@ -159,6 +171,10 @@ class Version:
         return self.major > other.major or \
                (self.major == other.major and self.minor > other.minor) or  \
                (self.major == other.major and self.minor == other.minor and self.patch > other.patch)
+    
+    @ property
+    def all_fields(self):
+        return {**self.major.fields, **self.minor.fields, **self.patch.fields}
 
 
 class _VersionField:
@@ -214,9 +230,6 @@ class _VersionField:
     def _update_version(self):
         """updates the parent subversion with itself
         """
-        if isinstance(self._inner_value, dict):
-            self._linked_subversion.update_fields(**self._inner_value)
-            return 
         self._linked_subversion.update_fields(**{self._name: self._inner_value})
 
 

@@ -1,5 +1,6 @@
 import operator
 import os
+import json
 import shutil
 from abc import ABC
 from abc import abstractmethod
@@ -65,6 +66,8 @@ class Savable(ABC):
         """
         with TemporaryDirectory() as temp_dir:
             self._serialize(temp_dir)
+            with open(os.path.join(temp_dir, "_versioned_fields.json"), "w") as version_fields_file:
+                json.dump(self.checksum().all_fields, version_fields_file)
             saver.persist(temp_dir, self.checksum(), **self.identifiers())
     
     @abstractclassmethod
@@ -79,6 +82,13 @@ class Savable(ABC):
             the initialised object corresponding to serialized format in dir
         """
 
+    def load_serialized_fields(self, **fields):
+        """
+        loads the serialized fields once the object has been deserialized
+        """
+        for field_name, field_value in fields.items():
+            setattr(self, field_name, field_value)
+
     @classmethod
     def load(cls, saver: Saver) -> "Savable":
         """
@@ -87,9 +97,15 @@ class Savable(ABC):
         with TemporaryDirectory() as temp_dir:
 
             old_version = saver.load(temp_dir, **cls.identifiers())
-            if old_version.major > cls.checksum().major:
-                raise ValueError(f"saved {cls.__name__} is deprecated")
-            return cls._deserialize(temp_dir)
+            with open(os.path.join(temp_dir, "_versioned_fields.json"), "r") as version_field_file:
+                versioned_fields = json.load(version_field_file)
+
+            # should distinguish saving version vs runtime version
+            instance =  cls._deserialize(temp_dir)
+        instance.load_serialized_fields(**versioned_fields)
+        if old_version.major > cls.checksum().major:
+            raise ValueError(f"saved {cls.__name__} is deprecated")
+        return instance
     
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
