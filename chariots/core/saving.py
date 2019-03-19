@@ -68,7 +68,7 @@ class Savable(ABC):
             saver.persist(temp_dir, self.checksum(), **self.identifiers())
     
     @abstractclassmethod
-    def _deserialize(cls, dir: Text) -> "Savable":
+    def _deserialize(cls, temp_dir: Text) -> "Savable":
         """
         defines how this object from it's serialized version persent in dir
 

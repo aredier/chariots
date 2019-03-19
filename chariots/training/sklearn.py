@@ -1,3 +1,4 @@
+import os
 from typing import IO
 from typing import Text
 from typing import Optional
@@ -39,13 +40,15 @@ class SklearnOp(Savable, TrainableOp):
     def _main(self, **kwargs) -> DataBatch:
         pass
 
-    def _serialize(self, temp_file: IO):
-        joblib.dump(self.model, temp_file)
+    def _serialize(self, temp_dir: Text):
+        with open(os.path.join(temp_dir, "model.pkl"), "wb") as file:
+            joblib.dump(self.model, file)
 
     @classmethod
-    def _deserialize(cls, file: IO) -> "Savable":
+    def _deserialize(cls, temp_dir: Text) -> "Savable":
         res = cls()
-        res.model = joblib.load(file)
+        with open(os.path.join(temp_dir, "model.pkl"), "rb") as file:
+            res.model = joblib.load(file)
         res._is_fited = True
         return res
     
