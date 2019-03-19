@@ -60,9 +60,8 @@ class AbstractOp(ABC):
         
         cls.requires = cls.requires or {}
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
-        instance = super(AbstractOp, cls).__new__(cls)
+        instance = super().__new__(cls)
         return instance
-    
 
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
