@@ -7,7 +7,7 @@ from abc import abstractclassmethod
 from typing import Text
 from typing import IO
 from typing import Tuple
-from tempfile import TemporaryFile
+from tempfile import TemporaryDirectory
 
 from chariots.core.versioning import Version
 
@@ -18,20 +18,32 @@ class Saver(ABC):
     """
 
     @abstractmethod
-    def persist(self, result_file: IO, validity_checksum: Text, **identifiers):
+    def persist(self, temp_res_dir: Text, validity_version: Version, **identifiers):
         """
-        method that determines how the the Saver should persist a file. the identifiers and 
-        validity checksu should be recoverable after the destruction of the Saver by a saver of the
-        class
+        method that determines how the the Saver should persist a dir. the identifiers and 
+        validity checksum should be recoverable after the destruction of the Saver by a saver of the
+        class. The temp_res_dir itself will be destroyed once out of this function and should be 
+        copied in order to persist
+        
+        Arguments:
+            temp_res_dir -- the temporary file in which the serialized object is
+            validity_version -- the version of the serilized object
+            identiiers -- intifiers to find a all the versions of the serialized object in
+                perpetuity and throughout the unniverse
         """
-        pass
     
     @abstractmethod
-    def load(self, **identifiers) -> Tuple[Text, IO]:
+    def load(self, temp_dir: Text,  **identifiers) -> Version:
         """
-        loads from identifiers a file. it returns a chacksum and an IO from which to read the data
+        loads the object corresponding to identifier and returns the Version of the object of the 
+        persisted object and the path to the directory containing the resulting serialized object
+        
+        Arguments:
+            temp_dir -- the temp directory in which to copy the serialized object
+        
+        Returns:
+            Version, path
         """
-        pass
 
 
 class Savable(ABC):
@@ -40,24 +52,31 @@ class Savable(ABC):
     """
 
     @abstractmethod
-    def _serialize(self, temp_file: IO):
-        """
-        how to serialise the object to a file
+    def _serialize(self, temp_dir: Text):
+        """serializes this object into temp_dir
+        
+        Arguments:
+            temp_dir -- the temporary directory into which to save this object
         """
     
     def save(self, saver: Saver):
         """
         saves the object using the saver's `persist` method
         """
-        with TemporaryFile() as tempfile:
-            self._serialize(tempfile)
-            tempfile.seek(0)
-            saver.persist(tempfile, self.checksum(), **self.identifiers())
+        with TemporaryDirectory() as temp_dir:
+            self._serialize(temp_dir)
+            saver.persist(temp_dir, self.checksum(), **self.identifiers())
     
     @abstractclassmethod
-    def _deserialize(cls, file: IO) -> "Savable":
+    def _deserialize(cls, dir: Text) -> "Savable":
         """
-        how to deserialize a the data and create an object
+        defines how this object from it's serialized version persent in dir
+
+        Arguments:
+            dir -- the directory in which is present the saved version of the target object
+
+        Returns:
+            the initialised object corresponding to serialized format in dir
         """
 
     @classmethod
@@ -65,12 +84,12 @@ class Savable(ABC):
         """
         creates an instance from the serialized data of the saver
         """
-        old_version, saved_io = saver.load(**cls.identifiers())
-        if old_version.major > cls.checksum().major:
-            raise ValueError(f"saved {cls.__name__} is deprecated")
-        res = cls._deserialize(saved_io)
-        saved_io.close()
-        return res
+        with TemporaryDirectory() as temp_dir:
+
+            old_version = saver.load(temp_dir, **cls.identifiers())
+            if old_version.major > cls.checksum().major:
+                raise ValueError(f"saved {cls.__name__} is deprecated")
+            return cls._deserialize(temp_dir)
     
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
@@ -93,20 +112,19 @@ class FileSaver(Saver):
     def __init__(self, root: Text = "/tmp/chariots"):
         self.root = root
     
-    def _generate_path(self, **identifiers):
+    def _generate_dir_path(self, **identifiers):
         identifiers = map(operator.itemgetter(1), sorted(identifiers.items(), key=operator.itemgetter(0)))
         return os.path.join(self.root, *identifiers)
+    
+    def _generate_file_path(self, version: Version, **identifier):
+        return os.path.join(self._generate_dir_path(**identifier), str(version))
 
 
-    def persist(self, result_file: IO, validity_checksum: Version, **identifiers):
-        file_str = result_file.read()
-        save_dir = self._generate_path(**identifiers)
-        os.makedirs(save_dir, exist_ok=True)
-        with open(os.path.join(save_dir, str(validity_checksum)), "w+b") as file:
-            file.write(file_str)
+    def persist(self, temp_res_dir: Text, validity_checksum: Text, **identifiers):
+        shutil.make_archive(self._generate_file_path(str(validity_checksum), **identifiers), "zip", temp_res_dir)
         
-    def load(self, **identifiers) -> Tuple[Text, IO]:
-        save_dir = self._generate_path(**identifiers)
+    def load(self, temp_dir: Text,  **identifiers) -> Tuple[Version, Text]:
+        save_dir = self._generate_dir_path(**identifiers)
         file_ls = os.listdir(save_dir)
         versions = [Version.parse(file_name) for file_name in file_ls]
         latest_version = None
@@ -115,8 +133,7 @@ class FileSaver(Saver):
             if latest_version is None or version > latest_version:
                 latest_version = version
                 latest_model_file = file_name
-        file = open(os.path.join(save_dir, latest_model_file), "r+b") 
-        #shutil.rmtree(save_dir)
-        return latest_version, file 
+        shutil.unpack_archive(os.path.join(save_dir, latest_model_file), temp_dir, "zip")
+        return latest_version
 
 
