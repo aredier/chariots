@@ -58,23 +58,14 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
     def identifiers(cls):
         return {"name": cls.name, "model_type": "sklearn"}
 
-    def _serialize(self, temp_file: IO):
-        with TemporaryDirectory() as temp_directory:
-            transition_file = os.path.join(temp_directory, "model.h5")
-            self._model.save(transition_file)
-            with open(transition_file, "rb") as transition_file:
-                temp_file.write(transition_file.read())
+    def _serialize(self, temp_dir: Text):
+        self._model.save(os.path.join(temp_dir, "model.h5"))
 
 
     @classmethod
-    def _deserialize(cls, file: IO) -> "Savable":
-        with TemporaryDirectory() as temp_directory:
-            transition_file_name = os.path.join(temp_directory, "model.h5")
-            with open(transition_file_name, "wb") as transition_file:
-                transition_file.write(file.read())
-            model = models.load_model(transition_file_name)
+    def _deserialize(cls, temp_dir: Text) -> "Savable":
         res = cls()
-        res._model = model
+        res._model = models.load_model(os.path.join(temp_dir, "model.h5"))
         res._is_fited = True
         return res
     

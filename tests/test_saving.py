@@ -23,9 +23,9 @@ class SavableObject(Savable):
             json.dump(self.seed, file)        
 
     @classmethod
-    def _deserialize(cls, dir: Text) -> "Savable":
+    def _deserialize(cls, temp_dir: Text) -> "Savable":
         res = cls()
-        with open(os.path.join(dir, "model.json"), "r") as file:
+        with open(os.path.join(temp_dir, "model.json"), "r") as file:
             res.seed = json.load(file)        
         return res
     
