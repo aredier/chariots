@@ -126,4 +126,4 @@ If you'd like to contribute to this repository please first discuss the change y
 
 ## License
 
-This project is licensed under the GPL License - see the [LICENSE.md](LICENSE) file for details
+This project is licensed under the GPL License - see the [LICENSE](LICENSE) file for details
