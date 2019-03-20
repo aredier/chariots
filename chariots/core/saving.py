@@ -102,9 +102,9 @@ class Savable(ABC):
 
             # should distinguish saving version vs runtime version
             instance =  cls._deserialize(temp_dir)
-        instance.load_serialized_fields(**versioned_fields)
         if old_version.major > cls.checksum().major:
             raise ValueError(f"saved {cls.__name__} is deprecated")
+        instance.load_serialized_fields(**versioned_fields)
         return instance
     
     # TODO use class property for those two

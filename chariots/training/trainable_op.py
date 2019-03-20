@@ -8,7 +8,7 @@ from typing import Optional
 from chariots.core.ops import BaseOp
 from chariots.core.ops import AbstractOp
 from chariots.core.versioning import VersionField
-from chariots.core.versioning import VersionType
+from chariots.core.versioning import SubVersionType
 from chariots.training import TrainableTrait
 from chariots.training import evaluation
 
@@ -31,7 +31,7 @@ class TrainableOp(TrainableTrait, BaseOp):
 
     # which vesion to update when retraining the model 
     # by default this is minor as in most cases all things being equal a retrain doesn't change much
-    _last_trained_time = VersionField(VersionType.PATCH, default_factory=lambda:None)
+    _last_trained_time = VersionField(SubVersionType.PATCH, default_factory=lambda:None)
 
     _is_fited = False
     evaluation_metric = None

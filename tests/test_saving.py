@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import os
 import json
 import uuid
@@ -9,7 +10,7 @@ from chariots.core.saving import FileSaver
 from chariots.core.ops import BaseOp
 from chariots.core.requirements import Number
 from chariots.core.saving import Savable
-from chariots.core.versioning import Version, VersionField, VersionType
+from chariots.core.versioning import Version, VersionField, SubVersionType
 
 
 test_uuid = str(uuid.uuid1())
@@ -17,7 +18,7 @@ test_uuid = str(uuid.uuid1())
 
 class SavableObject(Savable, BaseOp):
 
-    foo = VersionField(VersionType.MINOR, default_value=3)
+    foo = VersionField(SubVersionType.MINOR, default_value=3)
     
     def _main(self) -> Number:
         raise ValueError("not executable")

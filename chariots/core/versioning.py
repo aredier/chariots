@@ -1,24 +1,31 @@
 """
 package that provides the signatures of each op
 """
+import copy
 import json
 import time
-import copy
 import uuid
-from abc import ABC
-from abc import abstractproperty
+from abc import ABC, abstractproperty
 from enum import Enum
-from typing import Text, Any 
 from hashlib import md5
-from typing import Mapping
-from typing import Optional
-from typing import Hashable
+from typing import Any, Hashable, Mapping, Optional, Text, Callable
 
 VERSIONING_PRE = "_versioned_"
-class VersionType(Enum):
+
+
+class SubVersionType(Enum):
     PATCH = 1
     MINOR = 2
     MAJOR = 3
+
+
+class VersionType(Enum):
+    ALL = 1
+    # version that deprecates loading the mode changing this version means the model shouldn't be loaded
+    SAVING = 2
+    # Version that deprecates the rutime results of the ops. Cahnging this version means that next 
+    # ops won't accept the results of the deprecatd upstream op
+    RUNTIME = 3
 
 
 class AbstractSubversion(ABC):
@@ -185,7 +192,8 @@ class _VersionField:
         ValueError -- if the default factory and the default value are both set
     """
 
-    def __init__(self, default_value = None, default_factory = None):
+    def __init__(self, default_value: Any = None,
+                 default_factory: Callable[[], Any] = None):
         if default_factory is not None and default_value is not None:
             raise ValueError("setting both the default value and the default_factory is wrong, choose please")
         self._inner_value = default_value or default_factory()
@@ -237,13 +245,15 @@ class VersionField:
     """class that represents an uninstantiated (but prepared) versioned field
     """
     
-    def __init__(self, subversion: VersionType = VersionType.MINOR, default_value = None,
+    def __init__(self, subversion: SubVersionType = SubVersionType.MINOR,
+                 target_version: VersionType = VersionType.ALL, default_value = None,
                  default_factory = None):
         if default_factory is not None and default_value is not None:
             raise ValueError("setting both the default value and the default_factory is wrong, choose please")
         self.default_value = default_value
         self.default_factory = default_factory
         self.subversion = subversion
+        self.target_version = target_version
     
     def spawn(self) -> _VersionField:
         """creates a new instance of _VersionField corresponding to this instance's parameters
@@ -275,15 +285,20 @@ def _extract_versioned_fields(cls):
     all_class_attributes = {}
     for parent_class in cls.__mro__[::-1]:
         all_class_attributes.update(parent_class.__dict__)
-    version = Version()
+    saving_version = Version()
+    runtime_version = Version()
     for name, value in all_class_attributes.items():
         if isinstance(value, VersionField):
             instance = value.spawn()
             setattr(cls, VERSIONING_PRE + name, instance)
-            if value.subversion == VersionType.PATCH:
-                instance.link(version.patch, name)
-            elif value.subversion == VersionType.MINOR:
-                instance.link(version.minor, name)
-            elif value.subversion == VersionType.MAJOR:
-                instance.link(version.major, name)
-    return version
+            if value.target_version in {VersionType.ALL, VersionType.SAVING}:
+                version_of_interest = saving_version
+            else:
+                raise ValueError(f"version type {value.target_version} is unknown")
+            if value.subversion == SubVersionType.PATCH:
+                instance.link(version_of_interest.patch, name)
+            elif value.subversion == SubVersionType.MINOR:
+                instance.link(version_of_interest.minor, name)
+            elif value.subversion == SubVersionType.MAJOR:
+                instance.link(version_of_interest.major, name)
+    return saving_version, runtime_version

@@ -52,7 +52,8 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
 
     @classmethod
     def checksum(cls):
-        return cls._build_version()
+        saving_version, _ = cls._build_version()
+        return saving_version
     
     @classmethod
     def identifiers(cls):

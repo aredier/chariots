@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import copy
 import time
 
@@ -8,7 +9,7 @@ from chariots.core.requirements import Number
 from chariots.core.versioning import Version
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import _VersionField
-from chariots.core.versioning import VersionType
+from chariots.core.versioning import SubVersionType
 from chariots.core.versioning import SubVersion
 from chariots.core.versioning import SubversionString
 
@@ -17,20 +18,17 @@ from chariots.core.versioning import SubversionString
 def versioned_op_cls():
     class VersionedOp(BaseOp):
         name = "fake_op"
-        versioned_field = VersionField(VersionType.MAJOR, default_value=2)
-        markers = [Number]
-        def _main():
+        versioned_field = VersionField(SubVersionType.MAJOR, default_value=2)
+        def _main(self) -> Number:
             return self.versioned_field
     return VersionedOp
 
 @pytest.fixture
 def downstream_op_cls(versioned_op_cls):
     class FakeDown(BaseOp):
-        requires = {"fake_dep": Number}
         name = "fake_down"
-        markers = [Number]
         
-        def _main(fake_dep):
+        def _main(self, fake_dep: Number) -> Number:
             pass
     return FakeDown
 
@@ -71,7 +69,7 @@ def test_version_comparaison():
 
 def test_op_versioned_fields_getting_and_setting(versioned_op_cls):
     op = versioned_op_cls()
-    op.should.have.property("version").being.a(Version)
+    op.should.have.property("saving_version").being.a(Version)
     op.versioned_field.should.equal(2)
     op.versioned_field = 3
     op.versioned_field.should.equal(3)
@@ -79,13 +77,13 @@ def test_op_versioned_fields_getting_and_setting(versioned_op_cls):
 
 def test_op_version_evolution(versioned_op_cls):
     op = versioned_op_cls()
-    op.should.have.property("version").being.a(Version)
-    old_version = copy.deepcopy(op.version)
+    op.should.have.property("saving_version").being.a(Version)
+    old_version = copy.deepcopy(op.saving_version)
     op.versioned_field = 4
-    assert op.version > old_version
-    assert op.version.major > old_version.major
-    assert op.version.minor == old_version.minor
-    assert op.version.patch == old_version.patch
+    assert op.saving_version > old_version
+    assert op.saving_version.major > old_version.major
+    assert op.saving_version.minor == old_version.minor
+    assert op.saving_version.patch == old_version.patch
 
 def test_subversion_string():
     subversion = SubVersion()
@@ -110,11 +108,11 @@ def test_full_version_parsing():
 def test_version_ripeling(versioned_op_cls, downstream_op_cls):
     up = versioned_op_cls()
     down = downstream_op_cls()
-    version_1  = str(down.version)
+    version_1  = str(down.saving_version)
     down = down(up)
-    version_2 = str(down.version)
+    version_2 = str(down.saving_version)
     up.versioned_field = 5
-    version_3 = str(down.version)
+    version_3 = str(down.saving_version)
     
     version_1 = Version.parse(version_1)
     version_2 = Version.parse(version_2)
