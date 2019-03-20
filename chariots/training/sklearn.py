@@ -2,7 +2,7 @@ import os
 from typing import IO
 from typing import Text
 from typing import Optional
-from typing import Type
+from typing import Type, Mapping
 
 from sklearn.externals import joblib
 from sklearn.base import BaseEstimator
@@ -12,7 +12,7 @@ from chariots.core.requirements import Requirement
 from chariots.core.requirements import FloatType
 from chariots.core.saving import Savable
 from chariots.core.versioning import VersionField
-from chariots.core.versioning import VersionType
+from chariots.core.versioning import SubVersionType
 from chariots.helpers.types import DataBatch
 from chariots.training.trainable_op import TrainableOp
 
@@ -22,8 +22,8 @@ class SklearnOp(Savable, TrainableOp):
     """
 
 
-    model_cls = VersionField(VersionType.MINOR, default_factory=lambda: None)
-    training_params = VersionField(VersionType.MINOR, default_factory=lambda: {})
+    model_cls: Type[BaseEstimator] = VersionField(SubVersionType.MINOR, default_factory=lambda: None)
+    training_params: Mapping = VersionField(SubVersionType.MINOR, default_factory=lambda: {})
 
     # these have to be overiden when inheriting
     markers = [Matrix.with_shape_and_dtype((None, 1), FloatType)]
@@ -31,7 +31,7 @@ class SklearnOp(Savable, TrainableOp):
     training_requirements = {}
 
     def __init__(self):
-        self.model = self.model_cls(**self.training_params)
+        self.model = self.model_cls(**self.training_params)  # pylint: disable=not-callable, not-a-mapping
         self.training_requirements["x_train"] = self.requires["x"]
 
     def _inner_train(self, **kwargs):
@@ -54,7 +54,8 @@ class SklearnOp(Savable, TrainableOp):
     
     @classmethod
     def checksum(cls):
-        return cls._build_version()
+        saving_version, _ = cls._build_version()
+        return saving_version
     
     @classmethod
     def identifiers(cls):

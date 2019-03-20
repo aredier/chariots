@@ -54,7 +54,7 @@ class EvaluationMetric(BaseOp):
 
         # using dict doesn't work as they are used internally by the framework
         # TODO fix
-        return [str(self.previous_op.version), self._evaluate_batch(**kwargs)]
+        return [str(self.previous_op.runtime_version), self._evaluate_batch(**kwargs)]
 
     @abstractmethod
     def _evaluate_batch(self, **kwargs) -> Mapping[Text, float]:

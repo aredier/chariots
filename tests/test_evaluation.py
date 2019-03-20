@@ -48,8 +48,8 @@ def test_classification_metric_correct(tap, add_op_cls):
     res = Merge()([y_true, y_pred]) 
     evaluation = evaluation.evaluate(res)
     evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(res.version)).being.a(dict)
-    evaluation[str(res.version)].should.have.key("accuracy").being.equal(1)
+    evaluation.should.have.key(str(res.runtime_version)).being.a(dict)
+    evaluation[str(res.runtime_version)].should.have.key("accuracy").being.equal(1)
     
 
 def test_classification_metric_false(tap, add_op_cls):
@@ -62,8 +62,8 @@ def test_classification_metric_false(tap, add_op_cls):
     res = Merge()([y_true, y_pred]) 
     evaluation = evaluation.evaluate(res)
     evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(res.version)).being.a(dict)
-    evaluation[str(res.version)].should.have.key("accuracy").being.equal(0.)
+    evaluation.should.have.key(str(res.runtime_version)).being.a(dict)
+    evaluation[str(res.runtime_version)].should.have.key("accuracy").being.equal(0.)
 
 
 def test_regression_metric_correct(tap, add_op_cls):
@@ -76,9 +76,9 @@ def test_regression_metric_correct(tap, add_op_cls):
     res = Merge()([y_true, y_pred]) 
     evaluation = evaluation.evaluate(res)
     evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(res.version)).being.a(dict)
-    evaluation[str(res.version)].should.have.key("mae").being.equal(0)
-    evaluation[str(res.version)].should.have.key("mse").being.equal(0)
+    evaluation.should.have.key(str(res.runtime_version)).being.a(dict)
+    evaluation[str(res.runtime_version)].should.have.key("mae").being.equal(0)
+    evaluation[str(res.runtime_version)].should.have.key("mse").being.equal(0)
     
 
 def test_regresion_metric_false(tap, add_op_cls):
@@ -91,22 +91,9 @@ def test_regresion_metric_false(tap, add_op_cls):
     res = Merge()([y_true, y_pred]) 
     evaluation = evaluation.evaluate(res)
     evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(res.version)).being.a(dict)
-    evaluation[str(res.version)].should.have.key("mae").being.equal(1.)
-    evaluation[str(res.version)].should.have.key("mse").being.equal(1.)
-
-def test_classification_metric_correct(tap, add_op_cls):
-    y_true, y_pred = Split(2)(tap)
-    y_true = XOp()(y_true)
-    y_pred = TrueY()(y_pred)
-    evaluation = ClassificationMetrics(XMarker.with_shape_and_dtype((1, 1), FloatType), 
-                                       YMarker.with_shape_and_dtype((1, 1), FloatType),
-                                       ["accuracy"])
-    res = Merge()([y_true, y_pred]) 
-    evaluation = evaluation.evaluate(res)
-    evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(res.version)).being.a(dict)
-    evaluation[str(res.version)].should.have.key("accuracy").being.equal(1)
+    evaluation.should.have.key(str(res.runtime_version)).being.a(dict)
+    evaluation[str(res.runtime_version)].should.have.key("mae").being.equal(1.)
+    evaluation[str(res.runtime_version)].should.have.key("mse").being.equal(1.)
 
 def test_attaching_evaluaton(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
@@ -126,7 +113,7 @@ def test_attaching_evaluaton(x_op_cls, linear_y_op_cls, linear_model_cls, x_requ
     test_data = Merge()([x_test, y_true])
     evaluation = foo.evaluate(test_data)
     evaluation.should.be.a(dict)
-    evaluation.should.have.key(str(foo.version)).being.a(dict)
-    assert evaluation[str(foo.version)]["mae"] < 0.1
-    assert evaluation[str(foo.version)]["mse"] < 0.1
+    evaluation.should.have.key(str(foo.runtime_version)).being.a(dict)
+    assert evaluation[str(foo.runtime_version)]["mae"] < 0.1
+    assert evaluation[str(foo.runtime_version)]["mse"] < 0.1
 

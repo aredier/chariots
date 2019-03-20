@@ -21,7 +21,7 @@ from chariots.core.versioning import _extract_versioned_fields
 from chariots.core.versioning import VersionField
 from chariots.core.versioning import _VersionField
 from chariots.core.versioning import Version
-from chariots.core.versioning import VersionType
+from chariots.core.versioning import SubVersionType
 from chariots.core.versioning import VERSIONING_PRE
 from chariots.helpers.types import DataBatch
 from chariots.helpers.types import Requirements
@@ -37,7 +37,7 @@ class AbstractOp(ABC):
         - marker : corresponds to the markers of this op, these will be searched by the next
           op in the pipeline as parameters for their _main method
     """
-    version: Version = None
+    saving_version: Version = None
     name: Text = None
     previous_op = None
     # TODO these should be part of the major version of the op
@@ -55,7 +55,7 @@ class AbstractOp(ABC):
         checks that fields are implemented
         """
         cls.name = cls.name or cls.__name__
-        cls.version = cls._build_version()
+        cls.saving_version, cls.runtime_version = cls._build_version()
         cls.markers = cls.markers or []
         
         cls.requires = cls.requires or {}
@@ -91,9 +91,9 @@ class AbstractOp(ABC):
                                             for requirement in self.requires.values())]]
 
     def _link_versions(self, other: "AbstractOp"):
-        self.version.major.link(other.version.major)
-        self.version.minor.link(other.version.minor)
-        self.version.patch.link(other.version.patch)
+        self.saving_version.major.link(other.saving_version.major)
+        self.saving_version.minor.link(other.saving_version.minor)
+        self.saving_version.patch.link(other.saving_version.patch)
 
     
     def __getattribute__(self, attribute: Text) -> Any:
