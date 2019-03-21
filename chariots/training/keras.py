@@ -35,7 +35,7 @@ class KerasOutput(requirements.Matrix):
         return [left, right]
 
 
-class KerasOp(saving.Savable, trainable_op.TrainableOp):
+class KerasOp(trainable_op.TrainableOp):
     _model: models.Model = None
 
     def __init__(self):
@@ -50,22 +50,19 @@ class KerasOp(saving.Savable, trainable_op.TrainableOp):
     def _build_model(self):
         pass
 
-    @classmethod
-    def checksum(cls):
-        saving_version, _ = cls._build_version()
-        return saving_version
     
     @classmethod
     def identifiers(cls):
         return {"name": cls.name, "model_type": "sklearn"}
 
     def _serialize(self, temp_dir: Text):
+        super()._serialize(temp_dir)
         self._model.save(os.path.join(temp_dir, "model.h5"))
 
 
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "Savable":
-        res = cls()
+        res = super()._deserialize(temp_dir)
         res._model = models.load_model(os.path.join(temp_dir, "model.h5"))
         res._is_fited = True
         return res

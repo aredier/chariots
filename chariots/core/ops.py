@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 """
 base op of chariots
 """
@@ -91,9 +92,9 @@ class AbstractOp(ABC):
                                             for requirement in self.requires.values())]]
 
     def _link_versions(self, other: "AbstractOp"):
-        self.saving_version.major.link(other.saving_version.major)
-        self.saving_version.minor.link(other.saving_version.minor)
-        self.saving_version.patch.link(other.saving_version.patch)
+        self.runtime_version.major.link(other.runtime_version.major)
+        self.runtime_version.minor.link(other.runtime_version.minor)
+        self.runtime_version.patch.link(other.runtime_version.patch)
 
     
     def __getattribute__(self, attribute: Text) -> Any:

@@ -3,12 +3,13 @@ package that provides the signatures of each op
 """
 import copy
 import json
+import os
 import time
 import uuid
 from abc import ABC, abstractproperty
 from enum import Enum
 from hashlib import md5
-from typing import Any, Hashable, Mapping, Optional, Text, Callable
+from typing import Any, Callable, Hashable, Mapping, Optional, Text
 
 VERSIONING_PRE = "_versioned_"
 
@@ -182,6 +183,30 @@ class Version:
     @ property
     def all_fields(self):
         return {**self.major.fields, **self.minor.fields, **self.patch.fields}
+    
+    def save_fields(self, path: Text):
+        """saves the versioned fields of all the subversions in json format
+        
+        Arguments:
+            path -- the path at which to save
+        """
+
+        with open(os.path.join(path), "w") as version_fields_file:
+            json.dump(self.all_fields, version_fields_file)
+    
+    @classmethod
+    def load_fields(cls, path: Text) -> Mapping[Text, Any]:
+        """loads fields saved via `save_fields`
+        
+        Arguments:
+            path -- the path at which the fields were saved
+        
+        Returns:
+            Mapping[Text, Any] -- the fields in a dict (value for name)
+        """
+
+        with open(path, "r") as version_field_file:
+            return json.load(version_field_file)
 
 
 class _VersionField:
