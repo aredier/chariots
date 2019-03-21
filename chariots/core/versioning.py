@@ -291,14 +291,18 @@ def _extract_versioned_fields(cls):
         if isinstance(value, VersionField):
             instance = value.spawn()
             setattr(cls, VERSIONING_PRE + name, instance)
+            versions_of_interest = []
             if value.target_version in {VersionType.ALL, VersionType.SAVING}:
-                version_of_interest = saving_version
-            else:
+                versions_of_interest.append(saving_version)
+            if value.target_version in {VersionType.ALL, VersionType.RUNTIME}:
+                versions_of_interest.append(runtime_version)
+            if not versions_of_interest:
                 raise ValueError(f"version type {value.target_version} is unknown")
-            if value.subversion == SubVersionType.PATCH:
-                instance.link(version_of_interest.patch, name)
-            elif value.subversion == SubVersionType.MINOR:
-                instance.link(version_of_interest.minor, name)
-            elif value.subversion == SubVersionType.MAJOR:
-                instance.link(version_of_interest.major, name)
+            for version_of_interest in versions_of_interest:
+                if value.subversion == SubVersionType.PATCH:
+                    instance.link(version_of_interest.patch, name)
+                elif value.subversion == SubVersionType.MINOR:
+                    instance.link(version_of_interest.minor, name)
+                elif value.subversion == SubVersionType.MAJOR:
+                    instance.link(version_of_interest.major, name)
     return saving_version, runtime_version

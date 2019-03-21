@@ -27,7 +27,6 @@ class YTrain(ops.BaseOp):
 
 class XTest(ops.BaseOp):
     def _main(self, x_in: requirements.Number) -> XMarker:
-        print(x_in)
         return np.array([[x_in]])
 
 
