@@ -1,3 +1,4 @@
+import json
 import os
 import inspect
 import time
@@ -5,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Optional,Text
 
 from chariots.core.ops import AbstractOp, BaseOp
-from chariots.core.versioning import SubVersionType, VersionField
+from chariots.core.versioning import SubVersionType, VersionField, VersionType, Version
 from chariots.training import TrainableTrait, evaluation
 from chariots.core.saving import Savable
 
@@ -28,7 +29,12 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
 
     # which vesion to update when retraining the model 
     # by default this is minor as in most cases all things being equal a retrain doesn't change much
-    _last_trained_time = VersionField(SubVersionType.PATCH, default_factory=lambda:None)
+    _last_trained_time = VersionField(SubVersionType.PATCH, target_version=VersionType.RUNTIME,
+                                      default_factory=lambda:None)
+
+    # in case of coupeling after train (mostly after saving) to know if we accept the previous
+    # version or if we need to retrain
+    _upstream_version_str_at_train = None
 
     _is_fited = False
     evaluation_metric = None
@@ -71,7 +77,15 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         evaluation_res = self.evaluation_metric.evaluate(self)
         self.previous_op = None
         return evaluation_res
-    
+
+    def __call__(self, other):
+        if self.fited:
+            for version_string in self._upstream_version_str_at_train:
+                parsed_version = Version.parse(version_string)
+                # if all(parsed_version.major != Version.parse(potential_version).major
+                #        for _, potential_version in other.compounded_markers_and_version_str):
+                #     raise ValueError("op fitted on a different version, consider retraining")
+        return super().__call__(other)
 
     def fit(self, other: Optional[AbstractOp] = None):
         """
@@ -93,7 +107,12 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
             args_dict, _ = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
         self._is_fited = True
-        # self._last_trained_time = time.time()
+        self._last_trained_time = time.time()
+        self._upstream_version_str_at_train = self._find_previous_prediction_op_version()
+    
+    def _find_previous_prediction_op_version(self):
+        return [version for req, version in self.previous_op.compounded_markers_and_version_str
+                if any(requirement.compatible(req) for requirement in self.requires.values())]
 
     @classmethod
     def checksum(cls):
@@ -102,10 +121,14 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
 
     def _serialize(self, temp_dir: Text):
         self.saving_version.save_fields(os.path.join(temp_dir, "_runtime_version.json"))
+        with open(os.path.join(temp_dir, "_upstream_version_str_at_train.json"), "w") as file:
+            json.dump(self._upstream_version_str_at_train, file)
     
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "TrainableOp":
         instance = cls()
+        with open(os.path.join(temp_dir, "_upstream_version_str_at_train.json"), "r") as file:
+            instance._upstream_version_str_at_train = json.load(file)
         versioned_fields = instance.saving_version.load_fields(os.path.join(temp_dir,
                                                                "_runtime_version.json"))
         for field_name, field_value in versioned_fields.items(): 
