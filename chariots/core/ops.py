@@ -84,12 +84,13 @@ class AbstractOp(ABC):
         return self
 
     @property
-    def compounded_markers(self):
+    def compounded_markers_and_version_str(self):
         if self.previous_op is None:
-            return self.markers
-        return [*self.markers, *[marker for marker in self.previous_op.compounded_markers
-                                 if not any(requirement.compatible(marker)
-                                            for requirement in self.requires.values())]]
+            return [(m, str(self.runtime_version)) for m in self.markers]
+        return [*[(m, str(self.runtime_version)) for m in self.markers], 
+                *[marker for marker in self.previous_op.compounded_markers_and_version_str
+                  if not any(requirement.compatible(marker[0]) for requirement
+                            in self.requires.values())]]
 
     def _link_versions(self, other: "AbstractOp"):
         self.runtime_version.major.link(other.runtime_version.major)
@@ -134,8 +135,8 @@ class AbstractOp(ABC):
     @staticmethod
     def _check_compatibility(other: "AbstractOp", requirements: Requirements):
         missing = next((required for required in requirements.items()
-                        if all(not required[1].compatible(marker)
-                               for marker in other.compounded_markers)),
+                        if all(not required[1].compatible(marker[0])
+                               for marker in other.compounded_markers_and_version_str)),
                        None)
         if missing is not None:
             raise ValueError(f"requirement {missing} not fulfiled by {other.name}")
@@ -340,13 +341,13 @@ class Merge(AbstractOp):
         return res
 
     @property
-    def compounded_markers(self):
+    def compounded_markers_and_version_str(self):
         if self.previous_op is None:
-            return self.markers
-        return [*self.markers, *[marker for op in self.previous_op 
-                                 for marker in op.compounded_markers 
-                                 if not any(requirement.compatible(marker)
-                                            for requirement in self.requires.values())]]
+            return [(m, str(self.runtime_version)) for m in self.marker]
+        return [*[(m, str(self.runtime_version)) for m in self.markers],
+                *[marker for op in self.previous_op 
+                for marker in op.compounded_markers_and_version_str 
+                if not any(requirement.compatible(marker[0]) for requirement in self.requires.values())]]
     
     @property
     def ready(self):

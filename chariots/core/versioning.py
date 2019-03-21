@@ -191,7 +191,7 @@ class Version:
             path -- the path at which to save
         """
 
-        with open(os.path.join(path), "w") as version_fields_file:
+        with open(path, "w") as version_fields_file:
             json.dump(self.all_fields, version_fields_file)
     
     @classmethod
