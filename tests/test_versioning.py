@@ -6,21 +6,23 @@ import pytest
 
 from chariots.core.ops import BaseOp
 from chariots.core.requirements import Number
-from chariots.core.versioning import Version
-from chariots.core.versioning import VersionField
-from chariots.core.versioning import _VersionField
-from chariots.core.versioning import SubVersionType
-from chariots.core.versioning import SubVersion
-from chariots.core.versioning import SubversionString
+from chariots.core.versioning import (SubVersion, SubversionString,
+                                      SubVersionType, Version, VersionField,
+                                      _VersionField, VersionType)
 
 
 @pytest.fixture
 def versioned_op_cls():
     class VersionedOp(BaseOp):
         name = "fake_op"
-        versioned_field = VersionField(SubVersionType.MAJOR, default_value=2)
+        saving_versioned_field = VersionField(SubVersionType.MAJOR,
+                                              target_version=VersionType.SAVING,
+                                              default_value=2)
+        runtime_versioned_field = VersionField(SubVersionType.MAJOR,
+                                               target_version=VersionType.RUNTIME,
+                                               default_value=2)
         def _main(self) -> Number:
-            return self.versioned_field
+            return self.saving_versioned_field
     return VersionedOp
 
 @pytest.fixture
@@ -70,20 +72,30 @@ def test_version_comparaison():
 def test_op_versioned_fields_getting_and_setting(versioned_op_cls):
     op = versioned_op_cls()
     op.should.have.property("saving_version").being.a(Version)
-    op.versioned_field.should.equal(2)
-    op.versioned_field = 3
-    op.versioned_field.should.equal(3)
+    op.saving_versioned_field.should.equal(2)
+    op.saving_versioned_field = 3
+    op.saving_versioned_field.should.equal(3)
 
 
-def test_op_version_evolution(versioned_op_cls):
+def test_op_saving_version_evolution(versioned_op_cls):
     op = versioned_op_cls()
     op.should.have.property("saving_version").being.a(Version)
     old_version = copy.deepcopy(op.saving_version)
-    op.versioned_field = 4
+    op.saving_versioned_field = 4
     assert op.saving_version > old_version
     assert op.saving_version.major > old_version.major
     assert op.saving_version.minor == old_version.minor
     assert op.saving_version.patch == old_version.patch
+
+def test_op_runtime_version_evolution(versioned_op_cls):
+    op = versioned_op_cls()
+    op.should.have.property("runtime_version").being.a(Version)
+    old_version = copy.deepcopy(op.runtime_version)
+    op.runtime_versioned_field = 4
+    assert op.runtime_version > old_version
+    assert op.runtime_version.major > old_version.major
+    assert op.runtime_version.minor == old_version.minor
+    assert op.runtime_version.patch == old_version.patch
 
 def test_subversion_string():
     subversion = SubVersion()
@@ -105,14 +117,36 @@ def test_full_version_parsing():
     version_string = Version.parse(version_string)
     version_string.should.equal(version_string)
 
-def test_version_ripeling(versioned_op_cls, downstream_op_cls):
+def test_saving_version_ripeling(versioned_op_cls, downstream_op_cls):
     up = versioned_op_cls()
     down = downstream_op_cls()
     version_1  = str(down.saving_version)
     down = down(up)
     version_2 = str(down.saving_version)
-    up.versioned_field = 5
+    up.saving_versioned_field = 5
     version_3 = str(down.saving_version)
+    
+    version_1 = Version.parse(version_1)
+    version_2 = Version.parse(version_2)
+    version_3 = Version.parse(version_3)
+
+    # testing evolution on link
+    assert version_2 == version_1
+    assert version_2.major == version_1.major and version_2.minor == version_1.minor \
+           and version_2.patch == version_1.patch
+    assert version_3 == version_2
+    assert version_3.major == version_2.major
+    assert version_3.minor == version_2.minor
+    assert version_3.patch == version_2.patch
+
+def test_runtime_version_ripeling(versioned_op_cls, downstream_op_cls):
+    up = versioned_op_cls()
+    down = downstream_op_cls()
+    version_1  = str(down.runtime_version)
+    down = down(up)
+    version_2 = str(down.runtime_version)
+    up.runtime_versioned_field = 5
+    version_3 = str(down.runtime_version)
     
     version_1 = Version.parse(version_1)
     version_2 = Version.parse(version_2)

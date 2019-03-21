@@ -66,8 +66,7 @@ class Savable(ABC):
         """
         with TemporaryDirectory() as temp_dir:
             self._serialize(temp_dir)
-            with open(os.path.join(temp_dir, "_versioned_fields.json"), "w") as version_fields_file:
-                json.dump(self.checksum().all_fields, version_fields_file)
+            self.checksum().save_fields(os.path.join(temp_dir, "_saving_versioned_fields.json"))
             saver.persist(temp_dir, self.checksum(), **self.identifiers())
     
     @abstractclassmethod
@@ -97,8 +96,8 @@ class Savable(ABC):
         with TemporaryDirectory() as temp_dir:
 
             old_version = saver.load(temp_dir, **cls.identifiers())
-            with open(os.path.join(temp_dir, "_versioned_fields.json"), "r") as version_field_file:
-                versioned_fields = json.load(version_field_file)
+            versioned_fields = Version.load_fields(os.path.join(temp_dir,
+                                                   "_saving_versioned_fields.json"))
 
             # should distinguish saving version vs runtime version
             instance =  cls._deserialize(temp_dir)

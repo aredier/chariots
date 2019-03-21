@@ -1,19 +1,16 @@
+import os
 import inspect
 import time
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
+from typing import Optional,Text
 
-from typing import Optional
-
-from chariots.core.ops import BaseOp
-from chariots.core.ops import AbstractOp
-from chariots.core.versioning import VersionField
-from chariots.core.versioning import SubVersionType
-from chariots.training import TrainableTrait
-from chariots.training import evaluation
+from chariots.core.ops import AbstractOp, BaseOp
+from chariots.core.versioning import SubVersionType, VersionField
+from chariots.training import TrainableTrait, evaluation
+from chariots.core.saving import Savable
 
 
-class TrainableOp(TrainableTrait, BaseOp):
+class TrainableOp(Savable, TrainableTrait, BaseOp):
     # TODO find a way to use ABC meta
     """
     abstract base  for all the trainable ops:
@@ -97,3 +94,21 @@ class TrainableOp(TrainableTrait, BaseOp):
             self._inner_train(**args_dict)
         self._is_fited = True
         # self._last_trained_time = time.time()
+
+    @classmethod
+    def checksum(cls):
+        saving_version, _ = cls._build_version()
+        return saving_version
+
+    def _serialize(self, temp_dir: Text):
+        self.saving_version.save_fields(os.path.join(temp_dir, "_runtime_version.json"))
+    
+    @classmethod
+    def _deserialize(cls, temp_dir: Text) -> "TrainableOp":
+        instance = cls()
+        versioned_fields = instance.saving_version.load_fields(os.path.join(temp_dir,
+                                                               "_runtime_version.json"))
+        for field_name, field_value in versioned_fields.items(): 
+            setattr(instance, field_name, field_value)
+        return instance
+

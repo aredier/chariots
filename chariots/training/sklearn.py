@@ -17,7 +17,7 @@ from chariots.helpers.types import DataBatch
 from chariots.training.trainable_op import TrainableOp
 
 
-class SklearnOp(Savable, TrainableOp):
+class SklearnOp(TrainableOp):
     """abstract op that handles sklearn models (saving, factory, ...)
     """
 
@@ -41,21 +41,17 @@ class SklearnOp(Savable, TrainableOp):
         pass
 
     def _serialize(self, temp_dir: Text):
+        super()._serialize(temp_dir)
         with open(os.path.join(temp_dir, "model.pkl"), "wb") as file:
             joblib.dump(self.model, file)
 
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "Savable":
-        res = cls()
+        res = super()._deserialize(temp_dir)
         with open(os.path.join(temp_dir, "model.pkl"), "rb") as file:
             res.model = joblib.load(file)
         res._is_fited = True
         return res
-    
-    @classmethod
-    def checksum(cls):
-        saving_version, _ = cls._build_version()
-        return saving_version
     
     @classmethod
     def identifiers(cls):
