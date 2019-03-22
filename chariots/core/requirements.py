@@ -42,11 +42,12 @@ class Requirement(ABC):
         return issubclass(other, cls)
     
     @classmethod
-    def create_child(cls) -> Type["Marker"]:
+    def create_child(cls, name=None) -> Type["Marker"]:
         """
         creates a unique marker that will be accepted by this class but will only accept itself 
         """
-        return type(f"{cls.__name__}-sub", (cls,), 
+        name = name or f"{cls.__name__}-sub"
+        return type(name, (cls,), 
                     {"__doc__": f"automaticly generated marker generated from {cls.__name__}"})
     
     @classmethod

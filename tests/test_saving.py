@@ -56,9 +56,8 @@ class SavableObject(Savable, BaseOp):
         return {"type": "test", "instance": test_uuid}
 
 
-def test_saving():
+def test_saving(saver):
     foo =  SavableObject()
-    saver = FileSaver()
     foo.save(saver)
     bar = SavableObject.load(saver)
     foo.seed.should.be.equal(bar.seed)
@@ -68,17 +67,15 @@ def test_saving():
     foo.unique.should_not.be.equal(bar.seed)
 
 
-def test_loading_deprecated():
+def test_loading_deprecated(saver):
     foo =  SavableObject()
-    saver = FileSaver()
     foo.save(saver)
     SavableObject.saving_versioned_field.default_value = -1
     SavableObject.load.when.called_with(saver).should.throw(ValueError)
 
 
-def test_runtime_deprecated():
+def test_runtime_deprecated(saver):
     foo =  SavableObject()
-    saver = FileSaver()
     foo.save(saver)
     foo_version = str(foo.runtime_version)
     SavableObject.runtime_versioned_field.default_value = -1

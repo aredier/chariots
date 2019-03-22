@@ -95,11 +95,13 @@ def test_regresion_metric_false(tap, add_op_cls):
     evaluation[str(res.runtime_version)].should.have.key("mae").being.equal(1.)
     evaluation[str(res.runtime_version)].should.have.key("mse").being.equal(1.)
 
-def test_attaching_evaluaton(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_cls):
+def test_attaching_evaluaton(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_cls,
+                             forget_version_op_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
 
     data = DataTap(iter(numbers), Number)
     x = x_op_cls()(data)
+    x = forget_version_op_cls()(x)
     x, y = Split(2)(x)
     y = linear_y_op_cls()(y)
     training_data =  Merge()([x, y])
@@ -109,6 +111,7 @@ def test_attaching_evaluaton(x_op_cls, linear_y_op_cls, linear_model_cls, x_requ
     evaluation = RegresionMetrics(y_true=YTruReq, y_pred=foo.markers[0])
     foo.attach_evaluation(evaluation)
     x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
+    x_test = forget_version_op_cls()(x_test)
     y_true = DataTap(iter([i+1] for i in range(100)), YTruReq)
     test_data = Merge()([x_test, y_true])
     evaluation = foo.evaluate(test_data)

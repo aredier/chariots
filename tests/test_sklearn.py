@@ -9,7 +9,6 @@ from chariots.core.requirements import FloatType
 from chariots.core.ops import BaseOp
 from chariots.core.ops import Split
 from chariots.core.ops import Merge
-from chariots.core.saving import FileSaver
 from chariots.core.taps import DataTap
 from chariots.training.sklearn import SingleFitSkSupervised
 from chariots.training.sklearn import SingleFitSkTransformer
@@ -48,7 +47,7 @@ def naive_baise_op():
     )
 
 
-def test_sklearn_training(count_vectorizer, naive_baise_op):
+def test_sklearn_training(count_vectorizer, naive_baise_op, forget_version_op_cls):
     sentences = [
         "That there’s some good in this world, Mr. Frodo… and it’s worth fighting for",
         "A day may come when the courage of men fails… but it is not THIS day"
@@ -59,6 +58,7 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
     vocab = DataTap(
         iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     x_train, y_train = Split(2)(train_data)
+    x_train = forget_version_op_cls()(x_train)
     y_train = YTrue()(y_train)
 
     vectorizer = count_vectorizer()
@@ -70,6 +70,7 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
                         TextList)
+    test_data = forget_version_op_cls()(test_data)
     x_test = vectorizer(test_data)
     pred = naive_baise(x_test)
 
@@ -80,7 +81,7 @@ def test_sklearn_training(count_vectorizer, naive_baise_op):
             res_ind.should.equal(1)
 
 
-def test_sklearn_persistance(count_vectorizer, naive_baise_op):
+def test_sklearn_persistance(count_vectorizer, naive_baise_op, forget_version_op_cls, saver):
     sentences = [
         "That there’s some good in this world, Mr. Frodo… and it’s worth fighting for",
         "A day may come when the courage of men fails… but it is not THIS day"
@@ -91,21 +92,21 @@ def test_sklearn_persistance(count_vectorizer, naive_baise_op):
     vocab = DataTap(
         iter([np.random.choice(sentences, train_size, replace=True)]), TextList)
     x_train, y_train = Split(2)(train_data)
+    x_train = forget_version_op_cls()(x_train)
     y_train = YTrue()(y_train)
 
     vectorizer = count_vectorizer()
     vectorizer.fit(vocab)
     vectorizer(x_train)
     naive_baise = naive_baise_op()
-
     naive_baise.fit(Merge()([vectorizer, y_train]))
-    saver = FileSaver()
     naive_baise.save(saver)
 
     second_naive_baise = naive_baise_op.load(saver)
 
     test_data = DataTap(iter([[sentences[0] for _ in range(train_size)] for i in range(2)]),
                         TextList)
+    test_data = forget_version_op_cls()(test_data)
     x_test = vectorizer(test_data)
     pred = second_naive_baise(x_test)
 

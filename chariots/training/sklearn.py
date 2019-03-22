@@ -79,7 +79,6 @@ class SklearnOp(TrainableOp):
         Returns:
             Type -- the resulting class
         """
-
         resulting_op = type(name, (cls,), {"__doc__": description})
         resulting_op.requires = {"x": x_marker}
         resulting_op.model_cls = model_cls

@@ -1,12 +1,13 @@
+import uuid
+
+import numpy as np
 import pytest
 import sure
-import numpy as np
 from sklearn.linear_model import SGDRegressor
 
 from chariots.core.ops import BaseOp
-from chariots.core.requirements import Number
-from chariots.core.requirements import Requirement
-from chariots.core.requirements import Matrix
+from chariots.core.requirements import Matrix, Number, Requirement
+from chariots.core.saving import FileSaver
 from chariots.core.taps import DataTap
 from chariots.training.trainable_op import TrainableOp
 
@@ -18,6 +19,11 @@ class AddOneOp(BaseOp):
 
     def _main(self, input_value):
         return input_value + 1
+
+@pytest.fixture
+def saver():
+    return FileSaver(f"/tmp/chariots/{uuid.uuid1()}")
+
 
 
 @pytest.fixture
@@ -101,6 +107,27 @@ class LinearYOp(BaseOp):
     def _main(self, in_value):
         return np.array([in_value + 1 for in_value in in_value])
 
+
 @pytest.fixture
 def linear_y_op_cls():
     return LinearYOp
+
+
+class ForgetVersionOp(BaseOp):
+    """
+    this is an op meant to forget the version for tests
+    """
+    
+    _carry_on_verision = False
+
+    def __call__(self, other):
+        self.markers = other.markers
+        return super().__call__(other)
+    
+    def _main(self, input_data: Requirement) -> Requirement:
+        return input_data
+
+    
+@pytest.fixture
+def forget_version_op_cls():
+    return ForgetVersionOp

@@ -82,9 +82,9 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         if self.fited:
             for version_string in self._upstream_version_str_at_train:
                 parsed_version = Version.parse(version_string)
-                # if all(parsed_version.major != Version.parse(potential_version).major
-                #        for _, potential_version in other.compounded_markers_and_version_str):
-                #     raise ValueError("op fitted on a different version, consider retraining")
+                if all(parsed_version.major != Version.parse(potential_version).major
+                       for _, potential_version in other.compounded_markers_and_version_str):
+                    raise ValueError("op fitted on a different version, consider retraining")
         return super().__call__(other)
 
     def fit(self, other: Optional[AbstractOp] = None):
@@ -111,6 +111,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         self._upstream_version_str_at_train = self._find_previous_prediction_op_version()
     
     def _find_previous_prediction_op_version(self):
+        self.compounded_markers_and_version_str
         return [version for req, version in self.previous_op.compounded_markers_and_version_str
                 if any(requirement.compatible(req) for requirement in self.requires.values())]
 

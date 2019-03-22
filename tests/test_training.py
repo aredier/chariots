@@ -5,7 +5,8 @@ from chariots.core.requirements import Number
 from chariots.core.ops import Merge, Split
 
 
-def test_training_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_cls):
+def test_training_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_cls, 
+                     forget_version_op_cls):
     numbers = np.random.choice(list(range(100)), 10, replace=True)
 
     data = DataTap(iter(numbers), Number)
@@ -13,9 +14,11 @@ def test_training_op(x_op_cls, linear_y_op_cls, linear_model_cls, x_requirement_
     x, y = Split(2)(x)
     y = linear_y_op_cls()(y)
     training_data =  Merge()([x, y])
+    training_data = forget_version_op_cls()(training_data)
     foo = linear_model_cls()
     foo.fit(training_data)
     x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
+    x_test = forget_version_op_cls()(x_test)
     y_pred = foo(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)

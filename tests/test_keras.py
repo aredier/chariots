@@ -10,8 +10,8 @@ from chariots.core import saving
 from chariots.training import keras
 
 
-XMarker = keras.KerasInput.create_child()
-YMarker = keras.KerasOutput.create_child()
+XMarker = keras.KerasInput.create_child("x")
+YMarker = keras.KerasOutput.create_child("y")
 
 
 class XTrain(ops.BaseOp):
@@ -40,12 +40,13 @@ def model():
     return model
 
 
-def test_keras_model_cls_def(model):
+def test_keras_model_cls_def(model, forget_version_op_cls):
     class KerasLinear(keras.KerasOp):
         def _build_model(self):
             return model
     x_train = taps.DataTap(iter(range(1000)), requirements.Number)
     x_train = XTrain()(x_train)
+    x_train = forget_version_op_cls()(x_train)
     x_train, y_train = ops.Split(2)(x_train)
     y_train = YTrain()(y_train)
     model = KerasLinear()
@@ -53,14 +54,16 @@ def test_keras_model_cls_def(model):
 
     x_test = taps.DataTap(iter(range(10)), requirements.Number)
     x_test = XTest()(x_test)
+    x_test = forget_version_op_cls()(x_test)
     for i, y_pred in enumerate(model(x_test).perform()):
         float(y_pred[keras.KerasOutput][0][0]).should.equal(i + 1., epsilon = 0.1)
 
 
-def test_keras_model_factory(model):
+def test_keras_model_factory(model, forget_version_op_cls):
     KerasLinear = keras.KerasOp.factory(build_function=lambda: model, name="KerasLinear")
     x_train = taps.DataTap(iter(range(1000)), requirements.Number)
     x_train = XTrain()(x_train)
+    x_train = forget_version_op_cls()(x_train)
     x_train, y_train = ops.Split(2)(x_train)
     y_train = YTrain()(y_train)
     model = KerasLinear()
@@ -68,24 +71,26 @@ def test_keras_model_factory(model):
 
     x_test = taps.DataTap(iter(range(10)), requirements.Number)
     x_test = XTest()(x_test)
+    x_test = forget_version_op_cls()(x_test)
     for i, y_pred in enumerate(model(x_test).perform()):
         float(y_pred[keras.KerasOutput][0][0]).should.equal(i + 1., epsilon = 0.1)
 
         
-def test_keras_model_saving(model):
+def test_keras_model_saving(model, forget_version_op_cls, saver):
     KerasLinear = keras.KerasOp.factory(build_function=lambda: model, name="KerasLinear")
     x_train = taps.DataTap(iter(range(1000)), requirements.Number)
     x_train = XTrain()(x_train)
+    x_train = forget_version_op_cls()(x_train)
     x_train, y_train = ops.Split(2)(x_train)
     y_train = YTrain()(y_train)
     model_op = KerasLinear()
     model_op.fit(ops.Merge()([x_train, y_train]))
-    saver = saving.FileSaver()
     model_op.save(saver)
 
     del(model_op)
     model_op = KerasLinear.load(saver)
     x_test = taps.DataTap(iter(range(10)), requirements.Number)
     x_test = XTest()(x_test)
+    x_test = forget_version_op_cls()(x_test)
     for i, y_pred in enumerate(model_op(x_test).perform()):
         float(y_pred[keras.KerasOutput][0][0]).should.equal(i + 1., epsilon = 0.1)

@@ -290,6 +290,12 @@ class Split(AbstractOp):
                              " the data flowing")
         self._pusher.set_iterator(self.previous_op.perform())
 
+    @property
+    def compounded_markers_and_version_str(self):
+        if self.previous_op is None:
+            return []
+        return self.previous_op.compounded_markers_and_version_str
+
     
 class _SplitRes(AbstractOp):
     """
@@ -314,6 +320,12 @@ class _SplitRes(AbstractOp):
     def perform(self) -> DataSet:
         self.previous_op.perform()
         return DataSet.from_op(self._puller)
+
+    @property
+    def compounded_markers_and_version_str(self):
+        if self.previous_op is None:
+            return []
+        return self.previous_op.compounded_markers_and_version_str
 
 class Merge(AbstractOp):
     """
@@ -343,11 +355,10 @@ class Merge(AbstractOp):
     @property
     def compounded_markers_and_version_str(self):
         if self.previous_op is None:
-            return [(m, str(self.runtime_version)) for m in self.marker]
-        return [*[(m, str(self.runtime_version)) for m in self.markers],
-                *[marker for op in self.previous_op 
+            return []
+        return [marker for op in self.previous_op 
                 for marker in op.compounded_markers_and_version_str 
-                if not any(requirement.compatible(marker[0]) for requirement in self.requires.values())]]
+                if not any(requirement.compatible(marker[0]) for requirement in self.requires.values())]
     
     @property
     def ready(self):
