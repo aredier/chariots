@@ -25,23 +25,23 @@ class Saver(ABC):
         validity checksum should be recoverable after the destruction of the Saver by a saver of the
         class. The temp_res_dir itself will be destroyed once out of this function and should be 
         copied in order to persist
-        
+
         Arguments:
             temp_res_dir -- the temporary file in which the serialized object is
             validity_version -- the version of the serilized object
             identiiers -- intifiers to find a all the versions of the serialized object in
                 perpetuity and throughout the unniverse
         """
-    
+
     @abstractmethod
     def load(self, temp_dir: Text,  **identifiers) -> Version:
         """
         loads the object corresponding to identifier and returns the Version of the object of the 
         persisted object and the path to the directory containing the resulting serialized object
-        
+
         Arguments:
             temp_dir -- the temp directory in which to copy the serialized object
-        
+
         Returns:
             Version, path
         """
@@ -55,11 +55,11 @@ class Savable(ABC):
     @abstractmethod
     def _serialize(self, temp_dir: Text):
         """serializes this object into temp_dir
-        
+
         Arguments:
             temp_dir -- the temporary directory into which to save this object
         """
-    
+
     def save(self, saver: Saver):
         """
         saves the object using the saver's `persist` method
@@ -68,7 +68,7 @@ class Savable(ABC):
             self._serialize(temp_dir)
             self.checksum().save_fields(os.path.join(temp_dir, "_saving_versioned_fields.json"))
             saver.persist(temp_dir, self.checksum(), **self.identifiers())
-    
+
     @abstractclassmethod
     def _deserialize(cls, temp_dir: Text) -> "Savable":
         """
@@ -105,7 +105,7 @@ class Savable(ABC):
             raise ValueError(f"saved {cls.__name__} is deprecated")
         instance.load_serialized_fields(**versioned_fields)
         return instance
-    
+
     # TODO use class property for those two
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
     @abstractclassmethod
@@ -120,24 +120,24 @@ class Savable(ABC):
         identifies the object (in order for the saver to know which data to fetch at loading time)
         """
         return {}
-        
+
 
 class FileSaver(Saver):
 
     def __init__(self, root: Text = "/tmp/chariots"):
         self.root = root
-    
+
     def _generate_dir_path(self, **identifiers):
         identifiers = map(operator.itemgetter(1), sorted(identifiers.items(), key=operator.itemgetter(0)))
         return os.path.join(self.root, *identifiers)
-    
+
     def _generate_file_path(self, version: Version, **identifier):
         return os.path.join(self._generate_dir_path(**identifier), str(version))
 
 
     def persist(self, temp_res_dir: Text, validity_checksum: Text, **identifiers):
         shutil.make_archive(self._generate_file_path(str(validity_checksum), **identifiers), "zip", temp_res_dir)
-        
+
     def load(self, temp_dir: Text,  **identifiers) -> Tuple[Version, Text]:
         save_dir = self._generate_dir_path(**identifiers)
         file_ls = os.listdir(save_dir)
@@ -150,5 +150,3 @@ class FileSaver(Saver):
                 latest_model_file = file_name
         shutil.unpack_archive(os.path.join(save_dir, latest_model_file), temp_dir, "zip")
         return latest_version
-
-

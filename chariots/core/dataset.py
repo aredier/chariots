@@ -15,13 +15,13 @@ class DataSet:
             self._inner_data = map(self._initialize, iter(data))
         else:
             self._inner_data = iter(data)
-    
+
     def __iter__(self):
         return self
-    
+
     def __next__(self):
         return next(self._inner_data)
-    
+
     def _initialize(self, data):
         """
         used if the dataset doesn't have an operation

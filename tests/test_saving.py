@@ -24,28 +24,28 @@ class SavableObject(Savable, BaseOp):
     runtime_versioned_field = VersionField(SubVersionType.MAJOR,
                                            target_version=VersionType.RUNTIME,
                                            default_value=int(np.random.randint(1000)))
-    saving_versioned_field = VersionField(SubVersionType.MAJOR, 
+    saving_versioned_field = VersionField(SubVersionType.MAJOR,
                                           target_version=VersionType.SAVING,
                                           default_value=int(np.random.randint(1000)))
-    
+
     def _main(self) -> Number:
         raise ValueError("not executable")
 
     def __init__(self):
         self.unique = int(np.random.randint(1000))
         self.seed = int(np.random.randint(1000))
-    
+
     def _serialize(self, temp_dir: Text):
         with open(os.path.join(temp_dir, "model.json"), "w") as file:
-            json.dump(self.seed, file)        
+            json.dump(self.seed, file)
 
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "Savable":
         res = cls()
         with open(os.path.join(temp_dir, "model.json"), "r") as file:
-            res.seed = json.load(file)        
+            res.seed = json.load(file)
         return res
-    
+
     @classmethod
     def checksum(cls):
         saving_version, _ = cls._build_version()

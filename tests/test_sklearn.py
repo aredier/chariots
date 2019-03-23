@@ -12,7 +12,6 @@ from chariots.core.ops import Merge
 from chariots.core.taps import DataTap
 from chariots.training.sklearn import SingleFitSkSupervised
 from chariots.training.sklearn import SingleFitSkTransformer
-from chariots.training.trainable_pipeline import TrainablePipeline
 
 
 TextList = Requirement.create_child()
