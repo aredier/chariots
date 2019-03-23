@@ -8,7 +8,7 @@ from chariots.core.requirements import Requirement, Number
 from chariots.core.requirements import Matrix
 from chariots.core.ops import Merge, BaseOp, Split
 from chariots.training.trainable_op import TrainableOp
-from chariots.training.trainable_pipeline import TrainablePipeline
+from chariots.core.pipeline import Pipeline
 
 
 LeftMarker = Matrix.create_child()
@@ -20,7 +20,7 @@ RightMarker = Matrix.create_child()
 def left_linear_model_cls(linear_model_cls):
     class LinearModelL(linear_model_cls):
         markers = [LeftMarker]
-    
+
     return LinearModelL
 
 
@@ -28,7 +28,7 @@ def left_linear_model_cls(linear_model_cls):
 def right_linear_model_cls(linear_model_cls):
     class LinearModelR(linear_model_cls):
         markers = [RightMarker]
-    
+
     return LinearModelR
 
 
@@ -49,19 +49,21 @@ class Identity(BaseOp):
 
 
 def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cls,
-                                      x_requirement_cls):
+                                      x_requirement_cls, forget_version_op_cls):
     numbers = np.random.choice(list(range(100)), 20, replace=True)
 
     data = DataTap(iter(numbers), Number)
     x = x_op_cls()(data)
     x, y = Split(2)(x)
     y = linear_y_op_cls()(y)
+    x = forget_version_op_cls()(x)
     training_data =  Merge()([x, y])
     model = linear_model_cls()
-    pipe = TrainablePipeline()
+    pipe = Pipeline()
     pipe.add(model)
     pipe.fit(training_data)
     x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
+    x_test = forget_version_op_cls()(x_test)
     y_pred = pipe(x_test)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
@@ -70,24 +72,28 @@ def test_trainable_pipeline_single_op(x_op_cls, linear_y_op_cls, linear_model_cl
     x = Split(2)
 
 
-def test_trainable_pipeline_single_ignore_y(x_op_cls, linear_y_op_cls, linear_model_cls,
-                                            x_requirement_cls):
-    # numbers = np.random.choice(list(range(100)), 10, replace=True)
-    # data = DataTap(iter(numbers), Number)
-    # x_in = x_op_cls()(data)
-    # x, y = Split(2)(x_in)
-    # y = linear_y_op_cls()(y)
-    # training_data =  Merge()([x, y])
-    # model = linear_model_cls()(training_data)
-    # pipe = TrainablePipeline(x_in, model)
-    # pipe.fit(data)
-    # x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
-    # y_pred = pipe(x_test)
-    # for i, y_pred_ind in enumerate(y_pred.perform()):
-    #     y_pred_ind.should.be.a(dict)
-    #     y_pred_ind.should.have.key(LinearModel.markers[0])
-    #     float(y_pred_ind[linear_model_cls.markers[0]][0]).should.equal(i + 1., epsilon=0.01)
-    pass
+def test_training_pipeline(x_op_cls, linear_y_op_cls, linear_model_cls,
+                                            x_requirement_cls, forget_version_op_cls):
+    forgret_op = forget_version_op_cls(x_requirement_cls)
+    model = linear_model_cls()(forgret_op)
+    model_pipeline = Pipeline(forgret_op, model)
+
+    numbers = np.random.choice(list(range(100)), 10, replace=True)
+    data = DataTap(iter(numbers), Number)
+    x_in = x_op_cls()
+    x, y = Split(2)(x_in)
+    y = linear_y_op_cls()(y)
+    training_data =  Merge()([x, y])
+    model_pipeline(training_data)
+    training_pipeline = Pipeline(x_in, model_pipeline)
+    training_pipeline.fit(data)
+
+    x_test = DataTap(iter([i] for i in range(100)), x_requirement_cls)
+    y_pred = model_pipeline(x_test)
+    for i, y_pred_ind in enumerate(y_pred.perform()):
+        y_pred_ind.should.be.a(dict)
+        y_pred_ind.should.have.key(model.markers[0])
+        float(y_pred_ind[linear_model_cls.markers[0]][0]).should.equal(i + 1., epsilon=0.01)
 
 
 def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_model_cls, 
@@ -98,7 +104,7 @@ def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_mod
     # left_m = left_linear_model_cls()(x_l)
     # right_m = right_linear_model_cls()(x_r)
     # res = Merge()([left_m, right_m])
-    # pipe = TrainablePipeline(data_id, res)
+    # pipe = Pipeline(data_id, res)
 
     # data = DataTap(iter(numbers), Number)
     # data_id = Identity()(data)
@@ -121,7 +127,7 @@ def test_trainable_pipeline_parrallel(x_op_cls, linear_y_op_cls, left_linear_mod
     # combined = Merge()([model_2, model])
     # res = Add()(combined)
 
-    # pipe = TrainablePipeline(data_id, res)
+    # pipe = Pipeline(data_id, res)
     # pipe.fit(data)
     # x_test = DataTap(iter(range(100)), Number)
     # y_pred = pipe(x_test)

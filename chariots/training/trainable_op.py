@@ -20,7 +20,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
     the training requirements should represent the data needed in order to train the function
     and their names should correspond to `_inner_train`'s arguments
     """
-    
+
     training_requirements = None
 
     # when a breaking change is made in the previous op(s) data structure, if the markers have
@@ -50,7 +50,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
     @property
     def fited(self):
         return self._is_fited
-    
+
     @property
     def ready(self):
         return self.previous_op.ready and self.fited
@@ -65,10 +65,10 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         if not self.fited:
             raise ValueError(f"{self.name} is not fited, cannot perform")
         return super().perform()
-    
+
     def attach_evaluation(self, evaluation: evaluation.EvaluationMetric):
         self.evaluation_metric = evaluation
-    
+
     def evaluate(self, data: AbstractOp):
         if self.evaluation_metric is None:
             raise ValueError("cannot evaluate a trainable op with no metric linked to it,"\
@@ -103,13 +103,13 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(self.previous_op, self.training_requirements)
         for training_batch in self.previous_op.perform():
-           
+
             args_dict, _ = self._resolve_arguments(training_batch, self.training_requirements)
             self._inner_train(**args_dict)
         self._is_fited = True
         self._last_trained_time = time.time()
         self._upstream_version_str_at_train = self._find_previous_prediction_op_version()
-    
+
     def _find_previous_prediction_op_version(self):
         self.compounded_markers_and_version_str
         return [version for req, version in self.previous_op.compounded_markers_and_version_str
@@ -124,7 +124,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         self.saving_version.save_fields(os.path.join(temp_dir, "_runtime_version.json"))
         with open(os.path.join(temp_dir, "_upstream_version_str_at_train.json"), "w") as file:
             json.dump(self._upstream_version_str_at_train, file)
-    
+
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "TrainableOp":
         instance = cls()
