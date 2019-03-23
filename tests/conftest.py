@@ -78,7 +78,7 @@ class LinearModel(TrainableOp):
         x = np.asarray(x).reshape((-1, 1))[idx, :]
         y = np.asarray(y)[idx]
         self._model = self._model.partial_fit(x , np.asarray(y))
-    
+
     def _main(self, x):
         return self._model.predict(np.asarray(x).reshape(-1, 1))
 
@@ -118,16 +118,19 @@ class ForgetVersionOp(BaseOp):
     this is an op meant to forget the version for tests
     """
     
+    def __init__(self, *markers):
+        self.markers = markers
+
     _carry_on_verision = False
 
     def __call__(self, other):
         self.markers = other.markers
         return super().__call__(other)
-    
+
     def _main(self, input_data: Requirement) -> Requirement:
         return input_data
 
-    
+
 @pytest.fixture
 def forget_version_op_cls():
     return ForgetVersionOp
