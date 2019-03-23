@@ -58,7 +58,7 @@ class AbstractOp(ABC):
         cls.name = cls.name or cls.__name__
         cls.saving_version, cls.runtime_version = cls._build_version()
         cls.markers = cls.markers or []
-        
+
         cls.requires = cls.requires or {}
         cls.requires = {key: value.as_marker() for key, value in cls.requires.items()}
         instance = super().__new__(cls)
@@ -69,7 +69,7 @@ class AbstractOp(ABC):
     @classmethod
     def _build_version(cls) -> Version:
         return _extract_versioned_fields(cls)
-    
+
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         """
         used to determine the ancestor of an op
@@ -97,13 +97,13 @@ class AbstractOp(ABC):
         self.runtime_version.minor.link(other.runtime_version.minor)
         self.runtime_version.patch.link(other.runtime_version.patch)
 
-    
+
     def __getattribute__(self, attribute: Text) -> Any:
         """gets the attribute and unwrapts it if it is a `VersionField` instance
-        
+
         Arguments:
             attribute {Text} -- the attribute name
-        
+
         Returns:
             Any -- the attribute's value
         """
@@ -112,11 +112,11 @@ class AbstractOp(ABC):
             field = object.__getattribute__(self, VERSIONING_PRE + attribute)
             return field.value
         return underlying
-    
+
     def __setattr__(self, attribute: Text, value: Any):
         """sets an attribute or the attriubute's inner value if the attribute is an instance of 
         class `VersionField`
-        
+
         Arguments:
             attribute {Text} -- the attribute name
             value {Any} -- the desired value
@@ -131,7 +131,7 @@ class AbstractOp(ABC):
                 object.__setattr__(self, attribute, value)
         except AttributeError:
             object.__setattr__(self, attribute, value)
-    
+
     @staticmethod
     def _check_compatibility(other: "AbstractOp", requirements: Requirements):
         missing = next((required for required in requirements.items()
@@ -148,7 +148,7 @@ class AbstractOp(ABC):
         returns the resulting DataSet
         """
         pass
-    
+
     @property
     def ready(self):
         """
@@ -157,7 +157,7 @@ class AbstractOp(ABC):
         if self.previous_op:
             return self.previous_op.ready
         return True
-    
+
     @classmethod
     @functools.lru_cache()
     def as_marker(cls) -> Requirement:
@@ -168,7 +168,7 @@ class AbstractOp(ABC):
             raise ValueError("using more or less than one marker for an op is ambigous to"\
                              " produce marker")
         return cls.markers[0].create_child()
-    
+
 
 class BaseOp(AbstractOp):
     """

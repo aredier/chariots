@@ -6,6 +6,7 @@ from typing import Any
 from typing import Optional
 
 from chariots.core.ops import AbstractOp
+from chariots.core.saving import Savable, Saver
 from chariots.core.dataset import DataSet
 from chariots.training import TrainableTrait
 
@@ -31,10 +32,10 @@ class Pipeline(TrainableTrait, AbstractOp):
 
     def _build_op_graph(self, input_op, output_op):
         reading_heads = [output_op]
-        while True:
+        while len(reading_heads):
             op_of_interest = reading_heads.pop()
             if op_of_interest == input_op:
-                break
+                continue
             if op_of_interest.previous_op is None:
                 raise ValueError(f"{op_of_interest.name} doesn't seem to converge to provided input ops")
             if isinstance(op_of_interest.previous_op, list):
@@ -98,8 +99,50 @@ class Pipeline(TrainableTrait, AbstractOp):
             if not op_of_interest.previous_op.ready:
                 next_ops.append(op_of_interest)
                 continue
-            print(op_of_interest)
             op_of_interest.fit()
             next_ops.extend([downstream for upstream, downstream in self._op_graph if upstream == op_of_interest])
         if called_with_op:
             self.input_op.previous_op = None
+
+    def save(self, saver: Saver):
+        for op in self.all_ops:
+            if isinstance(op, Savable):
+                op.save(saver)
+
+    def load(self, saver):
+        unloaded_ops = self.all_ops
+        while len(unloaded_ops):
+            op_of_interest = unloaded_ops.pop(0)
+            if not isinstance(op_of_interest, Savable):
+                continue
+            if op_of_interest.previous_op is not None and op_of_interest.previous_op in unloaded_ops:
+                unloaded_ops.append(op_of_interest)
+                continue
+            loaded_op = op_of_interest.load(saver)
+            print("fited at loading", loaded_op.fited)
+            self._replace_op_in_graph(op_of_interest, loaded_op)
+
+    def _replace_op_in_graph(self, op_to_replace, replacing_op):
+        print("fited before replacing", replacing_op.fited)
+        print(any((up == op_to_replace for _, up in self._op_graph)))
+        res_op_graph = []
+        for downstream, upstream in self._op_graph:
+            downstream = replacing_op if downstream == op_to_replace else downstream
+            upstream = replacing_op if upstream == op_to_replace else upstream
+            upstream(downstream)
+            res_op_graph.append((upstream, downstream))
+        self._op_graph = res_op_graph
+
+        print("fited after replacing", replacing_op.fited)
+        if op_to_replace == self.input_op:
+            self.input_op = replacing_op
+        if op_to_replace == self.output_op:
+            print("got you")
+            self.output_op = replacing_op
+            print(self.output_op.fited)
+        print("some left", any((up == op_to_replace for _, up in self._op_graph)))
+        print("some replaced", any((up == replacing_op for _, up in self._op_graph)))
+
+    @property
+    def ready(self):
+        return self.output_op.ready

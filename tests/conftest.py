@@ -1,9 +1,12 @@
+import os
 import uuid
+from typing import Text
 
 import numpy as np
 import pytest
 import sure
 from sklearn.linear_model import SGDRegressor
+from sklearn.externals import joblib
 
 from chariots.core.ops import BaseOp
 from chariots.core.requirements import Matrix, Number, Requirement
@@ -82,6 +85,25 @@ class LinearModel(TrainableOp):
     def _main(self, x):
         return self._model.predict(np.asarray(x).reshape(-1, 1))
 
+    def _serialize(self, temp_dir: Text):
+        print("youhou")
+        super()._serialize(temp_dir)
+        with open(os.path.join(temp_dir, "model.pkl"), "wb") as file:
+            joblib.dump(self._model, file)
+
+    @classmethod
+    def _deserialize(cls, temp_dir: Text) -> "Savable":
+        print("loading")
+        res = super()._deserialize(temp_dir)
+        with open(os.path.join(temp_dir, "model.pkl"), "rb") as file:
+            res._model = joblib.load(file)
+        res._is_fited = True
+        return res
+
+    @classmethod
+    def identifiers(cls):
+        return {"name": cls.name, "model_type": "test-training"}
+
 @pytest.fixture
 def linear_model_cls():
     return LinearModel
@@ -117,7 +139,7 @@ class ForgetVersionOp(BaseOp):
     """
     this is an op meant to forget the version for tests
     """
-    
+
     def __init__(self, *markers):
         self.markers = markers
 

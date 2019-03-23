@@ -52,7 +52,7 @@ class SklearnOp(TrainableOp):
             res.model = joblib.load(file)
         res._is_fited = True
         return res
-    
+
     @classmethod
     def identifiers(cls):
         return {"name": cls.name, "model_type": "sklearn"}
@@ -63,19 +63,19 @@ class SklearnOp(TrainableOp):
                 description: Text = "") -> Type:
         """creates a new trainable op class inheriting from `cls` this allows to quicly produce
             ops without having to define a full class by hand
-        
+
         Arguments:
             x_marker {Marker} -- the input marker of the required input data
             y_markerMarker {[type]} -- the marker of the op (as output data) in cases of supervised
                 this will also be added as the training requirement for y_train
             model_cls {BaseEstimator} -- the class of the model to instanciate
-        
+
         Keyword Arguments:
             training_params {Optional[dict]} -- the training params of the model (default: {None})
             name {Text} -- the name of the op (default: {"some_sk_model"})
             description {Text} --  a short description of the op that will be added 
             to its docstring (default: {""})
-        
+
         Returns:
             Type -- the resulting class
         """
