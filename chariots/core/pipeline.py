@@ -117,6 +117,7 @@ class Pipeline(TrainableTrait, AbstractOp):
         else:
             self._op_graph.append((self.output_op, other))
             self.output_op = other(self.output_op)
+
     def fit(self, other: Optional[AbstractOp] = None, mode: Text = "naive"):
         """
         fiting the pipeline
@@ -132,7 +133,7 @@ class Pipeline(TrainableTrait, AbstractOp):
         next_ops = [self.input_op]
         while len(next_ops):
             op_of_interest = next_ops.pop(0)
-            if not isinstance(op_of_interest, TrainableTrait):
+            if not isinstance(op_of_interest, TrainableTrait) or op_of_interest.ready:
                 next_ops.extend([downstream for upstream, downstream in self._op_graph if upstream == op_of_interest])
                 continue
             if not op_of_interest.previous_op.ready:

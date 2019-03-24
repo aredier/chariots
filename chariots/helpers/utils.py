@@ -17,8 +17,9 @@ class SplitPusher:
 
     def __next__(self):
         nxt = next(self.iterator)
-        for puller in self._pullers:
-            puller.register(copy.deepcopy(nxt))
+        if nxt:
+            for puller in self._pullers:
+                puller.register(copy.deepcopy(nxt))
 
     def __iter__(self):
         return self

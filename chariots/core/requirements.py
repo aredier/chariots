@@ -21,7 +21,7 @@ class Requirement(ABC):
     classmethod to account for your desired behavior
     """
 
-    dype = None
+    dtype = None
 
     def __new__(cls, *args, **kwargs):
         raise ValueError("reauirements should not be instantiated")
@@ -31,35 +31,35 @@ class Requirement(ABC):
         """
         checks if this Requirement is copatible with other, if not overiden the default 
         behavior checks that other is a subclass of cls
-        
+
         Arguments:
             other {Type[Marker]} -- the Requirement to check against
-        
+
         Returns:
             bool -- wether or not other can be considered as cls
         """
 
         return issubclass(other, cls)
-    
+
     @classmethod
     def create_child(cls, name=None) -> Type["Marker"]:
         """
         creates a unique marker that will be accepted by this class but will only accept itself 
         """
         name = name or f"{cls.__name__}-sub"
-        return type(name, (cls,), 
+        return type(name, (cls,),
                     {"__doc__": f"automaticly generated marker generated from {cls.__name__}"})
-    
+
     @classmethod
     def parse(cls, data: Any) -> Any:
         """
         parses raw data and casts it to the underlying type this Requirement represents
         if cls.dtype is set, this will default to instantiating it, otherwise, it will return the
         data unvhanged
-        
+
         Arguments:
             data {Any} -- the data to parse
-        
+
         Returns:
             Any -- the parsed data
         """
@@ -72,13 +72,13 @@ class Requirement(ABC):
     def combine(cls, left: Any, right: Any) -> Any:
         """
         how to combine two instances of the underlying type(s)
-        
+
         Raises:
             NotImplementedError -- when the combine logic is not implemented
         """
 
         raise NotImplementedError(f"{cls.__name__} does not implement combine logic")
-    
+
     @classmethod
     def as_marker(cls):
         """helper function that returns this type to provide a common interface with ops"""
@@ -99,9 +99,9 @@ class Matrix(Requirement):
     """
     an marker for ops that output matrix-like data (np.arrays, sparse, ...)
     """
-    
+
     shape = None
-    parent_class = None 
+    parent_class = None
 
     @classmethod
     def compatible(cls, other: Type["Requirement"]) -> bool:
@@ -119,7 +119,7 @@ class Matrix(Requirement):
             if self_ind is not None and self_ind != other_ind:
                 return False
         return True
-    
+
     @classmethod
     def with_shape_and_dtype(cls, shape: Tuple[int], dtype: Type) ->Type["Matrix"]:
         res = cls.create_child()
@@ -127,18 +127,18 @@ class Matrix(Requirement):
         res.dtype = dtype
         res.parent_class = cls
         return res
-        
+
     @classmethod
     def parse(cls, data: Any) -> Any:
         if cls.dtype is not None:
             return np.asarray(data, dtype=cls.dtype)
         try:
-            return np.asarray(array_as_list, FloatType)
+            return np.asarray(data, FloatType)
         except ValueError:
-            return np.asarray(array_as_list)
-        
+            return np.asarray(data)
+
     @classmethod
     def combine(cls, left: Any, right: Any) -> Any:
-        """will combine the data along the first dimension"""
-        return np.concatenate((np.asarray(left), np.asarray(right)))
-        
+        """will combine the data along the first dimension"""#
+        return np.concatenate((np.asarray(left), np.asarray(right)), axis=-1)
+

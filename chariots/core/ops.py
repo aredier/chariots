@@ -212,10 +212,11 @@ class BaseOp(AbstractOp):
                 if desired_marker.compatible(data_marker):
                     markers_to_group.append(data_marker)
 
-            grouped_res = None
             if not self._accept_combine:
                 res[desired_arg_name] = data.pop(markers_to_group[0])
                 continue
+
+            grouped_res = None
             for selected_marker in markers_to_group:
                 grouped_res = desired_marker.combine(
                     grouped_res, data.pop(selected_marker)
@@ -274,6 +275,7 @@ class Split(AbstractOp):
     def __init__(self, n_splits: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._n_splits = n_splits
+        self._already_joined = False
 
     @property
     def markers(self):
@@ -283,13 +285,16 @@ class Split(AbstractOp):
         self.previous_op = other
         self._pusher = SplitPusher(self._n_splits)
         self._link_versions(other)
+        self._already_joined = False
         return [_SplitRes(puller, self) for puller in self._pusher.pullers]
 
     def perform(self):
         if self.previous_op is None:
             raise ValueError("this pipeline doesn't seem to have a tap, can't get"\
                              " the data flowing")
-        self._pusher.set_iterator(self.previous_op.perform())
+        if not self._already_joined:
+            self._already_joined = True
+            self._pusher.set_iterator(self.previous_op.perform())
 
     @property
     def compounded_markers_and_version_str(self):

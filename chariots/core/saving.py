@@ -1,14 +1,10 @@
+import json
 import operator
 import os
-import json
 import shutil
-from abc import ABC
-from abc import abstractmethod
-from abc import abstractclassmethod
-from typing import Text
-from typing import IO
-from typing import Tuple
+from abc import ABC, abstractclassmethod, abstractmethod
 from tempfile import TemporaryDirectory
+from typing import IO, Text, Tuple
 
 from chariots.core.versioning import Version
 
@@ -81,12 +77,11 @@ class Savable(ABC):
             the initialised object corresponding to serialized format in dir
         """
 
-    def load_serialized_fields(self, **fields):
+    @abstractmethod
+    def load_serialized_fields(self,version_identifiers, **fields):
         """
         loads the serialized fields once the object has been deserialized
         """
-        for field_name, field_value in fields.items():
-            setattr(self, field_name, field_value)
 
     @classmethod
     def load(cls, saver: Saver) -> "Savable":
@@ -96,14 +91,14 @@ class Savable(ABC):
         with TemporaryDirectory() as temp_dir:
 
             old_version = saver.load(temp_dir, **cls.identifiers())
-            versioned_fields = Version.load_fields(os.path.join(temp_dir,
+            versioned_fields, identifiers = Version.load_fields(os.path.join(temp_dir,
                                                    "_saving_versioned_fields.json"))
 
             # should distinguish saving version vs runtime version
             instance =  cls._deserialize(temp_dir)
         if old_version.major != cls.checksum().major:
             raise ValueError(f"saved {cls.__name__} is deprecated")
-        instance.load_serialized_fields(**versioned_fields)
+        instance.load_serialized_fields(version_identifiers=identifiers, **versioned_fields)
         return instance
 
     # TODO use class property for those two
@@ -148,5 +143,7 @@ class FileSaver(Saver):
             if latest_version is None or version > latest_version:
                 latest_version = version
                 latest_model_file = file_name
+        if latest_model_file is None:
+            raise FileNotFoundError("saved object could not be found")
         shutil.unpack_archive(os.path.join(save_dir, latest_model_file), temp_dir, "zip")
         return latest_version

@@ -27,7 +27,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
     # not changed a trainable op should be able to cope with it
     _carry_on_verision = False
 
-    # which vesion to update when retraining the model 
+    # which vesion to update when retraining the model
     # by default this is minor as in most cases all things being equal a retrain doesn't change much
     _last_trained_time = VersionField(SubVersionType.PATCH, target_version=VersionType.RUNTIME,
                                       default_factory=lambda:None)
@@ -81,7 +81,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
 
     def __call__(self, other):
         if self.fited:
-            for version_string in self._upstream_version_str_at_train:
+            for version_string in self._upstream_version_str_at_train.values():
                 parsed_version = Version.parse(version_string)
                 if all(parsed_version.major != Version.parse(potential_version).major
                        for _, potential_version in other.compounded_markers_and_version_str):
@@ -109,11 +109,10 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
             self._inner_train(**args_dict)
         self._is_fited = True
         self._last_trained_time = time.time()
-        self._upstream_version_str_at_train = self._find_previous_prediction_op_version()
+        self._upstream_version_str_at_train = dict(self._find_previous_prediction_op_version())
 
     def _find_previous_prediction_op_version(self):
-        self.compounded_markers_and_version_str
-        return [version for req, version in self.previous_op.compounded_markers_and_version_str
+        return [(str(req), version) for req, version in self.previous_op.compounded_markers_and_version_str
                 if any(requirement.compatible(req) for requirement in self.requires.values())]
 
     @classmethod
@@ -122,7 +121,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         return saving_version
 
     def _serialize(self, temp_dir: Text):
-        self.saving_version.save_fields(os.path.join(temp_dir, "_runtime_version.json"))
+        self.runtime_version.save_fields(os.path.join(temp_dir, "_runtime_version.json"))
         with open(os.path.join(temp_dir, "_upstream_version_str_at_train.json"), "w") as file:
             json.dump(self._upstream_version_str_at_train, file)
 
@@ -131,9 +130,19 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
         instance = cls()
         with open(os.path.join(temp_dir, "_upstream_version_str_at_train.json"), "r") as file:
             instance._upstream_version_str_at_train = json.load(file)
-        versioned_fields = instance.saving_version.load_fields(os.path.join(temp_dir,
+        versioned_fields, version_identifiers = instance.saving_version.load_fields(os.path.join(temp_dir,
                                                                "_runtime_version.json"))
         for field_name, field_value in versioned_fields.items():
             setattr(instance, field_name, field_value)
+        instance.runtime_version.major._unique_identifier = version_identifiers["major"]
+        instance.runtime_version.minor._unique_identifier = version_identifiers["minor"]
+        instance.runtime_version.patch._unique_identifier = version_identifiers["patch"]
         return instance
+
+    def load_serialized_fields(self,version_identifiers, **fields):
+        for field_name, field_value in fields.items():
+            setattr(self, field_name, field_value)
+        self.saving_version.major = version_identifiers["major"]
+        self.saving_version.minor = version_identifiers["minor"]
+        self.saving_version.patch = version_identifiers["patch"]
 

@@ -55,6 +55,13 @@ class SavableObject(Savable, BaseOp):
     def identifiers(cls):
         return {"type": "test", "instance": test_uuid}
 
+    def load_serialized_fields(self,version_identifiers, **fields):
+        for field_name, field_value in fields.items():
+            setattr(self, field_name, field_value)
+        self.saving_version.major = version_identifiers["major"]
+        self.saving_version.minor = version_identifiers["minor"]
+        self.saving_version.patch = version_identifiers["patch"]
+
 
 def test_saving(saver):
     foo =  SavableObject()

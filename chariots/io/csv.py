@@ -79,7 +79,6 @@ class CSVTap(taps.DataTap):
         }
         self.markers = list(self._col_for_marker.keys())
         self._kept_markers = list(itertools.chain(*self._col_for_marker.values()))
-        print(self._kept_markers)
 
     def _batch_generator(self):
         if not self._file_opened:

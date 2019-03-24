@@ -1,19 +1,13 @@
 import os
-from typing import IO
-from typing import Text
-from typing import Optional
-from typing import Type, Mapping
+from typing import IO, Mapping, Optional, Text, Type
 
 import numpy as np
-from sklearn.externals import joblib
 from sklearn.base import BaseEstimator
+from sklearn.externals import joblib
 
-from chariots.core.requirements import Matrix
-from chariots.core.requirements import Requirement
-from chariots.core.requirements import FloatType
+from chariots.core.requirements import FloatType, Matrix, Requirement
 from chariots.core.saving import Savable
-from chariots.core.versioning import VersionField
-from chariots.core.versioning import SubVersionType
+from chariots.core.versioning import SubVersionType, VersionField, VersionType
 from chariots.helpers.types import DataBatch
 from chariots.training.trainable_op import TrainableOp
 
@@ -23,13 +17,21 @@ class SklearnOp(TrainableOp):
     """
 
 
-    model_cls: Type[BaseEstimator] = VersionField(SubVersionType.MINOR, default_factory=lambda: None)
-    training_params: Mapping = VersionField(SubVersionType.MINOR, default_factory=lambda: {})
+    model_cls: Type[BaseEstimator] = VersionField(SubVersionType.MINOR, target_version=VersionType.RUNTIME,
+                                                  default_factory=lambda: None)
+    training_params: Mapping = VersionField(SubVersionType.MINOR, target_version=VersionType.RUNTIME,
+                                            default_factory=lambda: {})
 
     # these have to be overiden when inheriting
-    markers = [Matrix.with_shape_and_dtype((None, 1), FloatType)]
-    requires = {"x": Matrix}
-    training_requirements = {}
+    markers = None
+    requires = None
+    training_requirements = None
+
+    def __new__(cls, *args, **kwargs):
+        cls.markers = cls.markers or [Matrix.with_shape_and_dtype((None, 1), FloatType)]
+        cls.requires = cls.requires or {"x": Matrix}
+        cls.training_requirements = cls.training_requirements or {}
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self):
         self.model = self.model_cls(**self.training_params)  # pylint: disable=not-callable, not-a-mapping
@@ -85,6 +87,7 @@ class SklearnOp(TrainableOp):
         resulting_op.model_cls = model_cls
         resulting_op.training_params = training_params or {}
         resulting_op.markers = [y_marker]
+        resulting_op.name = name
         return resulting_op
 
 
@@ -111,6 +114,8 @@ class OnlineSklearnSupervised(SklearnOp):
 
 class OnlineSklearnTransformer(SklearnOp):
 
+    _last_trained_time = VersionField(SubVersionType.MAJOR, target_version=VersionType.RUNTIME,
+                                      default_factory=lambda:None)
     def _inner_train(self, x_train):
         self.model.partial_fit(x=x_train)
 
@@ -131,7 +136,7 @@ class SingleFitSkSupervised(SklearnOp):
         return self.model.predict(x)
 
     @classmethod
-    def factory(cls, x_marker, y_marker, model_cls, training_params = None, name = "some_sk_model", 
+    def factory(cls, x_marker, y_marker, model_cls, training_params = None, name = "some_sk_model",
                 description = ""):
 
         resulting_op = super().factory(x_marker, y_marker, model_cls, training_params, name,
@@ -142,6 +147,8 @@ class SingleFitSkSupervised(SklearnOp):
 
 class SingleFitSkTransformer(SklearnOp):
 
+    _last_trained_time = VersionField(SubVersionType.MAJOR, target_version=VersionType.RUNTIME,
+                                      default_factory=lambda:None)
     def _inner_train(self, x_train):
         self.model.fit(x_train)
 
