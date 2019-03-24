@@ -39,6 +39,10 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
     _is_fited = False
     evaluation_metric = None
 
+    # if True na values in train will be droped before training
+    # this behavior  has to be implemented when overiding
+    _na_resilient = False
+
     @classmethod
     def _interpret_signature(cls):
         super()._interpret_signature()
@@ -132,7 +136,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
             instance._upstream_version_str_at_train = json.load(file)
         versioned_fields = instance.saving_version.load_fields(os.path.join(temp_dir,
                                                                "_runtime_version.json"))
-        for field_name, field_value in versioned_fields.items(): 
+        for field_name, field_value in versioned_fields.items():
             setattr(instance, field_name, field_value)
         return instance
 

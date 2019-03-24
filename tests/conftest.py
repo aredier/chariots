@@ -86,14 +86,12 @@ class LinearModel(TrainableOp):
         return self._model.predict(np.asarray(x).reshape(-1, 1))
 
     def _serialize(self, temp_dir: Text):
-        print("youhou")
         super()._serialize(temp_dir)
         with open(os.path.join(temp_dir, "model.pkl"), "wb") as file:
             joblib.dump(self._model, file)
 
     @classmethod
     def _deserialize(cls, temp_dir: Text) -> "Savable":
-        print("loading")
         res = super()._deserialize(temp_dir)
         with open(os.path.join(temp_dir, "model.pkl"), "rb") as file:
             res._model = joblib.load(file)

@@ -115,7 +115,6 @@ def test_saving_trained_pipeline(x_op_cls, linear_y_op_cls, x_requirement_cls, l
     assert not virgin_pipeline.ready
     virgin_pipeline.load(saver)
     y_pred = virgin_pipeline(x_test)
-    print(virgin_pipeline.output_op.fited)
     for i, y_pred_ind in enumerate(y_pred.perform()):
         y_pred_ind.should.be.a(dict)
         y_pred_ind.should.have.key(linear_model_cls.markers[0])

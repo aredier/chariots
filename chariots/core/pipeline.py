@@ -170,7 +170,6 @@ class Pipeline(TrainableTrait, AbstractOp):
                 unloaded_ops.append(op_of_interest)
                 continue
             loaded_op = op_of_interest.load(saver)
-            print("fited at loading", loaded_op.fited)
             self._replace_op_in_graph(op_of_interest, loaded_op)
 
     def _replace_op_in_graph(self, op_to_replace: AbstractOp, replacing_op: AbstractOp):
