@@ -2,32 +2,19 @@
 """
 base op of chariots
 """
-import random
 import functools
 import inspect
-from abc import ABC
-from abc import abstractmethod
-from abc import abstractclassmethod
-from abc import ABCMeta
-from typing import Optional
-from typing import List
-from typing import Mapping
-from typing import Type
-from typing import Text
-from typing import Any
+import random
+from abc import ABC, ABCMeta, abstractclassmethod, abstractmethod
+from typing import Any, List, Mapping, Optional, Text, Type
 
-from chariots.core.dataset import DataSet, ORIGIN
+from chariots.core.dataset import ORIGIN, DataSet
 from chariots.core.requirements import Requirement
-from chariots.core.versioning import _extract_versioned_fields
-from chariots.core.versioning import VersionField
-from chariots.core.versioning import _VersionField
-from chariots.core.versioning import Version
-from chariots.core.versioning import SubVersionType
-from chariots.core.versioning import VERSIONING_PRE
-from chariots.helpers.types import DataBatch
-from chariots.helpers.types import Requirements
-from chariots.helpers.utils import SplitPuller
-from chariots.helpers.utils import SplitPusher
+from chariots.core.versioning import (VERSIONING_PRE, SubVersionType, Version,
+                                      VersionField, _extract_versioned_fields,
+                                      _VersionField)
+from chariots.helpers.types import DataBatch, Requirements
+from chariots.helpers.utils import SplitPuller, SplitPusher
 
 
 class AbstractOp(ABC):
@@ -178,10 +165,13 @@ class BaseOp(AbstractOp):
     The key of each requirement is used as the parameter_name of the corresponding argument in _main
     hence all the arguments of _main must be keys of the required dict
     """
+
+    _accept_combine = False
+
     def __new__(cls, *args, **kwargs):
         cls._interpret_signature()
         instance = super().__new__(cls)
-        return instance 
+        return instance
 
     @abstractmethod
     def _main(self, **kwargs) -> DataBatch:
@@ -197,13 +187,13 @@ class BaseOp(AbstractOp):
         if self.previous_op is None:
             raise ValueError("this pipeline doesn't seem to have a tap, can't get the data flowing")
         return self._map_op(self.previous_op.perform())
-    
+
     def _map_op(self, data_set: DataSet):
         """
         maps itself to a dataset
         """
         return DataSet.from_op(map(self._perform_single, data_set))
-    
+
     def _perform_single(self, data: DataBatch):
         """
         performs the argument resolution executes the op on a databatch
@@ -213,16 +203,27 @@ class BaseOp(AbstractOp):
         wraped_res = dict(zip(self.markers, op_res if isinstance(op_res, tuple) else (op_res,)))
         wraped_res.update(unused_data)
         return wraped_res
-    
+
     def _resolve_arguments(self, data: dict, requirements: Requirements):
         res = {}
-        for arg_name, marker in requirements.items():
+        for desired_arg_name, desired_marker in requirements.items():
+            markers_to_group = []
             for data_marker in data:
-                if marker.compatible(data_marker):
-                    res[arg_name] = data.pop(data_marker) 
-                    break
+                if desired_marker.compatible(data_marker):
+                    markers_to_group.append(data_marker)
+
+            grouped_res = None
+            if not self._accept_combine:
+                res[desired_arg_name] = data.pop(markers_to_group[0])
+                continue
+            for selected_marker in markers_to_group:
+                grouped_res = desired_marker.combine(
+                    grouped_res, data.pop(selected_marker)
+                ) if grouped_res is not None else data.pop(selected_marker)
+
+            res[desired_arg_name] = grouped_res
         return res, data
-    
+
     @staticmethod
     def _find_valid_requirements(signature: inspect.Signature) -> Mapping[Text, Type[Requirement]]:
         requirements = {}
@@ -239,7 +240,7 @@ class BaseOp(AbstractOp):
                                 "subclass of Requirements, cannot infer previous op requirement")
             requirements[arg_name] = arg.annotation
         return requirements
-    
+
     @staticmethod
     def _find_marker(signature: inspect.Signature) -> Type[Requirement]:
         if signature.return_annotation is inspect.Signature.empty:
@@ -256,11 +257,11 @@ class BaseOp(AbstractOp):
         main_sig = inspect.signature(cls._main)
         if cls.requires is None:
             cls.requires = cls._find_valid_requirements(main_sig)
-        
+
         if cls.markers is None:
             cls.markers = [cls._find_marker(main_sig)]
 
-    
+
 class Split(AbstractOp):
     """
     split operation that creates several downstreams from a single upstream
@@ -273,17 +274,17 @@ class Split(AbstractOp):
     def __init__(self, n_splits: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._n_splits = n_splits
-    
+
     @property
     def markers(self):
         return self.previous_op.markers
-    
+
     def __call__(self, other: "AbstractOp") -> List["_SplitRes"]:
         self.previous_op = other
         self._pusher = SplitPusher(self._n_splits)
         self._link_versions(other)
         return [_SplitRes(puller, self) for puller in self._pusher.pullers]
-    
+
     def perform(self):
         if self.previous_op is None:
             raise ValueError("this pipeline doesn't seem to have a tap, can't get"\
@@ -296,7 +297,7 @@ class Split(AbstractOp):
             return []
         return self.previous_op.compounded_markers_and_version_str
 
-    
+
 class _SplitRes(AbstractOp):
     """
     downstream op of a split (returned by Split.__call__)
@@ -313,10 +314,10 @@ class _SplitRes(AbstractOp):
     @property
     def markers(self):
         return self.previous_op.markers
-    
+
     def __call__(self, other: "AbstractOp") -> "AbstractOp":
         raise ValueError("split puller should not be called directly")
-    
+
     def perform(self) -> DataSet:
         self.previous_op.perform()
         return DataSet.from_op(self._puller)
@@ -345,7 +346,7 @@ class Merge(AbstractOp):
     @property
     def markers(self):
         return [marker for op in self.previous_op for marker in op.markers]
-    
+
     def _perform_single(self, ziped):
         res = {}
         for partial in ziped:
@@ -359,7 +360,7 @@ class Merge(AbstractOp):
         return [marker for op in self.previous_op 
                 for marker in op.compounded_markers_and_version_str 
                 if not any(requirement.compatible(marker[0]) for requirement in self.requires.values())]
-    
+
     @property
     def ready(self):
         return all([op.ready for op in self.previous_op])
@@ -369,4 +370,3 @@ class Merge(AbstractOp):
         for other_single_op in other:
             self._link_versions(other_single_op)
         return self
-

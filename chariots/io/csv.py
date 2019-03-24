@@ -72,8 +72,7 @@ class CSVTap(taps.DataTap):
 
     def _analyse_header(self):
         header = next(self._file_io)
-        header_names = [""] if header[0] == "," else[]
-        header_names.extend(self._split_line(header.strip()))
+        header_names = self._split_line(header.strip())
         self._col_for_marker = {
             marker: list(map(header_names.index, names))
             for marker, names in self._name_for_marker.items()

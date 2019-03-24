@@ -38,10 +38,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
 
     _is_fited = False
     evaluation_metric = None
-
-    # if True na values in train will be droped before training
-    # this behavior  has to be implemented when overiding
-    _na_resilient = False
+    _accept_combine = True
 
     @classmethod
     def _interpret_signature(cls):

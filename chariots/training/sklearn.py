@@ -30,7 +30,6 @@ class SklearnOp(TrainableOp):
     markers = [Matrix.with_shape_and_dtype((None, 1), FloatType)]
     requires = {"x": Matrix}
     training_requirements = {}
-    _na_resilient = False
 
     def __init__(self):
         self.model = self.model_cls(**self.training_params)  # pylint: disable=not-callable, not-a-mapping
@@ -95,9 +94,6 @@ class OnlineSklearnSupervised(SklearnOp):
     training_requirements = {"y_train": Matrix.with_shape_and_dtype((None, 1), FloatType)}
 
     def _inner_train(self, x_train, y_train):
-        na_idxs = np.isnan(x_train).any(axis=1)
-        x_train = x_train[~na_idxs]
-        y_train = y_train[~na_idxs]
         self.model.partial_fit(X=x_train, y=y_train)
 
     def _main(self, x) -> DataBatch:
@@ -116,8 +112,6 @@ class OnlineSklearnSupervised(SklearnOp):
 class OnlineSklearnTransformer(SklearnOp):
 
     def _inner_train(self, x_train):
-        na_idxs = np.isnan(x_train).any(axis=1)
-        x_train = x_train[~na_idxs]
         self.model.partial_fit(x=x_train)
 
     def _main(self, x) -> DataBatch:
@@ -131,9 +125,6 @@ class SingleFitSkSupervised(SklearnOp):
 
     # TODO add an error when refiting
     def _inner_train(self, x_train, y_train):
-        na_idxs = np.isnan(x_train).any(axis=1)
-        x_train = x_train[~na_idxs]
-        y_train = y_train[~na_idxs]
         self.model.fit(X=x_train, y=y_train)
 
     def _main(self, x) -> DataBatch:
@@ -152,8 +143,6 @@ class SingleFitSkSupervised(SklearnOp):
 class SingleFitSkTransformer(SklearnOp):
 
     def _inner_train(self, x_train):
-        na_idxs = np.isnan(x_train).any(axis=1)
-        x_train = x_train[~na_idxs]
         self.model.fit(x_train)
 
     def _main(self, x) -> DataBatch:
