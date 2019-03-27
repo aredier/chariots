@@ -17,57 +17,57 @@ from chariots.training.sklearn import (SingleFitSkSupervised,
 TRAIN_PATH = os.environ.get("TITANIC_TRAIN_PATH")
 TEST_PATH = os.environ.get("TITANIC_TEST_PATH")
 
-numerical_features = requirements.Matrix.create_child("numerical_features").with_shape_and_dtype((None, 2), np.float32)
-not_processed_names = requirements.Matrix.create_child("preprocessed_names").with_shape_and_dtype((None, 1), np.str)
-not_processed_sex = requirements.Matrix.create_child("preprocessed_sex").with_shape_and_dtype((None, 1), np.str)
-not_processed_class = requirements.Matrix.create_child("not_processed_class").with_shape_and_dtype((None, 1), np.str)
-none_preprocessed_embarked = requirements.Matrix.create_child("preprocessed_embarked").with_shape_and_dtype((None, 1), np.str)
+NumericalFeatures = requirements.Matrix.create_child("numerical_features").with_shape_and_dtype((None, 2), np.float32)
+NotProcessedNames = requirements.Matrix.create_child("preprocessed_names").with_shape_and_dtype((None, 1), np.str)
+NotProcessedSex = requirements.Matrix.create_child("preprocessed_sex").with_shape_and_dtype((None, 1), np.str)
+NotProcessedClass = requirements.Matrix.create_child("not_processed_class").with_shape_and_dtype((None, 1), np.str)
+NotPreprocessedEmbarked = requirements.Matrix.create_child("preprocessed_embarked").with_shape_and_dtype((None, 1), np.str)
 y = requirements.Matrix.create_child("survived-pred").with_shape_and_dtype((None, 1), np.int32)
-y_evaluate = requirements.Matrix.create_child("survived-true").with_shape_and_dtype((None, 1), np.int32)
+YEvaluate = requirements.Matrix.create_child("survived-true").with_shape_and_dtype((None, 1), np.int32)
 
-is_master = numerical_features.create_child("is_master")
+is_master = NumericalFeatures.create_child("is_master")
 
 class IsMasterOp(ops.BaseOp):
     is_reversed = versioning.VersionField(subversion=versioning.SubVersionType.MAJOR,
                                           target_version=versioning.VersionType.RUNTIME,
                                           default_value=False)
 
-    def _main(self, names: not_processed_names) -> is_master:
+    def _main(self, names: NotProcessedNames) -> is_master:
         if self.is_reversed:
             return np.array([[int(not bool(re.match(".*Master", name[0])))] for name in names])
         return np.array([[int(bool(re.match(".*Master", name[0])))] for name in names])
 
 is_master_op = IsMasterOp()
 
-sex_encoder_cls = SingleFitSkTransformer.factory(
-    not_processed_sex,
-    numerical_features.create_child("sex_preprocessed"),
+SexEncoderOp = SingleFitSkTransformer.factory(
+    NotProcessedSex,
+    NumericalFeatures.create_child("sex_preprocessed"),
     model_cls = OneHotEncoder,
     name="sex_encoder",
     training_params = {"sparse": False}
 )
 
-class_encoder_cls = SingleFitSkTransformer.factory(
-    not_processed_class,
-    numerical_features.create_child("class_preprocessed"),
+ClassEncoderOp = SingleFitSkTransformer.factory(
+    NotProcessedClass,
+    NumericalFeatures.create_child("class_preprocessed"),
     model_cls = OneHotEncoder,
     name="class_encoder",
     training_params = {"sparse": False}
 )
 
-model_cls = SingleFitSkSupervised.factory(
-    numerical_features,
+ModelOp = SingleFitSkSupervised.factory(
+    NumericalFeatures,
     y,
     model_cls = RandomForestClassifier,
     name="our_glorious_model"
 )
 
 def train(train_path):
-    class_encoder = class_encoder_cls()
-    sex_encoder = sex_encoder_cls()
-    model = model_cls()
+    class_encoder = ClassEncoderOp()
+    sex_encoder = SexEncoderOp()
+    model = ModelOp()
 
-    with csv.CSVTap(train_path, {numerical_features: ["Age", "Fare"], not_processed_sex: ["Sex"], not_processed_names: ["Name"], not_processed_class: ["Pclass"], y: ["Survived"]}, skip_nan=True) as tap:
+    with csv.CSVTap(train_path, {NumericalFeatures: ["Age", "Fare"], NotProcessedSex: ["Sex"], NotProcessedNames: ["Name"], NotProcessedClass: ["Pclass"], y: ["Survived"]}, skip_nan=True) as tap:
         sex_training, class_training, features = ops.Split(3)(tap)
 
         class_encoder.fit(class_training)
@@ -80,10 +80,10 @@ def train(train_path):
     return class_encoder, sex_encoder, model
 
 def test(test_path, class_encoder, sex_encoder, model):
-    model.attach_evaluation(evaluation.ClassificationMetrics(y_evaluate, y))
-    with csv.CSVTap(test_path, {numerical_features: ["Age", "Fare"],not_processed_sex: ["Sex"],
-                                not_processed_names: ["Name"], not_processed_class: ["Pclass"],
-                                y_evaluate: ["Survived"]}, skip_nan=True) as tap:
+    model.attach_evaluation(evaluation.ClassificationMetrics(YEvaluate, y))
+    with csv.CSVTap(test_path, {NumericalFeatures: ["Age", "Fare"],NotProcessedSex: ["Sex"],
+                                NotProcessedNames: ["Name"], NotProcessedClass: ["Pclass"],
+                                YEvaluate: ["Survived"]}, skip_nan=True) as tap:
         features = sex_encoder(tap)
         features = class_encoder(features)
 
@@ -94,9 +94,9 @@ if __name__ == "__main__":
     saver = FileSaver("/tmp/chariots/")
     should_save = False
     try:
-        model = model_cls.load(saver)
-        class_encoder = class_encoder_cls.load(saver)
-        sex_encoder = sex_encoder_cls.load(saver)
+        model = ModelOp.load(saver)
+        class_encoder = ClassEncoderOp.load(saver)
+        sex_encoder = SexEncoderOp.load(saver)
     except FileNotFoundError:
         should_save = True
         print("\nno models found, training\n")
