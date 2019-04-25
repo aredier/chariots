@@ -1,6 +1,7 @@
 import operator
 import os
 import time
+import json
 from typing import Mapping, Type, Any, Text, Optional, List, Dict
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -27,12 +28,10 @@ class AbstractMonitoringTable(ABC):
     the data for a monitoring table
     """
 
-
     numerical_display_format: TableNumericalDisplayFormat = TableNumericalDisplayFormat.TABLE
     graphical_display_format: TableGraphicalDisplayFormat = TableGraphicalDisplayFormat.LINE_CHART
 
-
-    able_name: Text = None
+    table_name: Text = None
 
     # frequency at which the flush should happen
     flush_time_sep = 1
@@ -51,6 +50,10 @@ class AbstractMonitoringTable(ABC):
         return {attr_name: attr for attr_name, attr
                 in sorted(list(cls.__dict__.items()), key=operator.itemgetter(0))
                 if isinstance(attr, MonitoringField)}
+
+    @classmethod
+    def get_fields_metadata(cls):
+        return {field_name: field.metadata for field_name, field in cls.get_fields_dict().items()}
 
     def dump_data(self, **kwargs):
         self._check_data_validity(kwargs)
@@ -74,6 +77,7 @@ class AbstractMonitoringTable(ABC):
         self._interface.dump_data(self, self._cache)
         self._cache = []
 
+
 class MonitoringField:
 
     def __init__(self, dtype: FieldTypes, default_value: Optional[Any] = None, optional: bool = True,
@@ -84,6 +88,16 @@ class MonitoringField:
         self.is_optional = optional
         self.default_value = default_value
 
+    @property
+    def metadata(self):
+        return {
+            "dtype": self.dtype.value,
+            "groupings": {field: grouping.value for field, grouping in
+                          self.grouping_behavior.items()},
+            "optional": self.is_optional,
+            "default": self.default_value,
+        }
+
 
 class FieldGroupingBehavior(Enum):
     MAX = 1
@@ -91,10 +105,12 @@ class FieldGroupingBehavior(Enum):
     AVERAGE = 2
 
 
+
 class MonitoringFieldGrouping:
     def __init__(self, possible_grouping_behavior: Optional[List[FieldGroupingBehavior]],
                  is_forget_grouping: bool = False):
         pass
+
 
 class TablesMonitoringTable(AbstractMonitoringTable):
     """a table to monitor all the other tables present in the monitoring system"""
@@ -141,6 +157,7 @@ class AbstractMonitoringInterface(ABC):
     def __exit__(self, *args, **kwargs):
         pass
 
+
 class CSVMonitoringInterface(AbstractMonitoringInterface):
 
     def __init__(self, path: Text, *args, **kwargs):
@@ -151,8 +168,12 @@ class CSVMonitoringInterface(AbstractMonitoringInterface):
 
     def _initialise_table(self, table: AbstractMonitoringTable):
         if self._file_map is None:
-            self._needed_file_map.append({"t_name": table.table_name, "t_fields": table.get_fields_dict()})
+            self._needed_file_map.append({"t_name": table.table_name,
+                                          "t_fields": table.get_fields_dict(),
+                                          "t_metadata": table.get_fields_metadata()})
         else:
+            with open(os.path.join(self._dir_path, table.table_name + "_meta.json"), "w") as file:
+                json.dump(table.get_fields_metadata(), file)
             self._file_map[table.table_name] = open(self._build_name(table.table_name), "a")
             self._initialise_table_header(table.table_name, table.get_fields_dict())
 
@@ -160,7 +181,8 @@ class CSVMonitoringInterface(AbstractMonitoringInterface):
         self._file_map[table_name].write(self._format_line(fields_dict.keys()))
         self._file_map[table_name].flush()
 
-    def _format_line(self, line_elements):
+    @staticmethod
+    def _format_line(line_elements):
         print("---------------------", line_elements)
         return ",".join(map(str, line_elements)) + "\n"
 
@@ -184,6 +206,8 @@ class CSVMonitoringInterface(AbstractMonitoringInterface):
         self._file_map = {}
         for table_data in self._needed_file_map:
             t_name = table_data["t_name"]
+            with open(os.path.join(self._dir_path, t_name + "_meta.json"), "w") as file:
+                json.dump(table_data["t_metadata"], file)
             self._file_map[t_name] = open(self._build_name(t_name), "a")
             self._initialise_table_header(t_name, table_data["t_fields"])
         return self
