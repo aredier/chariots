@@ -1,10 +1,34 @@
-import operator
-import os
-import time
-import json
+from datetime import datetime
 from typing import Mapping, Type, Any, Text, Optional, List, Dict
 from abc import ABC, abstractmethod
 from enum import Enum
+
+from influxdb import InfluxDBClient
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.engine import Engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+
+INFLUX_DB_NAME = "chariots_monitoring"
+SQL_BASE = declarative_base()
+
+
+class SeriesNumericalDisplayFormat(Enum):
+    NONE = -1
+    TABLE = 1
+
+
+class SeriesGraphicalDisplayFormat(Enum):
+    NONE = -1
+    LINE_CHART = 1
+
+
+class FieldGroupingBehavior(Enum):
+    MAX = 1
+    MIN = 2
+    AVERAGE = 2
+
 
 class FieldTypes(Enum):
     INT = 0
@@ -12,79 +36,13 @@ class FieldTypes(Enum):
     TEXT = 2
 
 
-class TableNumericalDisplayFormat(Enum):
-    NONE = -1
-    TABLE = 1
-
-
-class TableGraphicalDisplayFormat(Enum):
-    NONE = -1
-    LINE_CHART = 1
-
-
-class AbstractMonitoringTable(ABC):
-    """
-    in memory buffer that defines and store temporarly (to reduce io operations)
-    the data for a monitoring table
-    """
-
-    numerical_display_format: TableNumericalDisplayFormat = TableNumericalDisplayFormat.TABLE
-    graphical_display_format: TableGraphicalDisplayFormat = TableGraphicalDisplayFormat.LINE_CHART
-
-    table_name: Text = None
-
-    # frequency at which the flush should happen
-    flush_time_sep = 1
-
-    # you can add MonitoringFields as class argguments
-
-    def __init__(self, interface: "AbstractMonitoringInterface", _register=True):
-        self._last_flush = time.time()
-        self._cache = []
-        self._interface = interface
-        if _register:
-            self._interface.register_table(self)
-
-    @classmethod
-    def get_fields_dict(cls) -> Dict[Text, "MonitoringField"]:
-        return {attr_name: attr for attr_name, attr
-                in sorted(list(cls.__dict__.items()), key=operator.itemgetter(0))
-                if isinstance(attr, MonitoringField)}
-
-    @classmethod
-    def get_fields_metadata(cls):
-        return {field_name: field.metadata for field_name, field in cls.get_fields_dict().items()}
-
-    def dump_data(self, **kwargs):
-        self._check_data_validity(kwargs)
-        self._cache.append(kwargs)
-        present_time = time.time()
-        if present_time - self._last_flush > self.flush_time_sep:
-            self.flush()
-            self._last_flush = present_time
-
-    def _check_data_validity(self, data: Mapping[Text, Any]):
-        fields_dict = self.get_fields_dict()
-        for key, value in data.items():
-            if not fields_dict.pop(key, None):
-                raise ValueError(f"field is not present in table {self.table_name}: {key}")
-        if not all([field.is_optional for field in fields_dict.values()]):
-            raise ValueError("non optional field is None")
-
-    def flush(self):
-        print("flushing", self.table_name)
-        print(self._cache)
-        self._interface.dump_data(self, self._cache)
-        self._cache = []
-
-
 class MonitoringField:
 
     def __init__(self, dtype: FieldTypes, default_value: Optional[Any] = None, optional: bool = True,
-                 grouping_behavior: Optional[Mapping["MonitoringField", "FieldGroupingBehavior"]] = None,
+                 grouping_behavior: FieldGroupingBehavior = None,
                  ):
         self.dtype = dtype
-        self.grouping_behavior = grouping_behavior or {}
+        self.grouping_behavior = grouping_behavior
         self.is_optional = optional
         self.default_value = default_value
 
@@ -99,121 +57,101 @@ class MonitoringField:
         }
 
 
-class FieldGroupingBehavior(Enum):
-    MAX = 1
-    MIN = 2
-    AVERAGE = 2
+class MonitoringSeries(ABC):
+    series_name = None
+
+    numerical_display_format: SeriesNumericalDisplayFormat = SeriesNumericalDisplayFormat.TABLE
+    graphical_display_format: SeriesGraphicalDisplayFormat = SeriesGraphicalDisplayFormat.LINE_CHART
+
+    #you can add fields bellow
+
+    def __init__(self, interface: "MonitoringInterface"):
+        self._interface = interface
+        self._interface.register_series(self)
+
+    def dump_data(self, **kwargs):
+        self._interface.register_data(self, self._check_data_validity_and_fill_defaults(kwargs))
+
+    def _check_data_validity_and_fill_defaults(self, data: Mapping[Text, Any]):
+        fields_dict = self.get_fields_dict()
+        res = {}
+        for key, value in data.items():
+            if not fields_dict.pop(key, None):
+                raise ValueError(f"field is not present in table {self.series_name}: {key}")
+            res[key] = value
+        if not all([field.is_optional for field in fields_dict.values()]):
+            raise ValueError("non optional field is None")
+        res.update({field_name: field.default_value for field_name, field in fields_dict.items()})
+        return res
+
+    @classmethod
+    def get_fields_dict(cls) -> Mapping[Text, MonitoringField]:
+        return {attr_name: attr for attr_name, attr in cls.__dict__.items()
+                if isinstance(attr, MonitoringField)}
 
 
+class MonitoringSeriesMetadata(SQL_BASE):
+    __tablename__ = "series_metadata"
 
-class MonitoringFieldGrouping:
-    def __init__(self, possible_grouping_behavior: Optional[List[FieldGroupingBehavior]],
-                 is_forget_grouping: bool = False):
-        pass
+    id = Column(Integer, primary_key=True)
+    series_name = Column(String, nullable=False)
+    graphical_display = Column(Integer, default=SeriesGraphicalDisplayFormat.NONE.value)
+    numerical_display = Column(Integer, default=SeriesNumericalDisplayFormat.NONE.value)
 
-
-class TablesMonitoringTable(AbstractMonitoringTable):
-    """a table to monitor all the other tables present in the monitoring system"""
-
-    numerical_display_format = TableNumericalDisplayFormat.NONE
-    graphical_display_format = TableGraphicalDisplayFormat.NONE
-    table_name = "_all_fields"
-
-    _numerical_display_format = MonitoringField(dtype=FieldTypes.INT, default_value=None,
-                                                optional=False)
-    _graphical_display_format = MonitoringField(dtype=FieldTypes.INT, default_value=None,
-                                                optional=False)
-
-    _table_name = MonitoringField(dtype=FieldTypes.TEXT, default_value=None,
-                                                optional=False)
+    def __str__(self):
+        return f"<SeriesMetada of {self.series_name}, graphical: {self.graphical_display}, " \
+            f"numerical: {self.numerical_display}>"
 
 
-class AbstractMonitoringInterface(ABC):
+class MonitoringInterface:
 
-    def __init__(self):
-        self._all_tables_table = TablesMonitoringTable(self, _register=False)
-        self._initialise_table(TablesMonitoringTable)
+    def __init__(self, sql_engine: Engine, influx_client: InfluxDBClient,
+                 influx_db_name: Text = INFLUX_DB_NAME):
+        # initializing sql
+        self._sql_engine = sql_engine
+        self._sql_session_maker = sessionmaker(bind=self._sql_engine)
 
-    def register_table(self, table: AbstractMonitoringTable):
-        self._all_tables_table.dump_data(_numerical_display_format=table.numerical_display_format,
-                                         _graphical_display_format=table.graphical_display_format,
-                                         _table_name=table.table_name)
-        self._all_tables_table.flush()
-        self._initialise_table(table)
+        # initializing influx
+        self._influx_db_name = influx_db_name
+        self._influx_client = influx_client
+        self._influx_client.create_database(self._influx_db_name)
 
-    @abstractmethod
-    def _initialise_table(self, table: "AbstractMonitoringTable"):
-        pass
+        self._uncreated_series = []
+        self._entered = False
 
-    @abstractmethod
-    def dump_data(self, table_name, fields_maps: List[Mapping[Text, Any]]):
-        pass
-
-    @abstractmethod
-    def __enter__(self):
-        pass
-
-    @abstractmethod
-    def __exit__(self, *args, **kwargs):
-        pass
-
-
-class CSVMonitoringInterface(AbstractMonitoringInterface):
-
-    def __init__(self, path: Text, *args, **kwargs):
-        self._dir_path = path
-        self._needed_file_map = []
-        self._file_map: Optional[dict] = None
-        super().__init__(*args, **kwargs)
-
-    def _initialise_table(self, table: AbstractMonitoringTable):
-        if self._file_map is None:
-            self._needed_file_map.append({"t_name": table.table_name,
-                                          "t_fields": table.get_fields_dict(),
-                                          "t_metadata": table.get_fields_metadata()})
+    def register_series(self, series: MonitoringSeries):
+        if self._entered:
+            self._add_series_to_db(series)
         else:
-            with open(os.path.join(self._dir_path, table.table_name + "_meta.json"), "w") as file:
-                json.dump(table.get_fields_metadata(), file)
-            self._file_map[table.table_name] = open(self._build_name(table.table_name), "a")
-            self._initialise_table_header(table.table_name, table.get_fields_dict())
+            self._uncreated_series.append(series)
 
-    def _initialise_table_header(self, table_name, fields_dict):
-        self._file_map[table_name].write(self._format_line(fields_dict.keys()))
-        self._file_map[table_name].flush()
+    def register_data(self, series: MonitoringSeries, data: Mapping):
+        self._influx_client.write_points([{
+            "measurement": series.series_name,
+            "time": datetime.utcnow().isoformat(),
+            "fields": data
+        }])
+        print("foo")
 
-    @staticmethod
-    def _format_line(line_elements):
-        print("---------------------", line_elements)
-        return ",".join(map(str, line_elements)) + "\n"
+    def _add_series_to_db(self, series: MonitoringSeries):
+        session = self._sql_session_maker()
+        session.add(self._create_table_instance(series))
+        session.commit()
 
-    def _build_name(self, table_name):
-        return os.path.join(self._dir_path, table_name + ".csv")
-
-    def dump_data(self, table: AbstractMonitoringTable, fields_maps: List[Mapping[MonitoringFieldGrouping, Any]]):
-        for field_map in fields_maps:
-            line_elements = []
-            for field_name, field in table.get_fields_dict().items():
-                potential = field_map.get(field_name, None)
-                if potential is None and field.is_optional:
-                    potential = field.default_value
-                if potential is None:
-                    raise ValueError("non optional field is None")
-                line_elements.append(potential)
-            self._file_map[table.table_name].write(self._format_line(line_elements))
+    def _create_table_instance(self, series: MonitoringSeries):
+        return MonitoringSeriesMetadata(series_name=series.series_name,
+                                        graphical_display=series.graphical_display_format.value,
+                                        numerical_display=series.numerical_display_format.value)
 
     def __enter__(self):
-        os.makedirs(self._dir_path, exist_ok=True)
-        self._file_map = {}
-        for table_data in self._needed_file_map:
-            t_name = table_data["t_name"]
-            with open(os.path.join(self._dir_path, t_name + "_meta.json"), "w") as file:
-                json.dump(table_data["t_metadata"], file)
-            self._file_map[t_name] = open(self._build_name(t_name), "a")
-            self._initialise_table_header(t_name, table_data["t_fields"])
+        SQL_BASE.metadata.create_all(self._sql_engine)
+
+        for series in self._uncreated_series:
+            self._add_series_to_db(series)
+        self._entered = True
         return self
 
-    def __exit__(self, *args, **kwargs):
-        for file in self._file_map.values():
-            file.close()
-        self._file_map = None
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
 

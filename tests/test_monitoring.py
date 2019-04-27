@@ -50,10 +50,10 @@ def test_table_init(tmp_path):
         assert len(first_line_elmts) == 3
         assert first_line_elmts[positions[0]] == "fake"
         assert first_line_elmts[positions[1]] == str(
-            monitoring_interface.TableNumericalDisplayFormat.TABLE
+            monitoring_interface.SeriesNumericalDisplayFormat.TABLE
         )
         assert first_line_elmts[positions[2]] == str(
-           monitoring_interface.TableGraphicalDisplayFormat.LINE_CHART
+           monitoring_interface.SeriesGraphicalDisplayFormat.LINE_CHART
         )
     assert os.path.isfile(os.path.join(monitoring_dir, "fake.csv"))
     with open(os.path.join(monitoring_dir, "fake.csv")) as main_monitoring_file:
