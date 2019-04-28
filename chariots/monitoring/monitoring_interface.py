@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Mapping, Type, Any, Text, Optional, List, Dict
+from typing import Mapping, Type, Any, Text, Optional, List, Dict, Tuple
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from influxdb import InfluxDBClient
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -12,6 +12,12 @@ from sqlalchemy.orm import sessionmaker
 
 INFLUX_DB_NAME = "chariots_monitoring"
 SQL_BASE = declarative_base()
+
+
+def create_default_dbs() -> Tuple[Engine, InfluxDBClient]:
+    engine = create_engine('sqlite:////tmp/chariots.db', convert_unicode=True, echo=True)
+    client = InfluxDBClient('localhost', 8086, 'root', 'root', INFLUX_DB_NAME)
+    return engine, client
 
 
 class SeriesNumericalDisplayFormat(Enum):
@@ -105,15 +111,16 @@ class MonitoringSeriesMetadata(SQL_BASE):
 
 class MonitoringInterface:
 
-    def __init__(self, sql_engine: Engine, influx_client: InfluxDBClient,
+    def __init__(self, sql_engine: Engine = None, influx_client: InfluxDBClient = None,
                  influx_db_name: Text = INFLUX_DB_NAME):
+        default_sql_engine, default_influx_client = create_default_dbs()
         # initializing sql
-        self._sql_engine = sql_engine
+        self._sql_engine = sql_engine or default_sql_engine
         self._sql_session_maker = sessionmaker(bind=self._sql_engine)
 
         # initializing influx
         self._influx_db_name = influx_db_name
-        self._influx_client = influx_client
+        self._influx_client = influx_client or default_influx_client
         self._influx_client.create_database(self._influx_db_name)
 
         self._uncreated_series = []
@@ -138,7 +145,8 @@ class MonitoringInterface:
         session.add(self._create_table_instance(series))
         session.commit()
 
-    def _create_table_instance(self, series: MonitoringSeries):
+    @staticmethod
+    def _create_table_instance(series: MonitoringSeries):
         return MonitoringSeriesMetadata(series_name=series.series_name,
                                         graphical_display=series.graphical_display_format.value,
                                         numerical_display=series.numerical_display_format.value)
