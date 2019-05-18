@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from flask import Flask
+from flask_cors import CORS
 import graphene
 from flask_graphql import GraphQLView
 from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
@@ -9,20 +12,38 @@ from sqlalchemy.engine import Engine
 from chariots.monitoring.monitoring_interface import MonitoringSeriesMetadata, SQL_BASE, create_default_dbs
 
 
+class SeriesPoint(graphene.ObjectType):
+    time = graphene.types.datetime.DateTime()
+    op_version = graphene.String()
+    data = graphene.JSONString()
+
+
 class Series(SQLAlchemyObjectType):
     client = None
     class Meta:
         model = MonitoringSeriesMetadata
 
-    point = graphene.List(graphene.types.json.JSONString)
+    points = graphene.List(SeriesPoint, version_srting=graphene.String())
 
-    def resolve_point(self, info):
+    def resolve_points(self, info, version_srting=None):
         if Series.client is None:
             raise ValueError("influx db client not set canot get points")
-        return Series.client.query(f"select * from {self.series_name};") or [{
-            "foo": f"select * from {self.series_name};",
-            "bar": str(self.client)
-        }]
+        query_str = f"select * from {self.series_name}"
+        if version_srting is not None:
+            query_str += f" where version = '{version_srting}'"
+        print(query_str)
+        influx_data = Series.client.query(query_str + ";")
+        if not influx_data:
+            return []
+        return [
+            SeriesPoint(
+                time=datetime.strptime(raw_point.pop("time").split(".")[0], "%Y-%m-%dT%H:%M:%S"),
+                op_version=".".join(map(lambda subversion: subversion[:7],
+                                        raw_point.pop("version", None).split( "."))),
+                data=raw_point,
+            )
+            for raw_point in influx_data[(self.series_name, None)]
+        ]
 
 
 class Query(graphene.ObjectType):
@@ -51,6 +72,7 @@ def create_app(sql_engine: Engine = None, influx_db_client = None):
     schema = graphene.Schema(query=Query)
 
     app = Flask("monitoring backend")
+    cors = CORS(app, resources={r"/graphql/*": {"origins": "*"}})
     app.add_url_rule('/graphql',
                      view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True))
     app.teardown_appcontext(lambda _: db_session.remove())
