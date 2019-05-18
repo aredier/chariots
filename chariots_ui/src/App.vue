@@ -8,28 +8,24 @@
       app
     >
       <v-list dense>
-        <v-list-tile  v-for="series in this.seriesName" @click="pushRoute('/' +series)">
+        <v-list-tile  v-for="s in series.map(el => el.seriesName)"
+          @click="selected_series = s">
           <v-list-tile-action>
             <v-icon >trending_up</v-icon>
           </v-list-tile-action>
           <v-list-tile-content>
-            <v-list-tile-title>{{series}}</v-list-tile-title>
+            <v-list-tile-title>{{s}}</v-list-tile-title>
           </v-list-tile-content>
         </v-list-tile>
       </v-list>
     </v-navigation-drawer>
     <v-toolbar app fixed clipped-left>
       <v-toolbar-side-icon @click.stop="drawer = !drawer"></v-toolbar-side-icon>
-      <v-toolbar-title>Chariots Ui</v-toolbar-title>
+      <v-toolbar-title>Chariots UI</v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-toolbar-items class="hidden-sm-and-down">
-        <v-btn flat @click.stop="fetchData"><v-icon>cached</v-icon></v-btn>
-      </v-toolbar-items>
     </v-toolbar>
     <v-content>
-      <v-container fluid fill-height>
-         <router-view></router-view>
-      </v-container>
+        <data-page v-if="this.selected_series" :series_name="this.selected_series"></data-page>
     </v-content>
     <v-footer app fixed>
       <span>&copy; 2017</span>
@@ -38,30 +34,39 @@
 </template>
 
 <script>
+
 import HelloWorld from './components/HelloWorld';
+import DataPage from "./views/DataPage"
 import {mapGetters, mapActions} from 'vuex';
+
+import gql from 'graphql-tag'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    HelloWorld,
+    DataPage
   },
   computed:{
-    ...mapGetters([
-      "seriesName",
-    ])
+    seriesNames(series) {
+      return series.map(el => el.seriesName)
+    }
   },
   methods: {
-    ...mapActions(["fetchData"]),
-    pushRoute(route) {
-      this.$router.push(route)
-    }
+  },
+  apollo : {
+    series : gql`query {
+      series{
+        seriesName
+        }
+      }`
   },
   data: () => ({
-      drawer: null
+      drawer: null,
+      selected_series: null,
     }),
-    props: {
-      source: String
-    }
+  props: {
+    source: String
+  }
 }
 </script>

@@ -9,6 +9,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from chariots.core.versioning import Version
+from chariots.core.ops import AbstractOp
+
 
 INFLUX_DB_NAME = "chariots_monitoring"
 SQL_BASE = declarative_base()
@@ -75,8 +78,9 @@ class MonitoringSeries(ABC):
         self._interface = interface
         self._interface.register_series(self)
 
-    def dump_data(self, **kwargs):
-        self._interface.register_data(self, self._check_data_validity_and_fill_defaults(kwargs))
+    def dump_data(self, version: Optional[Version] = None, **kwargs):
+        self._interface.register_data(self, self._check_data_validity_and_fill_defaults( kwargs),
+                                      version)
 
     def _check_data_validity_and_fill_defaults(self, data: Mapping[Text, Any]):
         fields_dict = self.get_fields_dict()
@@ -109,6 +113,44 @@ class MonitoringSeriesMetadata(SQL_BASE):
             f"numerical: {self.numerical_display}>"
 
 
+class DBVersion(SQL_BASE):
+    __tablename__ = "version"
+
+    id = Column(Integer, primary_key=True)
+    major_checksum = Column(String, nullable=False)
+    minor_checksum = Column(String, nullable=False)
+    patch_checksum = Column(String, nullable=False)
+
+    def __str__(self):
+        return f"<DBVersion {self.major_checksum}.{self.minor_checksum}.{self.patch_checksum}"
+
+    @classmethod
+    def from_version(cls, version: Version) -> "DBVersion":
+        return cls(
+            major_checksum=version.major.fields_hash,
+            minor_checksum=version.minor.fields_hash,
+            patch_checksum=version.patch.fields_hash
+        )
+
+    @classmethod
+    def find_equivalent_filter_builder(cls, version: Version) -> Tuple:
+        return (
+            cls.major_checksum == version.major.fields_hash,
+            cls.minor_checksum == version.minor.fields_hash,
+            cls.patch_checksum == version.patch.fields_hash
+        )
+
+    def update_from_version(self, version: Version):
+        if not (
+            self.major_checksum == version.major.fields_hash and
+            self.minor_checksum == version.minor.fields_hash and
+            self.patch_checksum == version.patch.fields_hash
+        ):
+            raise ValueError(f"trying to update {self} with incompatible {version}")
+
+        # TODO add update when the dates are created
+
+
 class MonitoringInterface:
 
     def __init__(self, sql_engine: Engine = None, influx_client: InfluxDBClient = None,
@@ -132,16 +174,47 @@ class MonitoringInterface:
         else:
             self._uncreated_series.append(series)
 
-    def register_data(self, series: MonitoringSeries, data: Mapping):
+    def register_data(self, series: MonitoringSeries, data: Mapping,
+                      version: Optional[Version] = None, op: Optional[AbstractOp] = None):
+        processed_version = processed_op = None
+        if version is not None:
+            processed_version = self._process_version(version)
+        if op is not None:
+            processed_op = self._process_op(op)
         self._influx_client.write_points([{
             "measurement": series.series_name,
             "time": datetime.utcnow().isoformat(),
-            "fields": data
+            "fields": data,
+            "tags": {
+                "version": processed_version,
+                "op": processed_op
+            }
         }])
-        print("foo")
+
+    def _process_version(self, version: Version) -> Text:
+        session = self._sql_session_maker()
+        db_version = session.query(DBVersion).filter(*DBVersion.find_equivalent_filter_builder(
+            version)).first()
+        if not db_version:
+            db_version = DBVersion.from_version(version)
+            session.add(db_version)
+        session.commit()
+        return f"{db_version.major_checksum}.{db_version.minor_checksum}.{db_version.patch_checksum}"
+
+
+    def _process_op(self, op: AbstractOp) -> Text:
+        return op.name
 
     def _add_series_to_db(self, series: MonitoringSeries):
         session = self._sql_session_maker()
+        existing_series = session.query(MonitoringSeriesMetadata).filter(
+            MonitoringSeriesMetadata.series_name == series.series_name).first()
+        if existing_series:
+            existing_series.graphical_display = series.graphical_display_format.value
+            existing_series.numerical_display = series.numerical_display_format.value
+            session.commit()
+            return
+
         session.add(self._create_table_instance(series))
         session.commit()
 
