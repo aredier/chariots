@@ -17,6 +17,10 @@ setup(name='chariots',
                     'pandas',
                     'tensorflow',
                     'keras',
+                    'flask',
+                    'sqlalchemy',
+                    'graphene',
+                    'influxdb'
                    ],
       },
       zip_safe=False)
