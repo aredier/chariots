@@ -1,10 +1,24 @@
 import os
 
+import pytest
+from influxdb import InfluxDBClient
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.orm import sessionmaker
+
 from chariots.monitoring import monitoring_interface
 
 
-class FakeMonitoringTable(monitoring_interface.AbstractMonitoringTable):
-    table_name = "fake"
+@pytest.fixture
+def connectors(tmp_path):
+    print(tmp_path)
+    db_connection = create_engine(f'sqlite:////{tmp_path}/chariots.db', convert_unicode=True, echo=False)
+    influx_client = InfluxDBClient('localhost', 8086, 'root', 'root', "chariots_test")
+    influx_client.query("DROP DATABASE chariots_test")
+    return db_connection, influx_client
+
+
+class FakeMonitoringTable(monitoring_interface.MonitoringSeries):
+    series_name = "fake"
 
     my_numerical_field = monitoring_interface.MonitoringField(
         dtype=monitoring_interface.FieldTypes.INT, default_value=None,
@@ -16,74 +30,42 @@ class FakeMonitoringTable(monitoring_interface.AbstractMonitoringTable):
     )
 
 
-def _test_csv_and_get_positions(file_line: str, *args):
-    fields = file_line.strip().split(",")
-    assert len(fields) == len(args)
-    res = []
-    for field in args:
-        res.append(fields.index(field))
-    return res
-
-def test_monitoring_init(tmp_path):
-    monitoring_dir = os.path.join(tmp_path, "monitoring")
-    with monitoring_interface.CSVMonitoringInterface(path=monitoring_dir):
+def test_monitoring_init(connectors):
+    with monitoring_interface.MonitoringInterface(*connectors, influx_db_name="chariots_test"):
         pass
-    assert os.path.isfile(os.path.join(monitoring_dir, "_all_fields.csv"))
-    with open(os.path.join(monitoring_dir, "_all_fields.csv")) as main_monitoring_file:
-        lines = main_monitoring_file.readlines()
-        assert len(lines) == 1
-        _test_csv_and_get_positions(lines[0], "_table_name", "_numerical_display_format",
-                                    "_graphical_display_format")
+    iengine = inspect(connectors[0])
+    assert set(iengine.get_table_names()) == {monitoring_interface.MonitoringSeriesMetadata.__tablename__,
+                                              monitoring_interface.DBVersion.__tablename__}
 
-def test_table_init(tmp_path):
-    monitoring_dir = os.path.join(tmp_path, "monitoring")
-    with monitoring_interface.CSVMonitoringInterface(path=monitoring_dir) as interface:
+
+def test_table_init(connectors):
+    with monitoring_interface.MonitoringInterface(*connectors, influx_db_name="chariots_test") as interface:
         _ = FakeMonitoringTable(interface)
-    assert os.path.isfile(os.path.join(monitoring_dir, "_all_fields.csv"))
-    with open(os.path.join(monitoring_dir, "_all_fields.csv")) as main_monitoring_file:
-        lines = main_monitoring_file.readlines()
-        assert len(lines) == 2
-        positions = _test_csv_and_get_positions(lines[0], "_table_name",
-                                                "_numerical_display_format",
-                                                "_graphical_display_format")
-        first_line_elmts = lines[1].strip().split(",")
-        assert len(first_line_elmts) == 3
-        assert first_line_elmts[positions[0]] == "fake"
-        assert first_line_elmts[positions[1]] == str(
-            monitoring_interface.SeriesNumericalDisplayFormat.TABLE
-        )
-        assert first_line_elmts[positions[2]] == str(
-           monitoring_interface.SeriesGraphicalDisplayFormat.LINE_CHART
-        )
-    assert os.path.isfile(os.path.join(monitoring_dir, "fake.csv"))
-    with open(os.path.join(monitoring_dir, "fake.csv")) as main_monitoring_file:
-        lines = main_monitoring_file.readlines()
-        assert len(lines) == 1
-        _test_csv_and_get_positions(lines[0], "my_numerical_field", "my_optional_numerical_field")
+
+    sql_engine = connectors[0]
+    session = sessionmaker(bind=sql_engine)()
+    res = session.query(monitoring_interface.MonitoringSeriesMetadata).all()
+    assert len(res) == 1
+    assert res[0].series_name == "fake"
+    assert res[0].numerical_display == monitoring_interface.SeriesNumericalDisplayFormat.TABLE.value
+    assert res[0].graphical_display == monitoring_interface.SeriesGraphicalDisplayFormat.LINE_CHART.value
 
 
-def test_table_dump(tmp_path):
-    monitoring_dir = os.path.join(tmp_path, "monitoring")
-    with monitoring_interface.CSVMonitoringInterface(path=monitoring_dir) as interface:
+
+
+def test_table_dump(connectors):
+    with monitoring_interface.MonitoringInterface(*connectors, influx_db_name="chariots_test") as interface:
         my_field = FakeMonitoringTable(interface)
         my_field.dump_data(my_numerical_field=4, my_optional_numerical_field=3)
         my_field.dump_data(my_numerical_field=5)
         my_field.dump_data.when.called_with(my_optional_numerical_field=3).should.throw(ValueError)
-        my_field.flush()
-    assert os.path.isfile(os.path.join(monitoring_dir, "fake.csv"))
-    with open(os.path.join(monitoring_dir, "fake.csv")) as main_monitoring_file:
-        lines = main_monitoring_file.readlines()
-        assert len(lines) == 3
-        positions = _test_csv_and_get_positions(lines[0], "my_numerical_field",
-                                                "my_optional_numerical_field")
 
-        first_line_elmts = lines[1].strip().split(",")
-        assert len(first_line_elmts) == 2
-        assert first_line_elmts[positions[0]] == "4"
-        assert first_line_elmts[positions[1]] == "3"
-
-        scd_line_elmts = lines[2].strip().split(",")
-        assert len(first_line_elmts) == 2
-        assert scd_line_elmts[positions[0]] == "5"
-        assert scd_line_elmts[positions[1]] == "-1"
+    influx_data = list(connectors[1].query("select * from fake;")[("fake", None)])
+    assert len(influx_data) == 2
+    print(influx_data[0])
+    assert influx_data[0].get("my_numerical_field", False)
+    assert influx_data[0]["my_numerical_field"] == 4
+    assert influx_data[0]["my_optional_numerical_field"] == 3
+    assert influx_data[1]["my_numerical_field"] == 5
+    assert influx_data[1]["my_optional_numerical_field"] == -1
 
