@@ -9,7 +9,7 @@ from sqlalchemy.orm import (scoped_session, sessionmaker, relationship,
                             backref)
 from sqlalchemy.engine import Engine
 
-from chariots.monitoring.monitoring_interface import MonitoringSeriesMetadata, SQL_BASE, create_default_dbs
+from chariots.monitoring.monitoring_interface import _MonitoringSeriesMetadata, SQL_BASE, create_default_dbs
 
 
 class SeriesPoint(graphene.ObjectType):
@@ -21,7 +21,7 @@ class SeriesPoint(graphene.ObjectType):
 class Series(SQLAlchemyObjectType):
     client = None
     class Meta:
-        model = MonitoringSeriesMetadata
+        model = _MonitoringSeriesMetadata
 
     points = graphene.List(SeriesPoint, version_srting=graphene.String())
 
@@ -54,7 +54,7 @@ class Query(graphene.ObjectType):
     def resolve_series(args, info, series_name=None):
         query = Series.get_query(info)
         if series_name is not None:
-            query = query.filter(MonitoringSeriesMetadata.series_name == series_name)
+            query = query.filter(_MonitoringSeriesMetadata.series_name == series_name)
         return query.all()
 
 
