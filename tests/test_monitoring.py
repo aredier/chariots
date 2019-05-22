@@ -34,7 +34,7 @@ def test_monitoring_init(connectors):
     with monitoring_interface.MonitoringInterface(*connectors, influx_db_name="chariots_test"):
         pass
     iengine = inspect(connectors[0])
-    assert set(iengine.get_table_names()) == {monitoring_interface.MonitoringSeriesMetadata.__tablename__,
+    assert set(iengine.get_table_names()) == {monitoring_interface._MonitoringSeriesMetadata.__tablename__,
                                               monitoring_interface.DBVersion.__tablename__}
 
 
@@ -44,7 +44,7 @@ def test_table_init(connectors):
 
     sql_engine = connectors[0]
     session = sessionmaker(bind=sql_engine)()
-    res = session.query(monitoring_interface.MonitoringSeriesMetadata).all()
+    res = session.query(monitoring_interface._MonitoringSeriesMetadata).all()
     assert len(res) == 1
     assert res[0].series_name == "fake"
     assert res[0].numerical_display == monitoring_interface.SeriesNumericalDisplayFormat.TABLE.value
