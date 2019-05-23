@@ -17,7 +17,7 @@ from chariots.helpers.types import DataBatch, Requirements
 from chariots.helpers.utils import SplitPuller, SplitPusher
 
 
-class AbstractOp(ABC):
+class _AbstractOp(ABC):
     """
     base op of a pipeline
     the main entry point of the op is going to be the perform method.
@@ -57,11 +57,11 @@ class AbstractOp(ABC):
     def _build_version(cls) -> Version:
         return _extract_versioned_fields(cls)
 
-    def __call__(self, other: "AbstractOp") -> "AbstractOp":
+    def __call__(self, other: "_AbstractOp") -> "_AbstractOp":
         """
         used to determine the ancestor of an op
         """
-        if not isinstance(other, AbstractOp):
+        if not isinstance(other, _AbstractOp):
             raise ValueError("call does only work with single ops. if you want another"\
                              "behavior, override the __Call__ method") 
         self._check_compatibility(other, self.requires)
@@ -79,7 +79,7 @@ class AbstractOp(ABC):
                   if not any(requirement.compatible(marker[0]) for requirement
                             in self.requires.values())]]
 
-    def _link_versions(self, other: "AbstractOp"):
+    def _link_versions(self, other: "_AbstractOp"):
         self.runtime_version.major.link(other.runtime_version.major)
         self.runtime_version.minor.link(other.runtime_version.minor)
         self.runtime_version.patch.link(other.runtime_version.patch)
@@ -119,8 +119,9 @@ class AbstractOp(ABC):
         except AttributeError:
             object.__setattr__(self, attribute, value)
 
+
     @staticmethod
-    def _check_compatibility(other: "AbstractOp", requirements: Requirements):
+    def _check_compatibility(other: "_AbstractOp", requirements: Requirements):
         missing = next((required for required in requirements.items()
                         if all(not required[1].compatible(marker[0])
                                for marker in other.compounded_markers_and_version_str)),
@@ -157,7 +158,7 @@ class AbstractOp(ABC):
         return cls.markers[0].create_child()
 
 
-class BaseOp(AbstractOp):
+class BaseOp(_AbstractOp):
     """
     BaseOp is a simple implementation of an op were _main is performed on each data batch 
     individually in order to do that, a litle magic (not too much I hope) is added to determine
@@ -262,8 +263,11 @@ class BaseOp(AbstractOp):
         if cls.markers is None:
             cls.markers = [cls._find_marker(main_sig)]
 
+    def __call_back__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
+        pass
 
-class Split(AbstractOp):
+
+class Split(_AbstractOp):
     """
     split operation that creates several downstreams from a single upstream
     be carefull, splits are not free as they have to do a deepcopy of each batch to
@@ -281,7 +285,7 @@ class Split(AbstractOp):
     def markers(self):
         return self.previous_op.markers
 
-    def __call__(self, other: "AbstractOp") -> List["_SplitRes"]:
+    def __call__(self, other: "_AbstractOp") -> List["_SplitRes"]:
         self.previous_op = other
         self._pusher = SplitPusher(self._n_splits)
         self._link_versions(other)
@@ -303,7 +307,7 @@ class Split(AbstractOp):
         return self.previous_op.compounded_markers_and_version_str
 
 
-class _SplitRes(AbstractOp):
+class _SplitRes(_AbstractOp):
     """
     downstream op of a split (returned by Split.__call__)
     """
@@ -320,7 +324,7 @@ class _SplitRes(AbstractOp):
     def markers(self):
         return self.previous_op.markers
 
-    def __call__(self, other: "AbstractOp") -> "AbstractOp":
+    def __call__(self, other: "_AbstractOp") -> "_AbstractOp":
         raise ValueError("split puller should not be called directly")
 
     def perform(self) -> DataSet:
@@ -333,7 +337,7 @@ class _SplitRes(AbstractOp):
             return []
         return self.previous_op.compounded_markers_and_version_str
 
-class Merge(AbstractOp):
+class Merge(_AbstractOp):
     """
     Op that merges sevreral pipelines in a single one
     """
@@ -370,7 +374,7 @@ class Merge(AbstractOp):
     def ready(self):
         return all([op.ready for op in self.previous_op])
 
-    def __call__(self, other: List["AbstractOp"]) -> "AbstractOp":
+    def __call__(self, other: List["_AbstractOp"]) -> "_AbstractOp":
         self.previous_op = other
         for other_single_op in other:
             self._link_versions(other_single_op)

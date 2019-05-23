@@ -6,7 +6,7 @@ from typing import List
 from typing import Optional
 
 from chariots.core.requirements import Requirement
-from chariots.core.ops import AbstractOp
+from chariots.core.ops import _AbstractOp
 from chariots.core.ops import BaseOp
 from chariots.core.versioning import Version
 
@@ -28,9 +28,9 @@ class EvaluationMetric(BaseOp):
     markers = [EvaluationMarker]
 
     def __new__(cls , *args, **kwargs):
-        return AbstractOp.__new__(cls, *args, **kwargs)
+        return _AbstractOp.__new__(cls, *args, **kwargs)
 
-    def evaluate(self, other: AbstractOp) -> Report:
+    def evaluate(self, other: _AbstractOp) -> Report:
         """evaluates a full pipeline (this will run through the pipeline) and aggregates the
         pipeline.
         

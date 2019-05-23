@@ -1,3 +1,5 @@
+from typing import Optional, Mapping, Text, Any
+
 import sure
 import pytest
 
@@ -23,9 +25,20 @@ class SecondOp(BaseOp):
     def _main(self, data: RightNumber) -> RightNumber:
         return data
 
+
 class Sum(BaseOp):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stored_results = []
+
     def _main(self, left: LeftNumber, right: RightNumber) -> Number:
-            return left + right
+        return left + right
+
+    def __call_back__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
+        self.sotred_results.append({
+            "in": op_input,
+            "out": op_res,
+        })
 
 
 def test_single_op(add_op_cls, tap):
@@ -82,3 +95,25 @@ def test_pipeline_as_an_op(tap, add_op_cls, square_op_cls):
     for i, res in enumerate(pipe.perform()):
         res.should.be.a(dict)
         res.should.have.key(square_op_cls.markers[0]).being((i + 1) ** 2)
+
+def test_callback_():
+    left_tap = DataTap(iter(range(10)), LeftNumber)
+    right_tap = DataTap(iter(range(10)), RightNumber)
+    full_tap = Merge()([left_tap, right_tap])
+    left = FirstOp()(full_tap)
+    right = SecondOp()(left)
+    sum_op = Sum()
+    res = sum_op(right)
+    for i, batch in enumerate(res.perform()):
+        batch.should.have.key(Number).being.equal(2 * i)
+    assert len(sum_op.stored_results) == 10
+    for i, ind_res in enumerate(sum_op.stored_results):
+        assert ind_res == {
+            "in": {
+                LeftNumber: i,
+                RightNumber: i
+            },
+            "out": {
+                2 * i
+            }
+        }

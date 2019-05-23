@@ -1,5 +1,6 @@
 import os
 
+
 import pytest
 from influxdb import InfluxDBClient
 from sqlalchemy import create_engine, inspect
@@ -7,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from chariots.monitoring import monitoring_interface
 
+pytestmark = pytest.mark.skipif(os.environ.get("CHARIOTS_SKIP_MONITORING_TESTS", False), "env not right to perform monitoring tests")
 
 @pytest.fixture
 def connectors(tmp_path):

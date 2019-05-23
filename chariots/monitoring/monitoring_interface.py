@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from chariots.core.versioning import Version
-from chariots.core.ops import AbstractOp
+from chariots.core.ops import _AbstractOp
 
 
 INFLUX_DB_NAME = "chariots_monitoring"
@@ -263,7 +263,7 @@ class MonitoringInterface:
             self._uncreated_series.append(series)
 
     def register_data(self, series: MonitoringSeries, data: Mapping,
-                      version: Optional[Version] = None, op: Optional[AbstractOp] = None):
+                      version: Optional[Version] = None, op: Optional[_AbstractOp] = None):
         """
         registers a data point of a series
 
@@ -297,7 +297,7 @@ class MonitoringInterface:
         session.commit()
         return f"{db_version.major_checksum}.{db_version.minor_checksum}.{db_version.patch_checksum}"
 
-    def _process_op(self, op: AbstractOp) -> Text:
+    def _process_op(self, op: _AbstractOp) -> Text:
         return op.name
 
     def _add_series_to_db(self, series: MonitoringSeries):

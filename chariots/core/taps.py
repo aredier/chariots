@@ -1,12 +1,12 @@
 from typing import List
 
-from chariots.core.ops import AbstractOp
+from chariots.core.ops import _AbstractOp
 from chariots.helpers.types import DataBatch
 from chariots.core.dataset import DataSet
 from chariots.core.requirements import Requirement
 
 
-class DataTap(AbstractOp):
+class DataTap(_AbstractOp):
     """
     A data tap represents a source of data that will be used by downstream ops
     """

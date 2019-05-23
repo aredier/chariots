@@ -5,13 +5,13 @@ from typing import Text
 from typing import Any
 from typing import Optional
 
-from chariots.core.ops import AbstractOp
+from chariots.core.ops import _AbstractOp
 from chariots.core.saving import Savable, Saver
 from chariots.core.dataset import DataSet
 from chariots.training import TrainableTrait
 
 
-class Pipeline(TrainableTrait, AbstractOp):
+class Pipeline(TrainableTrait, _AbstractOp):
     """
     a pipeline represents a graph of operations and provides helper methods to perform on all 
     relevant ops of the graph (saving, training, ...)
@@ -19,8 +19,8 @@ class Pipeline(TrainableTrait, AbstractOp):
     another pipeline)
     """
 
-    def __init__(self, input_op: Optional[AbstractOp] = None,
-                 output_op: Optional[AbstractOp] = None):
+    def __init__(self, input_op: Optional[_AbstractOp] = None,
+                 output_op: Optional[_AbstractOp] = None):
         """
         both inputop and output op have to be set or non of them. if you want to create a piepline 
         from one op and build on, use the add method on an empty pipeline
@@ -51,7 +51,7 @@ class Pipeline(TrainableTrait, AbstractOp):
         return self.input_op.previous_op
 
     @property
-    def all_ops(self) -> List[AbstractOp]:
+    def all_ops(self) -> List[_AbstractOp]:
         """all the ops in the pipeline (order is deterministic but not guarenteed to be from input
         ro output)
 
@@ -69,7 +69,7 @@ class Pipeline(TrainableTrait, AbstractOp):
         return self.output_op.ready
 
 
-    def _build_op_graph(self, input_op: AbstractOp, output_op: AbstractOp):
+    def _build_op_graph(self, input_op: _AbstractOp, output_op: _AbstractOp):
         """
         builds the internal op graph of the pipeline from an input and an output pipeline
 
@@ -101,12 +101,12 @@ class Pipeline(TrainableTrait, AbstractOp):
     def perform(self) -> DataSet:
         return self.output_op.perform()
 
-    def __call__(self, other: AbstractOp) -> AbstractOp:
+    def __call__(self, other: _AbstractOp) -> _AbstractOp:
         if self.input_op is not None:
             self.input_op(other)
         return self
 
-    def add(self, other: AbstractOp, head=None):
+    def add(self, other: _AbstractOp, head=None):
         """
         adds another op to the pipeline after output op
         """
@@ -118,7 +118,7 @@ class Pipeline(TrainableTrait, AbstractOp):
             self._op_graph.append((self.output_op, other))
             self.output_op = other(self.output_op)
 
-    def fit(self, other: Optional[AbstractOp] = None, mode: Text = "naive"):
+    def fit(self, other: Optional[_AbstractOp] = None, mode: Text = "naive"):
         """
         fiting the pipeline
             :param other:Optional[AbstractOp]=None: optional pipeline or op on which to fit the pipeline
@@ -173,7 +173,7 @@ class Pipeline(TrainableTrait, AbstractOp):
             loaded_op = op_of_interest.load(saver)
             self._replace_op_in_graph(op_of_interest, loaded_op)
 
-    def _replace_op_in_graph(self, op_to_replace: AbstractOp, replacing_op: AbstractOp):
+    def _replace_op_in_graph(self, op_to_replace: _AbstractOp, replacing_op: _AbstractOp):
         """replaces an op in the graph with another"""
 
         res_op_graph = []

@@ -5,7 +5,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from typing import Optional,Text
 
-from chariots.core.ops import AbstractOp, BaseOp
+from chariots.core.ops import _AbstractOp, BaseOp
 from chariots.core.versioning import SubVersionType, VersionField, VersionType, Version
 from chariots.training import TrainableTrait, evaluation
 from chariots.core.saving import Savable
@@ -70,7 +70,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
     def attach_evaluation(self, evaluation: evaluation.EvaluationMetric):
         self.evaluation_metric = evaluation
 
-    def evaluate(self, data: AbstractOp):
+    def evaluate(self, data: _AbstractOp):
         if self.evaluation_metric is None:
             raise ValueError("cannot evaluate a trainable op with no metric linked to it,"\
                              " use `attach_evaluation`")
@@ -88,7 +88,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
                     raise ValueError("op fitted on a different version, consider retraining")
         return super().__call__(other)
 
-    def fit(self, other: Optional[AbstractOp] = None):
+    def fit(self, other: Optional[_AbstractOp] = None):
         """
         method called to train the op on other (which must meet the training requirements)
         """
@@ -100,7 +100,7 @@ class TrainableOp(Savable, TrainableTrait, BaseOp):
 
         if self.previous_op is None:
             raise ValueError(f"other is None and {self.name} is not connected to a pipeline")
-        if not isinstance(self.previous_op, AbstractOp):
+        if not isinstance(self.previous_op, _AbstractOp):
             raise ValueError("call does only work with single ops. if you want another behavior, override the __Call__ method") 
         self._check_compatibility(self.previous_op, self.training_requirements)
         for training_batch in self.previous_op.perform():
