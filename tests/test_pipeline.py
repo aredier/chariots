@@ -16,6 +16,17 @@ LeftNumber = Number.create_child()
 RightNumber = Number.create_child()
 
 
+def create_callback():
+    outer_results = []
+
+    def monitor_in_and_out(op_res, op_input):
+        outer_results.append({
+            "in": op_input,
+            "out": op_res,
+        })
+    return monitor_in_and_out, outer_results
+
+
 class FirstOp(BaseOp):
     def _main(self, data: LeftNumber) -> LeftNumber:
         return data
@@ -34,8 +45,8 @@ class Sum(BaseOp):
     def _main(self, left: LeftNumber, right: RightNumber) -> Number:
         return left + right
 
-    def __call_back__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
-        self.sotred_results.append({
+    def __callback__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
+        self.stored_results.append({
             "in": op_input,
             "out": op_res,
         })
@@ -96,7 +107,7 @@ def test_pipeline_as_an_op(tap, add_op_cls, square_op_cls):
         res.should.be.a(dict)
         res.should.have.key(square_op_cls.markers[0]).being((i + 1) ** 2)
 
-def test_callback_():
+def test_callback_native():
     left_tap = DataTap(iter(range(10)), LeftNumber)
     right_tap = DataTap(iter(range(10)), RightNumber)
     full_tap = Merge()([left_tap, right_tap])
@@ -107,13 +118,36 @@ def test_callback_():
     for i, batch in enumerate(res.perform()):
         batch.should.have.key(Number).being.equal(2 * i)
     assert len(sum_op.stored_results) == 10
+    print(sum_op.requires, LeftNumber)
     for i, ind_res in enumerate(sum_op.stored_results):
         assert ind_res == {
             "in": {
-                LeftNumber: i,
-                RightNumber: i
+                "left": i,
+                "right": i
             },
             "out": {
-                2 * i
+                Number: 2 * i
             }
         }
+
+
+def test_callback_added(add_op_cls, tap):
+    op = add_op_cls()
+    monitor_in_and_out, outer = create_callback()
+    op.register_callback(monitor_in_and_out)
+    add = op(tap)
+    for i, res in enumerate(add.perform()):
+        res.should.be.a(dict)
+        res.should.have.key(add_op_cls.markers[0]).being(i + 1)
+
+    assert len(outer) == 10
+    for i, ind_res in enumerate(outer):
+        assert ind_res == {
+            "in": {
+                "input_value": i,
+            },
+            "out": {
+                Number: i + 1
+            }
+        }
+

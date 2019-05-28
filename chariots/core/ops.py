@@ -6,7 +6,7 @@ import functools
 import inspect
 import random
 from abc import ABC, ABCMeta, abstractclassmethod, abstractmethod
-from typing import Any, List, Mapping, Optional, Text, Type
+from typing import Any, List, Mapping, Optional, Text, Type, Callable
 
 from chariots.core.dataset import ORIGIN, DataSet
 from chariots.core.requirements import Requirement
@@ -168,6 +168,7 @@ class BaseOp(_AbstractOp):
     """
 
     _accept_combine = False
+    _callbacks: List[Callable[[Optional[Mapping[Requirement, Any]], Optional[Mapping[Requirement, Any]]], None]] = None
 
     def __new__(cls, *args, **kwargs):
         cls._interpret_signature()
@@ -202,6 +203,7 @@ class BaseOp(_AbstractOp):
         args_dict, unused_data = self._resolve_arguments(data, self.requires)
         op_res = self._main(**args_dict)
         wraped_res = dict(zip(self.markers, op_res if isinstance(op_res, tuple) else (op_res,)))
+        self.__callback__(wraped_res, args_dict)
         wraped_res.update(unused_data)
         return wraped_res
 
@@ -263,8 +265,14 @@ class BaseOp(_AbstractOp):
         if cls.markers is None:
             cls.markers = [cls._find_marker(main_sig)]
 
-    def __call_back__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
-        pass
+    def __callback__(self, op_res: Optional[Mapping[Text, Any]], op_input: Optional[Mapping[Text, Any]]):
+        for clbk in self._callbacks or []:
+            clbk(op_res, op_input)
+
+    def register_callback(self, callback: Callable[[Optional[Mapping[Requirement, Any]], Optional[Mapping[Requirement, Any]]], None]):
+        if self._callbacks is None:
+            self._callbacks = []
+        self._callbacks.append(callback)
 
 
 class Split(_AbstractOp):
