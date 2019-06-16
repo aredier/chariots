@@ -1,7 +1,7 @@
 import pytest
 
 from chariots.core.ops import AbstractOp
-from chariots.core.pipelines import Node, Pipeline, SequentialRunner, ReservedNodes
+from chariots.core.pipelines import Node, Pipeline, ReservedNodes
 
 
 @pytest.fixture

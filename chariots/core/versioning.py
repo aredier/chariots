@@ -28,7 +28,6 @@ class VersionableMeta(type):
                 continue
             intermediate_versions.update(super_class._get_atomic_versions_dict())
         intermediate_versions.update(cls._get_atomic_versions_dict())
-        print(intermediate_versions)
         cls.__version__ = sum(
             map(operator.itemgetter(1), sorted(intermediate_versions.items(), key=operator.itemgetter(0))),
             Version()
