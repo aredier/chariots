@@ -67,7 +67,7 @@ class AbstractRunner(ABC):
 
     @classmethod
     def _update_ancestry(cls, node: Node, available_nodes: Set[Node]):
-        orphan_nodes = [input_node for input_node in node.input_nodes if not input_node in available_nodes]
+        orphan_nodes = [input_node for input_node in node.input_nodes if input_node not in available_nodes]
         if orphan_nodes:
             raise ValueError(f"cannot find node(s) {orphan_nodes} in ancestry")
         if node in available_nodes:
@@ -114,5 +114,3 @@ class Pipeline(AbstractOp):
         if node.output_node != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
-
-
