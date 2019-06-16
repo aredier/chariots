@@ -3,6 +3,7 @@ module that takes care of the versioning of Ops
 """
 import hashlib
 import enum
+from _hashlib import HASH
 from typing import Any
 
 
@@ -46,3 +47,10 @@ class VersionedField:
     @property
     def __chariots_hash__(self):
         return hashlib.sha1(str(self.value).encode("utf-8")).hexdigest()
+
+
+class version:
+
+    def __init__(self, major: HASH, minor: HASH, patch: HASH):
+        pass
+
