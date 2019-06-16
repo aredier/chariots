@@ -15,7 +15,8 @@ class Chariot(Flask):
 
     def _build_routes(self, pipelines):
         for pipeline_name, pipeline in pipelines.items():
-            self.add_url_rule(f"/pipes/{pipeline_name}", pipeline_name, self._build_endpoint_from_pipeline(pipeline),
+            self.add_url_rule(f"/pipes/{pipeline_name}", pipeline_name,
+                              self._build_endpoint_from_pipeline(pipeline),
                               methods=['POST'])
 
     @staticmethod
