@@ -6,7 +6,7 @@ from flask import Flask, request, abort
 from chariots.core.pipelines import Pipeline
 
 
-class ChariotsBackend(Flask):
+class Chariot(Flask):
 
     def __init__(self, pipelines: Mapping[Text, Pipeline], *args, **kwargs):
         super().__init__(*args, **kwargs)
