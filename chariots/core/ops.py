@@ -20,8 +20,7 @@ class LoadableOp(AbstractOp):
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("you must define a call for the op to be valid")
 
-    @classmethod
-    def load(cls, serialized_object: bytes):
+    def load(self, serialized_object: bytes):
         raise NotImplementedError()
 
     def serialize(self) -> bytes:

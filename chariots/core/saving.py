@@ -43,7 +43,7 @@ class JSONSerializer(Serializer):
 
 class Saver(ABC):
 
-    def save(self, serialized_object: bytes, path: os.PathLike) -> bool:
+    def save(self, serialized_object: bytes, path: Text) -> bool:
         pass
 
     def load(self, path: Text) -> bytes:
@@ -56,11 +56,14 @@ class FileSaver(Saver):
         self.root_path = root_path
 
     def build_path(self, path: Text):
+        if path[0] == "/":
+            path = path[1:]
         return os.path.join(self.root_path, path)
 
     def save(self, serialized_object: bytes, path: Text) -> bool:
         object_path = self.build_path(path)
         dirname = os.path.dirname(object_path)
+        print(dirname, object_path)
         os.makedirs(dirname, exist_ok=True)
         with open(object_path, "wb") as file:
             file.write(serialized_object)

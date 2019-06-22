@@ -28,21 +28,22 @@ class Node:
         return self
 
     @staticmethod
-    def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping):
+    def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping) -> "Node":
         if isinstance(node, str):
             return symbolic_real_node_map[node]
         return node
 
     @property
-    def node_version(self):
+    def node_version(self) -> Version:
         return self._op.__version__
 
     @property
-    def has_symbolic_references(self):
+    def has_symbolic_references(self) -> bool:
         return any(isinstance(node, str) for node in self.input_nodes)
 
     def execute(self, *params):
-        return self._op(*params)
+        res = self._op(*params)
+        return res
 
     def get_version_with_ancestry(self, ancestry_versions):
         if not self.input_nodes:
@@ -52,6 +53,7 @@ class Node:
     def check_version(self, persisted_version: Mapping["Node", List[Version]],
                       current_versions: Mapping["Node", Version]):
         current_version = current_versions[self]
+        print(persisted_version)
         last_loaded_version = max(persisted_version[self])
         if current_version > last_loaded_version and current_version.major != last_loaded_version.major:
             raise ValueError("trying to load incompatible version")
@@ -60,7 +62,8 @@ class Node:
         if not self.is_loadable:
             raise ValueError("trying to load a non loadable node")
         op_bytes = saver.load(node_path)
-        return self._op.load(op_bytes)
+        self._op.load(op_bytes)
+        return self
 
     @property
     def is_loadable(self) -> bool:
@@ -69,6 +72,12 @@ class Node:
     @property
     def name(self):
         return self._op.name
+
+    def persist(self, saver: Saver):
+        if not self.is_loadable:
+            raise ValueError("trying to save a non savable/loadable op")
+        op_bytes = self._op.serialize()
+        saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(self.node_version)))
 
 
 class ReservedNodes(Enum):
@@ -108,7 +117,7 @@ class Pipeline(AbstractOp):
     def name(self):
         return self._name
 
-    def _set_pipeline_name(self, name: str):
+    def set_pipeline_name(self, name: str):
         self._name = name
 
     @classmethod
@@ -151,11 +160,13 @@ class Pipeline(AbstractOp):
 
     @staticmethod
     def extract_results(results: Dict[Node, Any]) -> Any:
+        print(results)
         node, output = next(iter(results.items()))
         if node.output_node != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
 
+    @property
     def pipeline_versions(self) -> Mapping[Node, Version]:
         versions = {}
         for node in self._graph:
@@ -170,30 +181,68 @@ class Pipeline(AbstractOp):
             new_node = self._load_single_node(node, persisted_versions, saver)
             new_graph.append(new_node)
             self._graph = new_graph
+        return self
 
     def _load_single_node(self, node: Node, versions: Mapping[Node, List[Version]], saver: Saver):
         if not node.is_loadable:
             return node
-        node.check_version(persisted_version=versions, current_versions=self.pipeline_versions())
+        node.check_version(persisted_version=versions, current_versions=self.pipeline_versions)
         node_path = self._get_path_from_versions(versions, node)
         return node.load(saver, node_path)
 
     def _load_versions(self, saver: Saver) -> Mapping[Node, List[Version]]:
         if self.name is None:
             raise ValueError("pipeline has no name, cannot load")
-        pipeline_meta_path = os.path.join(PIPELINE_PATH, self.name, "_meta.json")
-        pipeline_bytes = saver.load(pipeline_meta_path)
-        pipeline_json = JSONSerializer().deserialize_object(pipeline_bytes)
+        try:
+            pipeline_bytes = saver.load(self.pipeline_meta_path)
+            pipeline_json = JSONSerializer().deserialize_object(pipeline_bytes)
+        except FileNotFoundError:
+            pipeline_json = {}
         return {
             self.node_for_name[node_name]: [Version.parse(version_str) for version_str in versions]
-            for node_name, versions in pipeline_json
+            for node_name, versions in pipeline_json.items()
         }
+
+    @property
+    def pipeline_meta_path(self):
+        return os.path.join(PIPELINE_PATH, self.name, "_meta.json")
 
     @staticmethod
     def _get_path_from_versions(versions: Mapping[Node, List[Version]], node: Node) -> Text:
         node_version = max(versions[node])
+        print(str(node_version))
         return os.path.join(OPS_PATH, node.name, str(node_version))
 
     @property
     def node_for_name(self):
         return {node.name: node for node in self._graph}
+
+    def save(self, saver: Saver):
+        persisted_versions = self._load_versions(saver)
+        if not persisted_versions:
+            self._save_meta({node: [node_version] for node, node_version in self.pipeline_versions.items()}, saver)
+            return self._persist_nodes(saver)
+        for node in self._graph:
+            persisted_versions = self._update_versions(persisted_versions, node)
+        self._save_meta(persisted_versions, saver)
+        return self._persist_nodes(saver)
+
+    def _save_meta(self, meta: Mapping[Node, List[Version]], saver: Saver):
+        new_meta_bytes = JSONSerializer().serialize_object({
+            node.name: [str(version) for version in node_versions]
+            for node, node_versions in meta.items()
+        })
+        saver.save(new_meta_bytes, self.pipeline_meta_path)
+
+    def _persist_nodes(self, saver: Saver):
+        for node in self._graph:
+            if node.is_loadable:
+                node.persist(saver)
+
+    def _update_versions(self, versions: Mapping[Node, List[Version]], node: Node):
+        if not node.is_loadable:
+            return versions
+        if self.pipeline_versions[node] in versions[node]:
+            return versions
+        versions[node].append(self.pipeline_versions[node])
+        return versions
