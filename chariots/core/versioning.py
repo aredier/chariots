@@ -4,8 +4,11 @@ module that takes care of the versioning of Ops
 import hashlib
 import enum
 import operator
+import time
 from _hashlib import HASH
-from typing import Any
+from typing import Any, Union, Optional
+
+Hash = Union[HASH, str]
 
 
 class VersionType(enum.Enum):
@@ -57,10 +60,12 @@ class VersionedField:
 
 class Version:
 
-    def __init__(self):
-        self._major: HASH = hashlib.sha1()
-        self._minor: HASH = hashlib.sha1()
-        self._patch: HASH = hashlib.sha1()
+    def __init__(self, major: Optional[Hash] = None, minor: Optional[Hash] = None,
+                 patch: Optional[Hash] = None, creation_time: Optional[float] = None):
+        self._major: Hash = major or hashlib.sha1()
+        self._minor: Hash = minor or hashlib.sha1()
+        self._patch: Hash = patch or hashlib.sha1()
+        self._creation_time = creation_time or time.time()
 
     def __add__(self, other):
         if not isinstance(other, Version):
@@ -75,15 +80,32 @@ class Version:
         return result
 
     @property
+    def creation_time(self):
+        return self._creation_time
+
+    def __gt__(self, other: "Version") -> bool:
+        return self.creation_time > other.creation_time
+
+    def __eq__(self, other: "Version") -> bool:
+        return (self.major == other.major and self.minor == other.minor and
+                self.patch == other.patch and self.creation_time == other.creation_time)
+
+    @property
     def major(self):
+        if isinstance(self._major, str):
+            return self._major
         return self._major.hexdigest()
 
     @property
     def minor(self):
+        if isinstance(self._minor, str):
+            return self._minor
         return self._minor.hexdigest()
 
     @property
     def patch(self):
+        if isinstance(self._patch, str):
+            return self._patch
         return self._patch.hexdigest()
 
     def update_major(self, input_bytes: bytes):
@@ -107,5 +129,15 @@ class Version:
             self.update_patch(input_bytes)
         raise ValueError(f"you provided an invalid version type: {version_type}")
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Version, major:{self.major[:5]}, minor: {self.minor[:5]}, patch: {self.patch[:5]}>"
+
+    def __str__(self):
+        hash_str = ".".join((self.major, self.minor, self.patch))
+        return "_".join((hash_str, str(self._creation_time)))
+
+    @classmethod
+    def parse(cls, version_string: str) -> "Version":
+        hash_str, creation_time = version_string.split("_")
+        major, minor, patch = hash_str.split(".")
+        return cls(major, minor, patch, float(creation_time))

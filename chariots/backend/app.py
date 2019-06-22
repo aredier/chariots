@@ -1,7 +1,7 @@
 import json
 from typing import Text, Mapping
 
-from flask import Flask, request, abort
+from flask import Flask, request
 
 from chariots.core.pipelines import Pipeline
 

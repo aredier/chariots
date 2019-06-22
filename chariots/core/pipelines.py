@@ -1,12 +1,17 @@
+import os
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Type, Mapping, Text, Union, Set, Tuple, Any, Dict
+from typing import List, Mapping, Text, Union, Set, Any, Dict, Optional, AnyStr
 
-from chariots.core.ops import AbstractOp
-
+from chariots.core.ops import AbstractOp, OPS_PATH, LoadableOp
+from chariots.core.saving import Saver, JSONSerializer
+from chariots.core.versioning import Version
 
 SymbolicToRealMapping = Mapping[Text, Union["Node", "ReservedNodes"]]
 ResultDict = Dict[Union["Node", "ReservedNodes"], Any]
+
+
+PIPELINE_PATH = "/pipelines"
 
 
 class Node:
@@ -29,11 +34,41 @@ class Node:
         return node
 
     @property
+    def node_version(self):
+        return self._op.__version__
+
+    @property
     def has_symbolic_references(self):
         return any(isinstance(node, str) for node in self.input_nodes)
 
     def execute(self, *params):
         return self._op(*params)
+
+    def get_version_with_ancestry(self, ancestry_versions):
+        if not self.input_nodes:
+            return self._op.__version__
+        return self._op.__version__ + sum(ancestry_versions[input_node] for input_node in self.input_nodes)
+
+    def check_version(self, persisted_version: Mapping["Node", List[Version]],
+                      current_versions: Mapping["Node", Version]):
+        current_version = current_versions[self]
+        last_loaded_version = max(persisted_version[self])
+        if current_version > last_loaded_version and current_version.major != last_loaded_version.major:
+            raise ValueError("trying to load incompatible version")
+
+    def load(self, saver: Saver, node_path: Text) -> "Node":
+        if not self.is_loadable:
+            raise ValueError("trying to load a non loadable node")
+        op_bytes = saver.load(node_path)
+        return self._op.load(op_bytes)
+
+    @property
+    def is_loadable(self) -> bool:
+        return isinstance(self._op, LoadableOp)
+
+    @property
+    def name(self):
+        return self._op.name
 
 
 class ReservedNodes(Enum):
@@ -43,8 +78,38 @@ class ReservedNodes(Enum):
 
 class AbstractRunner(ABC):
 
-    def __init__(self, nodes: List[Node]):
+    @abstractmethod
+    def run_graph(self, pipeline_input: Any, graph: List[Node]):
+        pass
+
+
+class SequentialRunner(AbstractRunner):
+
+    def run_graph(self, pipeline_input: Any, graph: List[Node]) -> ResultDict:
+        temp_results = {ReservedNodes.pipeline_input: pipeline_input} if pipeline_input else {}
+        for node in graph:
+            temp_results = self._execute_node(node, temp_results)
+        return temp_results
+
+    @staticmethod
+    def _execute_node(node: Node, temp_results: ResultDict) -> ResultDict:
+        inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
+        temp_results[node] = node.execute(*inputs)
+        return temp_results
+
+
+class Pipeline(AbstractOp):
+
+    def __init__(self, nodes: List[Node], name: Optional[AnyStr] = None):
         self._graph = self.resolve_graph(nodes)
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    def _set_pipeline_name(self, name: str):
+        self._name = name
 
     @classmethod
     def resolve_graph(cls, nodes: List[Node]) -> List[Node]:
@@ -72,35 +137,11 @@ class AbstractRunner(ABC):
             raise ValueError(f"cannot find node(s) {orphan_nodes} in ancestry")
         if node in available_nodes:
             raise ValueError("can only use a node node in a graph")
-        return (available_nodes | {node}).difference(set(node.input_nodes))
+        update_available_node = available_nodes | {node}
+        return update_available_node.difference(set(node.input_nodes))
 
-    @abstractmethod
-    def run_graph(self, pipeline_input):
-        pass
-
-
-class SequentialRunner(AbstractRunner):
-
-    def run_graph(self, pipeline_input) -> ResultDict:
-        temp_results = {ReservedNodes.pipeline_input: pipeline_input} if pipeline_input else {}
-        for node in self._graph:
-            temp_results = self._execute_node(node, temp_results)
-        return temp_results
-
-    @staticmethod
-    def _execute_node(node: Node, temp_results: ResultDict) -> ResultDict:
-        inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
-        temp_results[node] = node.execute(*inputs)
-        return temp_results
-
-
-class Pipeline(AbstractOp):
-
-    def __init__(self, nodes=List[Node], runner: Type[SequentialRunner] = SequentialRunner):
-        self._runner = runner(nodes)
-
-    def __call__(self, pipeline_input=None):
-        results = self._runner.run_graph(pipeline_input)
+    def __call__(self, runner: AbstractRunner, pipeline_input=None):
+        results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
         print(list(r.output_node for r in results))
         if len(results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled")
@@ -109,8 +150,50 @@ class Pipeline(AbstractOp):
             return self.extract_results(results)
 
     @staticmethod
-    def extract_results(results: Dict[Node, Any]):
+    def extract_results(results: Dict[Node, Any]) -> Any:
         node, output = next(iter(results.items()))
         if node.output_node != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
+
+    def pipeline_versions(self) -> Mapping[Node, Version]:
+        versions = {}
+        for node in self._graph:
+            versions[node] = node.get_version_with_ancestry(versions)
+        return versions
+
+    def load(self, saver: Saver):
+        persisted_versions = self._load_versions(saver)
+
+        new_graph = []
+        for node in self._graph:
+            new_node = self._load_single_node(node, persisted_versions, saver)
+            new_graph.append(new_node)
+            self._graph = new_graph
+
+    def _load_single_node(self, node: Node, versions: Mapping[Node, List[Version]], saver: Saver):
+        if not node.is_loadable:
+            return node
+        node.check_version(persisted_version=versions, current_versions=self.pipeline_versions())
+        node_path = self._get_path_from_versions(versions, node)
+        return node.load(saver, node_path)
+
+    def _load_versions(self, saver: Saver) -> Mapping[Node, List[Version]]:
+        if self.name is None:
+            raise ValueError("pipeline has no name, cannot load")
+        pipeline_meta_path = os.path.join(PIPELINE_PATH, self.name, "_meta.json")
+        pipeline_bytes = saver.load(pipeline_meta_path)
+        pipeline_json = JSONSerializer().deserialize_object(pipeline_bytes)
+        return {
+            self.node_for_name[node_name]: [Version.parse(version_str) for version_str in versions]
+            for node_name, versions in pipeline_json
+        }
+
+    @staticmethod
+    def _get_path_from_versions(versions: Mapping[Node, List[Version]], node: Node) -> Text:
+        node_version = max(versions[node])
+        return os.path.join(OPS_PATH, node.name, str(node_version))
+
+    @property
+    def node_for_name(self):
+        return {node.name: node for node in self._graph}
