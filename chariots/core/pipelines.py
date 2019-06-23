@@ -53,7 +53,6 @@ class Node:
     def check_version(self, persisted_version: Mapping["Node", List[Version]],
                       current_versions: Mapping["Node", Version]):
         current_version = current_versions[self]
-        print(persisted_version)
         last_loaded_version = max(persisted_version[self])
         if current_version > last_loaded_version and current_version.major != last_loaded_version.major:
             raise ValueError("trying to load incompatible version")
@@ -79,6 +78,10 @@ class Node:
         op_bytes = self._op.serialize()
         saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(self.node_version)))
 
+    @property
+    def requires_runner(self):
+        return isinstance(self._op, Pipeline)
+
 
 class ReservedNodes(Enum):
     pipeline_input = "__pipeline_input__"
@@ -100,9 +103,11 @@ class SequentialRunner(AbstractRunner):
             temp_results = self._execute_node(node, temp_results)
         return temp_results
 
-    @staticmethod
-    def _execute_node(node: Node, temp_results: ResultDict) -> ResultDict:
+    def _execute_node(self, node: Node, temp_results: ResultDict) -> ResultDict:
         inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
+        if node.requires_runner:
+            temp_results[node] = node.execute(self, *inputs)
+            return temp_results
         temp_results[node] = node.execute(*inputs)
         return temp_results
 
@@ -151,7 +156,6 @@ class Pipeline(AbstractOp):
 
     def __call__(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
-        print(list(r.output_node for r in results))
         if len(results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled")
 
@@ -160,7 +164,6 @@ class Pipeline(AbstractOp):
 
     @staticmethod
     def extract_results(results: Dict[Node, Any]) -> Any:
-        print(results)
         node, output = next(iter(results.items()))
         if node.output_node != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
@@ -210,7 +213,6 @@ class Pipeline(AbstractOp):
     @staticmethod
     def _get_path_from_versions(versions: Mapping[Node, List[Version]], node: Node) -> Text:
         node_version = max(versions[node])
-        print(str(node_version))
         return os.path.join(OPS_PATH, node.name, str(node_version))
 
     @property

@@ -63,7 +63,6 @@ class FileSaver(Saver):
     def save(self, serialized_object: bytes, path: Text) -> bool:
         object_path = self.build_path(path)
         dirname = os.path.dirname(object_path)
-        print(dirname, object_path)
         os.makedirs(dirname, exist_ok=True)
         with open(object_path, "wb") as file:
             file.write(serialized_object)

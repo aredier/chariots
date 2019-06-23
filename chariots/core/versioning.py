@@ -126,7 +126,7 @@ class Version:
         if version_type is VersionType.MINOR:
             return self.update_minor(input_bytes)
         if version_type is VersionType.PATCH:
-            self.update_patch(input_bytes)
+            return self.update_patch(input_bytes)
         raise ValueError(f"you provided an invalid version type: {version_type}")
 
     def __repr__(self):
