@@ -1,4 +1,3 @@
-from chariots.core.saving import Serializer, Saver
 from chariots.core.versioning import VersionableMeta
 
 
