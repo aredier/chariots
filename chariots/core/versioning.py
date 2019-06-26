@@ -55,6 +55,7 @@ class VersionedField:
 
     @property
     def __chariots_hash__(self):
+        # TODO find better way to hash
         return hashlib.sha1(str(self.value).encode("utf-8")).hexdigest()
 
 
