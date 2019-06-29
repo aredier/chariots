@@ -5,22 +5,22 @@ from chariots.core.pipelines import Node, Pipeline, ReservedNodes, SequentialRun
 
 
 @pytest.fixture
-def Range10():
-
-    class Inner(AbstractOp):
-
-        def __call__(self, *args, **kwargs):
-            return list(range(10))
-    return Inner
-
-
-@pytest.fixture
 def IsPair():
 
     class Inner(AbstractOp):
 
         def __call__(self, data):
             return [not i % 2 for i in data]
+    return Inner
+
+
+@pytest.fixture
+def Sum():
+
+    class Inner(AbstractOp):
+
+        def __call__(self, left, right):
+            return [l + r for l, r in zip(left, right)]
     return Inner
 
 
@@ -64,3 +64,17 @@ def test_pipeline_as_op(Range10, IsPair):
     res = pipe(SequentialRunner())
     assert len(res) == 10
     assert res == [i % 2 for i in range(10)]
+
+
+def test_multiple_input(Range10, Sum):
+    pipe = Pipeline([
+        Node(Range10(), output_node="left"),
+        Node(Range10(), output_node="right"),
+        Node(Sum(), input_nodes=["left", "right"], output_node="__pipeline_output__"),
+    ])
+
+    res = pipe(SequentialRunner())
+    assert len(res) == 10
+    assert res == [2 * i for i in range(10)]
+
+

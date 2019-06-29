@@ -48,7 +48,7 @@ class Node:
     def get_version_with_ancestry(self, ancestry_versions):
         if not self.input_nodes:
             return self._op.__version__
-        return self._op.__version__ + sum(ancestry_versions[input_node] for input_node in self.input_nodes)
+        return self._op.__version__ + sum((ancestry_versions[input_node] for input_node in self.input_nodes), Version())
 
     def check_version(self, persisted_version: Mapping["Node", List[Version]],
                       current_versions: Mapping["Node", Version]):
@@ -72,15 +72,18 @@ class Node:
     def name(self):
         return self._op.name
 
-    def persist(self, saver: Saver):
+    def persist(self, saver: Saver, pipeline_version: Version):
         if not self.is_loadable:
             raise ValueError("trying to save a non savable/loadable op")
         op_bytes = self._op.serialize()
-        saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(self.node_version)))
+        saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(pipeline_version)))
 
     @property
     def requires_runner(self):
         return isinstance(self._op, Pipeline)
+
+    def __repr__(self):
+        return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_node)
 
 
 class ReservedNodes(Enum):
@@ -169,8 +172,7 @@ class Pipeline(AbstractOp):
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    @property
-    def pipeline_versions(self) -> Mapping[Node, Version]:
+    def get_pipeline_versions(self) -> Mapping[Node, Version]:
         versions = {}
         for node in self._graph:
             versions[node] = node.get_version_with_ancestry(versions)
@@ -179,17 +181,17 @@ class Pipeline(AbstractOp):
     def load(self, saver: Saver):
         persisted_versions = self._load_versions(saver)
 
-        new_graph = []
-        for node in self._graph:
+        new_graph = self._graph
+        for i, node in enumerate(self._graph):
             new_node = self._load_single_node(node, persisted_versions, saver)
-            new_graph.append(new_node)
+            new_graph[i] = new_node
             self._graph = new_graph
         return self
 
     def _load_single_node(self, node: Node, versions: Mapping[Node, List[Version]], saver: Saver):
         if not node.is_loadable:
             return node
-        node.check_version(persisted_version=versions, current_versions=self.pipeline_versions)
+        node.check_version(persisted_version=versions, current_versions=self.get_pipeline_versions())
         node_path = self._get_path_from_versions(versions, node)
         return node.load(saver, node_path)
 
@@ -221,13 +223,14 @@ class Pipeline(AbstractOp):
 
     def save(self, saver: Saver):
         persisted_versions = self._load_versions(saver)
+        pipeline_versions = self.get_pipeline_versions()
         if not persisted_versions:
-            self._save_meta({node: [node_version] for node, node_version in self.pipeline_versions.items()}, saver)
-            return self._persist_nodes(saver)
+            self._save_meta({node: [node_version] for node, node_version in pipeline_versions.items()}, saver)
+            return self._persist_nodes(saver, pipeline_versions)
         for node in self._graph:
-            persisted_versions = self._update_versions(persisted_versions, node)
+            persisted_versions = self._update_versions(persisted_versions, pipeline_versions, node)
         self._save_meta(persisted_versions, saver)
-        return self._persist_nodes(saver)
+        return self._persist_nodes(saver, pipeline_versions)
 
     def _save_meta(self, meta: Mapping[Node, List[Version]], saver: Saver):
         new_meta_bytes = JSONSerializer().serialize_object({
@@ -236,15 +239,17 @@ class Pipeline(AbstractOp):
         })
         saver.save(new_meta_bytes, self.pipeline_meta_path)
 
-    def _persist_nodes(self, saver: Saver):
+    def _persist_nodes(self, saver: Saver, pipeline_versions: Mapping[Node, Version]):
         for node in self._graph:
             if node.is_loadable:
-                node.persist(saver)
+                node.persist(saver, pipeline_versions[node])
 
-    def _update_versions(self, versions: Mapping[Node, List[Version]], node: Node):
+    @staticmethod
+    def _update_versions(historic_versions: Mapping[Node, List[Version]],
+                         pipeline_versions: Mapping[Node, Version], node: Node):
         if not node.is_loadable:
-            return versions
-        if self.pipeline_versions[node] in versions[node]:
-            return versions
-        versions[node].append(self.pipeline_versions[node])
-        return versions
+            return historic_versions
+        if pipeline_versions[node] in historic_versions[node]:
+            return historic_versions
+        historic_versions[node].append(pipeline_versions[node])
+        return historic_versions
