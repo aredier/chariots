@@ -23,10 +23,12 @@ def savable_op_generator():
 
             def load(self, serialized_object: bytes):
                 serializer = DillSerializer()
+                print("loading ", serializer.deserialize_object(serialized_object))
                 self.count = serializer.deserialize_object(serialized_object)
 
             def serialize(self) -> bytes:
                 serializer = DillSerializer()
+                print("saving", self.count)
                 return serializer.serialize_object(self.count)
 
         return CounterModulo
@@ -41,3 +43,14 @@ def Range10():
         def __call__(self, *args, **kwargs):
             return list(range(10))
     return Range
+
+
+@pytest.fixture
+def NotOp():
+
+    class NotOp(AbstractOp):
+
+        def __call__(self, input):
+            return [not i for i in input]
+
+    return NotOp

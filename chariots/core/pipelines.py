@@ -60,13 +60,16 @@ class Node:
     def load(self, saver: Saver, node_path: Text) -> "Node":
         if not self.is_loadable:
             raise ValueError("trying to load a non loadable node")
+        if isinstance(self._op, Pipeline):
+            self._op.load(saver)
+            return self
         op_bytes = saver.load(node_path)
         self._op.load(op_bytes)
         return self
 
     @property
     def is_loadable(self) -> bool:
-        return isinstance(self._op, LoadableOp)
+        return isinstance(self._op, (LoadableOp, Pipeline))
 
     @property
     def name(self):
@@ -75,6 +78,8 @@ class Node:
     def persist(self, saver: Saver, pipeline_version: Version):
         if not self.is_loadable:
             raise ValueError("trying to save a non savable/loadable op")
+        if isinstance(self._op, Pipeline):
+            return self._op.save(saver)
         op_bytes = self._op.serialize()
         saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(pipeline_version)))
 
