@@ -17,6 +17,20 @@ def pipe_generator(savable_op_generator, Range10):
     return inner
 
 
+@pytest.fixture
+def enchrined_pipelines_generator(NotOp, pipe_generator):
+    def inner(counter_step):
+        pipe1 = pipe_generator(counter_step=counter_step)
+        pipe1.set_pipeline_name("first_pipe")
+        pipe = Pipeline([
+            Node(pipe1, output_node="first_pipe"),
+            Node(NotOp(), input_nodes=["first_pipe"], output_node=ReservedNodes.pipeline_output)
+        ])
+        pipe.set_pipeline_name("complete_pipe")
+        return pipe
+    return inner
+
+
 def test_savable_pipeline(pipe_generator, tmpdir):
 
     pipe = pipe_generator(counter_step=1)
@@ -71,19 +85,6 @@ def test_savable_pipeline_wrong_version(pipe_generator, tmpdir):
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
-@pytest.fixture
-def enchrined_pipelines_generator(NotOp, pipe_generator):
-    def inner(counter_step):
-        pipe1 = pipe_generator(counter_step=counter_step)
-        pipe1.set_pipeline_name("first_pipe")
-        pipe = Pipeline([
-            Node(pipe1, output_node="first_pipe"),
-            Node(NotOp(), input_nodes=["first_pipe"], output_node=ReservedNodes.pipeline_output)
-        ])
-        pipe.set_pipeline_name("complete_pipe")
-        return pipe
-    return inner
-
 
 def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe = enchrined_pipelines_generator(counter_step=1)
@@ -109,3 +110,4 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     res = pipe_load(SequentialRunner())
     assert len(res) == 10
     assert res == [bool(i % 3) for i in range(10)]
+

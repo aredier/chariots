@@ -178,9 +178,10 @@ class Pipeline(AbstractOp):
         return output
 
     def get_pipeline_versions(self) -> Mapping[Node, Version]:
-        versions = {}
+        versions = {ReservedNodes.pipeline_input: Version()}
         for node in self._graph:
             versions[node] = node.get_version_with_ancestry(versions)
+        versions.pop(ReservedNodes.pipeline_input, None)
         return versions
 
     def load(self, saver: Saver):

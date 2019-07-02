@@ -84,11 +84,13 @@ class Version:
         return self._creation_time
 
     def __gt__(self, other: "Version") -> bool:
+        if self == other:
+            return False
         return self.creation_time > other.creation_time
 
     def __eq__(self, other: "Version") -> bool:
         return (self.major == other.major and self.minor == other.minor and
-                self.patch == other.patch and self.creation_time == other.creation_time)
+                self.patch == other.patch)
 
     @property
     def major(self):
