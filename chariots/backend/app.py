@@ -2,26 +2,40 @@ import json
 from typing import Text, Mapping, Any
 
 from flask import Flask, request
-from requests import Response
 
 from chariots.core.pipelines import Pipeline, SequentialRunner, Node
 from chariots.core.versioning import Version
 
 
 class PipelineResponse(object):
+    """
+    A PipelineResponse represents all the information that is sent from the backend when a pipeline is executed.
+    """
 
     def __init__(self, value: Any, versions: Mapping[Node, Version]):
         self.value = value
         self.versions = versions
 
-    def json(self):
+    def json(self) -> Mapping[str, Any]:
+        """
+        jsonify the response to be passed over http
+
+        :return: the dict representing this response
+        """
         return {
             "pipeline_output": self.value,
             "versions": {node.name: str(version) for node, version in self.versions.items()}
         }
 
     @classmethod
-    def from_request(cls, response: Response, query_pipeline: Pipeline):
+    def from_request(cls, response: request.Response, query_pipeline: Pipeline) -> "PipelineResponse":
+        """
+        builds the response from the response that was received through http and the pipeline used to query it
+
+        :param response: the response of the call
+        :param query_pipeline: the pipeline that was used in the query that generated the response
+        :return: the corresponding PipelineResponse
+        """
         if not response.status_code == 200:
             raise ValueError("trying to parse non nominal response")
         response_json = response.json()
@@ -33,6 +47,9 @@ class PipelineResponse(object):
 
 
 class Chariot(Flask):
+    """
+    the backend app used to run the pipelines
+    """
 
     def __init__(self, pipelines: Mapping[Text, Pipeline], *args, **kwargs):
         super().__init__(*args, **kwargs)
