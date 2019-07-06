@@ -3,7 +3,7 @@ from typing import Text, Mapping
 
 from flask import Flask, request
 
-from chariots.core.pipelines import Pipeline
+from chariots.core.pipelines import Pipeline, SequentialRunner
 
 
 class Chariot(Flask):
@@ -24,6 +24,6 @@ class Chariot(Flask):
 
         def inner():
             pipeline_input = request.json.get("pipeline_input") if request.json else None
-            res = pipeline(pipeline_input)
+            res = pipeline(SequentialRunner(), pipeline_input)
             return json.dumps(res)
         return inner
