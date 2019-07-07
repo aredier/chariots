@@ -1,13 +1,14 @@
 import json
-from typing import Text, Mapping, Any
+from typing import Text, Mapping, Any, List
 
+import requests
 from flask import Flask, request
 
 from chariots.core.pipelines import Pipeline, SequentialRunner, Node
 from chariots.core.versioning import Version
 
 
-class PipelineResponse(object):
+class PipelineResponse:
     """
     A PipelineResponse represents all the information that is sent from the backend when a pipeline is executed.
     """
@@ -28,7 +29,7 @@ class PipelineResponse(object):
         }
 
     @classmethod
-    def from_request(cls, response: request.Response, query_pipeline: Pipeline) -> "PipelineResponse":
+    def from_request(cls, response: requests.Response, query_pipeline: Pipeline) -> "PipelineResponse":
         """
         builds the response from the response that was received through http and the pipeline used to query it
 
@@ -51,14 +52,14 @@ class Chariot(Flask):
     the backend app used to run the pipelines
     """
 
-    def __init__(self, pipelines: Mapping[Text, Pipeline], *args, **kwargs):
+    def __init__(self, pipelines: List[Pipeline], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._build_routes(pipelines)
 
     def _build_routes(self, pipelines):
-        for pipeline_name, pipeline in pipelines.items():
-            self.add_url_rule(f"/pipes/{pipeline_name}", pipeline_name,
+        for pipeline in pipelines:
+            self.add_url_rule(f"/pipes/{pipeline.name}", pipeline.name,
                               self._build_endpoint_from_pipeline(pipeline),
                               methods=['POST'])
 
@@ -67,7 +68,6 @@ class Chariot(Flask):
 
         def inner():
             pipeline_input = request.json.get("pipeline_input") if request.json else None
-            print(request.json)
             response = PipelineResponse(pipeline(SequentialRunner(), pipeline_input), pipeline.get_pipeline_versions())
             return json.dumps(response.json())
         return inner

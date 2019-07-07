@@ -5,16 +5,6 @@ from chariots.core.pipelines import Node, Pipeline, ReservedNodes, SequentialRun
 
 
 @pytest.fixture
-def IsPair():
-
-    class Inner(AbstractOp):
-
-        def __call__(self, data):
-            return [not i % 2 for i in data]
-    return Inner
-
-
-@pytest.fixture
 def Sum():
 
     class Inner(AbstractOp):
