@@ -54,3 +54,13 @@ def NotOp():
             return [not i for i in input]
 
     return NotOp
+
+
+@pytest.fixture
+def IsPair():
+
+    class Inner(AbstractOp):
+
+        def __call__(self, data):
+            return [not i % 2 for i in data]
+    return Inner

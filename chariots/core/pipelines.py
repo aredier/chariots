@@ -210,7 +210,7 @@ class Pipeline(AbstractOp):
     a pipeline is a collection of linked nodes to be executed together
     """
 
-    def __init__(self, nodes: List[Node], name: Optional[AnyStr] = None):
+    def __init__(self, nodes: List[Node], name: str):
         """
         :param nodes: the nodes of the pipeline
         :param name: the name of the pipeline
@@ -225,13 +225,6 @@ class Pipeline(AbstractOp):
         :return: string of the name
         """
         return self._name
-
-    def set_pipeline_name(self, name: str):
-        """
-        sets the name of the pipeline
-        :param name: the desired name of the pipeline
-        """
-        self._name = name
 
     @classmethod
     def resolve_graph(cls, nodes: List[Node]) -> List[Node]:
