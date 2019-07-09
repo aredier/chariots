@@ -1,6 +1,7 @@
 import pytest
 
-from chariots.core.pipelines import Pipeline, Node, ReservedNodes, SequentialRunner
+from chariots.core.pipelines import Pipeline, SequentialRunner, ReservedNodes
+from chariots.core.nodes import  Node
 from chariots.core.saving import FileSaver
 
 
