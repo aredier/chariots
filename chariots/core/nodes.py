@@ -62,8 +62,9 @@ class AbstractNode(ABC):
             return symbolic_real_node_map[node]
         return node
 
-    def get_version_with_ancestry(self,
-                                  ancestry_versions: Mapping[Union["AbstractNode", "ReservedNodes"], Version]) -> Version:
+    def get_version_with_ancestry(
+            self, ancestry_versions: Mapping[Union["AbstractNode","ReservedNodes"], Version]
+    ) -> Version:
         """
         adds this node's version to those of it's input (themselves computed on their ancestry)
 
@@ -263,7 +264,7 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         self._name = name
         self._saver = None
 
-    def attach_serializer(self, saver: Saver):
+    def attach_saver(self, saver: Saver):
         """
         attach a saver to the op, this is the entry point for the Chariot App to inject it's saver to the Dat Op
 
@@ -272,7 +273,6 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         self._saver = saver
 
     @property
-    @abstractmethod
     def node_version(self) -> Version:
         """
         the version of the op this node represents
@@ -284,7 +284,6 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         version.update_major(file_hash)
         return version
 
-    @abstractmethod
     def execute(self, *params) -> Any:
         """
         executes the underlying op on params
@@ -298,7 +297,6 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         return self.serializer.deserialize_object(self._saver.load(self.path))
 
     @property
-    @abstractmethod
     def name(self) -> str:
         """
         the name of the node
@@ -307,7 +305,6 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         """
         return self.name or self.path.split("/")[-1].split(".")[0]
 
-    @abstractmethod
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)
 
@@ -331,7 +328,7 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         self._name = name
         self._saver = None
 
-    def attach_serializer(self, saver: Saver):
+    def attach_saver(self, saver: Saver):
         """
         attach a saver to the op, this is the entry point for the Chariot App to inject it's saver to the Dat Op
 
@@ -340,14 +337,12 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         self._saver = saver
 
     @property
-    @abstractmethod
     def node_version(self) -> Version:
         """
         the version of the op this node represents
         """
         return Version()
 
-    @abstractmethod
     def execute(self, data_to_serialize) -> Any:
         """
         executes the underlying op on params
@@ -358,10 +353,9 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         """
         if self._saver is None:
             raise ValueError("cannot save data without a saver")
-        return self._saver.save(self.serializer.serialize_object(data_to_serialize))
+        return self._saver.save(self.serializer.serialize_object(data_to_serialize), self.path)
 
     @property
-    @abstractmethod
     def name(self) -> str:
         """
         the name of the node
@@ -370,6 +364,5 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         """
         return self._name or self.path.split("/")[-1].split(".")[0]
 
-    @abstractmethod
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)
