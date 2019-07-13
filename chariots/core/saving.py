@@ -11,10 +11,8 @@ class Serializer(ABC):
     a Serializer handles transforming an object to and from bytes.
     """
 
-    ObjectType = Any
-
     @abstractmethod
-    def serialize_object(self, target: ObjectType) -> bytes:
+    def serialize_object(self, target: Any) -> bytes:
         """
         transforms an object into bytes
 
@@ -24,7 +22,7 @@ class Serializer(ABC):
         pass
 
     @abstractmethod
-    def deserialize_object(self, serialized_object: bytes) -> ObjectType:
+    def deserialize_object(self, serialized_object: bytes) -> Any:
         """
         loads the serialized bytes and returns the object they represent
 
@@ -39,12 +37,10 @@ class DillSerializer(Serializer):
     serializes the object into dill readable byte
     """
 
-    ObjectType = Any
-
-    def serialize_object(self, target: ObjectType) -> bytes:
+    def serialize_object(self, target: Any) -> bytes:
         return dill.dumps(target)
 
-    def deserialize_object(self, serialized_object: bytes) -> ObjectType:
+    def deserialize_object(self, serialized_object: bytes) -> Any:
         return dill.loads(serialized_object)
 
 
