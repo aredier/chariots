@@ -153,7 +153,7 @@ class Pipeline(AbstractOp):
         :return: the result
         """
         node, output = next(iter(results.items()))
-        if node.output_node != ReservedNodes.pipeline_output.value:
+        if output is not None and node.output_node != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
 

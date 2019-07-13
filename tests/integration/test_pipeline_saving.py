@@ -1,8 +1,11 @@
+import json
+import os
+
 import pytest
 
 from chariots.core.pipelines import Pipeline, SequentialRunner, ReservedNodes
-from chariots.core.nodes import  Node
-from chariots.core.saving import FileSaver
+from chariots.core.nodes import Node, DataLoadingNode, DataSavingNode
+from chariots.core.saving import FileSaver, JSONSerializer
 
 
 @pytest.fixture
@@ -111,4 +114,33 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     res = pipe_load(SequentialRunner())
     assert len(res) == 10
     assert res == [bool(i % 3) for i in range(10)]
+
+
+def test_data_ops(tmpdir, NotOp):
+
+    input_path = "in.json"
+    output_path = "out.json"
+
+    with open(os.path.join(tmpdir, input_path), "w") as file:
+        json.dump(list(range(10)), file)
+
+    saver = FileSaver(tmpdir)
+    in_node = DataLoadingNode(JSONSerializer(), input_path, output_node="data_in")
+    out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=["data_trans"])
+    in_node.attach_saver(saver)
+    out_node.attach_saver(saver)
+
+    pipe = Pipeline([
+        in_node,
+        Node(NotOp(), input_nodes=["data_in"], output_node="data_trans"),
+        out_node
+    ])
+
+    pipe(SequentialRunner())
+
+    with open(os.path.join(tmpdir, output_path), "r") as file:
+        res = json.load(file)
+
+    assert len(res) == 10
+    assert res == [True] + [False] * 9
 
