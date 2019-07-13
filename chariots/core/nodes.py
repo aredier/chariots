@@ -353,7 +353,7 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         """
         if self._saver is None:
             raise ValueError("cannot save data without a saver")
-        return self._saver.save(self.serializer.serialize_object(data_to_serialize), self.path)
+        self._saver.save(self.serializer.serialize_object(data_to_serialize), self.path)
 
     @property
     def name(self) -> str:
