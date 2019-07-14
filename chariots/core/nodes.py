@@ -63,7 +63,7 @@ class AbstractNode(ABC):
         return node
 
     def get_version_with_ancestry(
-            self, ancestry_versions: Mapping[Union["AbstractNode","ReservedNodes"], Version]
+            self, ancestry_versions: Mapping[Union["AbstractNode", "ReservedNodes"], Version]
     ) -> Version:
         """
         adds this node's version to those of it's input (themselves computed on their ancestry)
@@ -134,6 +134,14 @@ class AbstractNode(ABC):
         whether or not this node requires q runner to be executed
         (typically if the inner op is a pipelines)
 
+        :return: bool
+        """
+        return False
+
+    @property
+    def require_saver(self) -> bool:
+        """
+        whether or not this node requires a saver to be executed
         :return: bool
         """
         return False
@@ -245,20 +253,20 @@ class Node(AbstractNode):
         return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_node)
 
 
-class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
-    """
-    a node for loading data from a saver (that has to be attached after init)
-    """
+class DataNode(AbstractNode, metaclass=ABCMeta):
 
-    def __init__(self, serializer: Serializer,  path: str, output_node=None, name: Optional[str] = None):
+    def __init__(self, serializer: Serializer,  path: str, input_nodes: Optional[InputNodes] = None, output_node=None,
+                 name: Optional[str] = None):
         """
         :param serializer: the serializer to use to load the dat
         :param path: the path to load the data from
+        :param input_nodes: the input_nodes on which this node should be executed
         :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
         output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
         :param name: the name of the op
         """
-        super().__init__(output_node=output_node)
+
+        super().__init__(input_nodes=input_nodes, output_node=output_node)
         self.path = path
         self.serializer = serializer
         self._name = name
@@ -271,6 +279,65 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
         :param saver: the saver to use
         """
         self._saver = saver
+
+    @property
+    def name(self) -> str:
+        """
+        the name of the node
+
+        :return: the string of the name
+        """
+        return self.name or self.path.split("/")[-1].split(".")[0]
+
+    @property
+    @abstractmethod
+    def node_version(self) -> Version:
+        """
+        the version of the op this node represents
+        """
+        if self._saver is None:
+            raise ValueError("cannot get the version of a data op without a saver")
+        version = Version()
+        file_hash = sha1(self._saver.load(self.path)).hexdigest()
+        version.update_major(file_hash)
+        return version
+
+    @abstractmethod
+    def execute(self, *params) -> Any:
+        """
+        executes the underlying op on params
+
+        :param params: the inputs of the underlying op
+        :return: the output of the op
+        """
+
+        if self._saver is None:
+            raise ValueError("cannot load data without a saver")
+        return self.serializer.deserialize_object(self._saver.load(self.path))
+
+    @property
+    def require_saver(self) -> bool:
+        return True
+
+    @abstractmethod
+    def __repr__(self):
+        return "<DataLoadingNode of {}>".format(self.path)
+
+
+class DataLoadingNode(DataNode):
+    """
+    a node for loading data from a saver (that has to be attached after init)
+    """
+
+    def __init__(self, serializer: Serializer,  path: str, output_node=None, name: Optional[str] = None):
+        """
+        :param serializer: the serializer to use to load the dat
+        :param path: the path to load the data from
+        :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
+        output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
+        :param name: the name of the op
+        """
+        super().__init__(serializer=serializer, path=path, output_node=output_node, name=name)
 
     @property
     def node_version(self) -> Version:
@@ -296,20 +363,11 @@ class DataLoadingNode(AbstractNode, metaclass=ABCMeta):
             raise ValueError("cannot load data without a saver")
         return self.serializer.deserialize_object(self._saver.load(self.path))
 
-    @property
-    def name(self) -> str:
-        """
-        the name of the node
-
-        :return: the string of the name
-        """
-        return self.name or self.path.split("/")[-1].split(".")[0]
-
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)
 
 
-class DataSavingNode(AbstractNode, metaclass=ABCMeta):
+class DataSavingNode(DataNode):
     """
     a node for loading data from a saver (that has to be attached after init)
     """
@@ -322,19 +380,7 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         :param input_nodes: the input_nodes on which this node should be executed
         :param name: the name of the op
         """
-        super().__init__(input_nodes=input_nodes)
-        self.path = path
-        self.serializer = serializer
-        self._name = name
-        self._saver = None
-
-    def attach_saver(self, saver: Saver):
-        """
-        attach a saver to the op, this is the entry point for the Chariot App to inject it's saver to the Dat Op
-
-        :param saver: the saver to use
-        """
-        self._saver = saver
+        super().__init__(serializer=serializer, path=path, input_nodes=input_nodes, name=name)
 
     @property
     def node_version(self) -> Version:
@@ -354,15 +400,6 @@ class DataSavingNode(AbstractNode, metaclass=ABCMeta):
         if self._saver is None:
             raise ValueError("cannot save data without a saver")
         self._saver.save(self.serializer.serialize_object(data_to_serialize), self.path)
-
-    @property
-    def name(self) -> str:
-        """
-        the name of the node
-
-        :return: the string of the name
-        """
-        return self._name or self.path.split("/")[-1].split(".")[0]
 
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)

@@ -1,11 +1,13 @@
 import json
-from typing import Text, Mapping, Any, List
+from typing import Mapping, Any, List
 
 import requests
 from flask import Flask, request
 
-from chariots.core.pipelines import Pipeline, SequentialRunner, Node
+from chariots.core.pipelines import Pipeline, SequentialRunner
 from chariots.core.versioning import Version
+from chariots.core.nodes import AbstractNode
+from chariots.core.saving import Saver, FileSaver
 
 
 class PipelineResponse:
@@ -13,7 +15,7 @@ class PipelineResponse:
     A PipelineResponse represents all the information that is sent from the backend when a pipeline is executed.
     """
 
-    def __init__(self, value: Any, versions: Mapping[Node, Version]):
+    def __init__(self, value: Any, versions: Mapping[AbstractNode, Version]):
         self.value = value
         self.versions = versions
 
@@ -52,13 +54,15 @@ class Chariot(Flask):
     the backend app used to run the pipelines
     """
 
-    def __init__(self, pipelines: List[Pipeline], *args, **kwargs):
+    def __init__(self, pipelines: List[Pipeline], saver: Saver = FileSaver, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.saver = saver
         self._build_routes(pipelines)
 
     def _build_routes(self, pipelines):
         for pipeline in pipelines:
+            pipeline.prepare(self.saver)
             self.add_url_rule(f"/pipes/{pipeline.name}", pipeline.name,
                               self._build_endpoint_from_pipeline(pipeline),
                               methods=['POST'])

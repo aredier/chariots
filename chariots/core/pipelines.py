@@ -71,6 +71,11 @@ class Pipeline(AbstractOp):
         self._graph = self.resolve_graph(nodes)
         self._name = name
 
+    def prepare(self, saver: Saver):
+        for node in self._graph:
+            if node.require_saver:
+                node.attach_saver(saver)
+
     @property
     def name(self) -> str:
         """
