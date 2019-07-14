@@ -1,6 +1,9 @@
 language: python
-python:
-- 3.7
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: true
 install: pip install -U tox-travis
 script: tox
 deploy:
@@ -13,3 +16,4 @@ deploy:
     tags: true
     repo: aredier/chariots
     python: 3.7
+
