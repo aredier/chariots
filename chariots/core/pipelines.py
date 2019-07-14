@@ -1,9 +1,8 @@
 import os
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Mapping, Text, Set, Any, Dict, Optional, AnyStr
+from typing import List, Mapping, Text, Set, Any, Dict, Optional
 
-from chariots.core.nodes import AbstractNode
 from chariots.core.ops import AbstractOp, OPS_PATH
 from chariots.core.saving import Saver, JSONSerializer
 from chariots.core.versioning import Version
@@ -44,7 +43,7 @@ class SequentialRunner(AbstractRunner):
     """
 
     def run_graph(self, pipeline_input: Any, graph: List["AbstractNode"]) -> ResultDict:
-        temp_results = {"ReservedNodes".pipeline_input: pipeline_input} if pipeline_input else {}
+        temp_results = {ReservedNodes.pipeline_input: pipeline_input} if pipeline_input else {}
         for node in graph:
             temp_results = self._execute_node(node, temp_results)
         return temp_results
@@ -63,7 +62,7 @@ class Pipeline(AbstractOp):
     a pipeline is a collection of linked nodes to be executed together
     """
 
-    def __init__(self, nodes: List[AbstractNode], name: str):
+    def __init__(self, nodes: List["AbstractNode"], name: str):
         """
         :param nodes: the nodes of the pipeline
         :param name: the name of the pipeline
