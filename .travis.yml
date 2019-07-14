@@ -1,0 +1,15 @@
+language: python
+python:
+- 3.7
+install: pip install -U tox-travis
+script: tox
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: aredier
+  password:
+    secure: GHeT4971TSdGvtHsUK84CVoq282vcmXuLoi5TaPj/vl/L1pIEJ8887pyGg1mh86v4cmVlV2DhzinndwZ5mUslIxO8flgP3+uRKp8ids3Y4ch4HdoeReSPfE27IPOziJ5uPBDkaRm3/qfhQX2kQcdyDiuHtC0u0nB3cz75E8B6uSkkwaAgVNM39ZucWJojGNZ2BIJEXZAxnTvXjBygBTJaHW1s1Pg2p4ehjjbhEhoxfkBSEAiUvppkTX63aHk8dHDGuEo9onaHjOcr3cWOa1VM604jk4qi4L9YUbkrQEeHwgmViPvguwsJY8BDSO2EKYmqkntNwlSDsGCkXeeNii1D9cutgt/Co+7AiMK5xkB3CvlGLXOiy7jBFkd9hHMUFPHYkxUApD1t8rfxDVk/5atFcrNVnqXnNi76m0eej0AyBdxTZRmk084SDEfB4W1gFnsSGIYZimPEXPL5JPG3VBRSPvBlSrQBBBeIrguaBMU1Gr7bXCdoK028AUrr/pccLAb3LRpE93+qvpOdWptmTXEE4aib6tLFPyUR4ekQsfxUVv+/9XhlMd3wG8W26qVybuAKfMAQoWM8u+LsRd7gKLCy+UV8QhlrEctPG3sAOFhi6+BMmyX4L4a+EyuOEcD71O7koeqS6Ng42m9lltesK7fck82s/gQGFHX/k2OA5XjHFc=
+  on:
+    tags: true
+    repo: aredier/chariots
+    python: 3.7

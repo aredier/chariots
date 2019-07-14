@@ -5,6 +5,7 @@ Cargo.lock
 .idea/
 .cache/
 .vscode/
+*.pyc
 __pycache__/
 /chariots.egg-info/
 .pytest_cache/
@@ -32,3 +33,6 @@ yarn-error.log*
 *.sw?
 .editorconfig
 yarn.lock
+
+# doc
+docs/_build/*
