@@ -1,0 +1,4 @@
+Click>=6.0
+dill==0.2.9
+flask==1.0.3
+requests==2.22.0
