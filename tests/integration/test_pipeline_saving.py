@@ -143,4 +143,3 @@ def test_data_ops(tmpdir, NotOp):
 
     assert len(res) == 10
     assert res == [True] + [False] * 9
-
