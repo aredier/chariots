@@ -10,7 +10,6 @@ from chariots.core.versioning import Version
 
 def post_app(client, route, data=None):
     response = client.post(route, data=json.dumps(data), content_type='application/json')
-    print(response)
     return json.loads(response.data)
 
 
@@ -28,7 +27,7 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
     app = Chariot([pipe1, pipe], path=tmpdir, import_name="some_app")
     test_client = app.test_client()
 
-    response_json = post_app(test_client, "/pipes/outer_pipe")
+    response_json = post_app(test_client, "/pipelines/outer_pipe/main")
     assert "pipeline_output" in response_json
     assert "versions" in response_json
     response = PipelineResponse(response_json["pipeline_output"],
@@ -36,7 +35,7 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
                                  for node_name, version_str in response_json["versions"].items()})
     assert response.value == [i % 2 for i in range(10)]
 
-    response_json = post_app(test_client, "/pipes/inner_pipe")
+    response_json = post_app(test_client, "/pipelines/inner_pipe/main")
     response = PipelineResponse(response_json["pipeline_output"],
                                 {pipe1.node_for_name[node_name]: Version.parse(version_str)
                                  for node_name, version_str in response_json["versions"].items()})
@@ -51,7 +50,7 @@ def test_app_response_with_input(Range10, IsPair, NotOp, tmpdir):
     app = Chariot([pipe1], path=tmpdir, import_name="some_app")
     test_client = app.test_client()
 
-    response_json = post_app(test_client, "/pipes/inner_pipe", data={"pipeline_input": list(range(20))})
+    response_json = post_app(test_client, "/pipelines/inner_pipe/main", data={"pipeline_input": list(range(20))})
     response = PipelineResponse(response_json["pipeline_output"],
                                 {pipe1.node_for_name[node_name]: Version.parse(version_str)
                                  for node_name, version_str in response_json["versions"].items()})
@@ -77,7 +76,7 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     app = Chariot([pipe], path=tmpdir, import_name="some_app")
     test_client = app.test_client()
 
-    response_json = post_app(test_client, "/pipes/my_pipe")
+    response_json = post_app(test_client, "/pipelines/my_pipe/main")
     _ = PipelineResponse(response_json["pipeline_output"],
                                 {pipe.node_for_name[node_name]: Version.parse(version_str)
                                  for node_name, version_str in response_json["versions"].items()})

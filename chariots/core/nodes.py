@@ -86,6 +86,7 @@ class AbstractNode(ABC):
         current_version = current_versions[self]
         last_loaded_version = max(persisted_versions[self])
         if current_version > last_loaded_version and current_version.major != last_loaded_version.major:
+            # TODO create custom errors
             raise ValueError("trying to load incompatible version")
 
     def load(self, saver: Saver, node_path: Text) -> "AbstractNode":

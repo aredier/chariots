@@ -52,26 +52,88 @@ class PipelineResponse:
 class Chariot(Flask):
     """
     the backend app used to run the pipelines
+    for each pipeline, sevreal routes will be built:
+    - /pipelines/<pipeline_name>/main
+    - /pipelines/<pipeline_name>/versions
+    - /pipelines/<pipeline_name>/load
+    - /pipelines/<pipeline_name>/save
+    - /piepleines/<pipeline_name>/health_check
+    as well as some common routes
+    - /health_check
+    - /available_pipelines
     """
 
     def __init__(self, pipelines: List[Pipeline], path: str, saver_cls: Type[Saver] = FileSaver, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
-        self._build_routes(pipelines)
+        pipelines = self._prepare_pipelines(pipelines)
 
-    def _build_routes(self, pipelines):
-        for pipeline in pipelines:
-            pipeline.prepare(self.saver)
-            self.add_url_rule(f"/pipes/{pipeline.name}", pipeline.name,
-                              self._build_endpoint_from_pipeline(pipeline),
-                              methods=['POST'])
+        self._pipelines = {
+            pipe.name: pipe for pipe in pipelines
+        }
 
-    @staticmethod
-    def _build_endpoint_from_pipeline(pipeline: Pipeline):
+        self._loaded_pipelines = {
+            pipe.name: False for pipe in pipelines
+        }
 
-        def inner():
+        self._load_pipelines()
+        self._build_route()
+
+    def _prepare_pipelines(self, pipelines: List[Pipeline]):
+        for pipe in pipelines:
+            pipe.prepare(self.saver)
+        return pipelines
+
+    def _build_route(self):
+
+        @self.route("/pipelines/<pipeline_name>/main", methods=["POST"])
+        def serve_pipeline(pipeline_name):
+            if not self._loaded_pipelines[pipeline_name]:
+                raise ValueError("pipeline not loaded, load before execution")
+            pipeline = self._pipelines[pipeline_name]
             pipeline_input = request.json.get("pipeline_input") if request.json else None
             response = PipelineResponse(pipeline(SequentialRunner(), pipeline_input), pipeline.get_pipeline_versions())
             return json.dumps(response.json())
-        return inner
+
+        @self.route("/pipelines/<pipeline_name>/load", methods=["POST"])
+        def load_pipeline(pipeline_name):
+            self._load_single_pipeline(pipeline_name)
+            return json.dumps({})
+
+        @self.route("/pipelines/<pipeline_name>/versions", methods=["POST"])
+        def pipeline_versions(pipeline_name):
+            pipeline = self._pipelines[pipeline_name]
+            versions = pipeline.get_pipeline_versions()
+            version_json = {node.name: str(version) for node, version in versions.items()}
+            return json.dumps(version_json)
+
+        @self.route("/pipelines/<pipeline_name>/save", methods=["POST"])
+        def save_pipeline(pipeline_name):
+            pipeline = self._pipelines[pipeline_name]
+            pipeline.save(self.saver)
+            return json.dumps({})
+
+        @self.route("/pipelines/<pipeline_name>/health_check", methods=["GET"])
+        def pipeline_health_check(pipeline_name):
+            is_loaded = self._loaded_pipelines[pipeline_name]
+            return json.dumps({"is_loaded": is_loaded}), 200 if is_loaded else 419
+
+        @self.route("/health_check", methods=["GET"])
+        def health_check():
+            return json.dumps(self._loaded_pipelines)
+
+        @self.route("/available_pipelines", methods=["GET"])
+        def all_pipelines():
+            return json.dumps(list(self._pipelines.keys()))
+
+    def _load_pipelines(self):
+        for pipeline in self._pipelines.values():
+            try:
+                self._load_single_pipeline(pipeline.name)
+            except ValueError:
+                continue
+
+    def _load_single_pipeline(self, pipeline_name):
+        self._pipelines[pipeline_name].load(self.saver)
+        self._loaded_pipelines[pipeline_name] = True

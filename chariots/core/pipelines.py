@@ -202,6 +202,8 @@ class Pipeline(AbstractOp):
         """
         if not node.is_loadable:
             return node
+        if node not in versions:
+            return node
         node.check_version(persisted_versions=versions, current_versions=self.get_pipeline_versions())
         node_path = self._get_path_from_versions(versions, node)
         return node.load(saver, node_path)
