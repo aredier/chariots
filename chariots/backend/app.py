@@ -1,5 +1,5 @@
 import json
-from typing import Mapping, Any, List
+from typing import Mapping, Any, List, Type
 
 import requests
 from flask import Flask, request
@@ -54,10 +54,10 @@ class Chariot(Flask):
     the backend app used to run the pipelines
     """
 
-    def __init__(self, pipelines: List[Pipeline], saver: Saver = FileSaver, *args, **kwargs):
+    def __init__(self, pipelines: List[Pipeline], path: str, saver_cls: Type[Saver] = FileSaver, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.saver = saver
+        self.saver = saver_cls(path)
         self._build_routes(pipelines)
 
     def _build_routes(self, pipelines):

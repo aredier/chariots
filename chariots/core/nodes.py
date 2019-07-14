@@ -287,7 +287,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
 
         :return: the string of the name
         """
-        return self.name or self.path.split("/")[-1].split(".")[0]
+        return self._name or self.path.split("/")[-1].split(".")[0]
 
     @property
     @abstractmethod
@@ -348,7 +348,7 @@ class DataLoadingNode(DataNode):
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
         file_hash = sha1(self._saver.load(self.path)).hexdigest()
-        version.update_major(file_hash)
+        version.update_major(file_hash.encode("utf-8"))
         return version
 
     def execute(self, *params) -> Any:
