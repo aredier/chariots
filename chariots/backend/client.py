@@ -23,7 +23,7 @@ class Client:
         :param pipeline_input: the input to execute the pipeline on
         :return: a response contaning the versions of the nodes in the pipeline and the value of the executed pipeline
         """
-        pipe_url = "{}/pipes/{}".format(self.backend_url, pipeline.name)
+        pipe_url = "{}/pipelines/{}/main".format(self.backend_url, pipeline.name)
         response = requests.post(
             pipe_url,
             headers={"Content-Type": "application/json"},
