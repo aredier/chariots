@@ -16,7 +16,7 @@ def pipe_generator(savable_op_generator, Range10):
             Node(Range10(), output_node="my_list"),
             Node(savable_op_generator(counter_step)(), input_nodes=["my_list"],
                  output_node=ReservedNodes.pipeline_output)
-        ])
+        ], name="my_pipe")
         return pipe
     return inner
 
@@ -25,12 +25,10 @@ def pipe_generator(savable_op_generator, Range10):
 def enchrined_pipelines_generator(NotOp, pipe_generator):
     def inner(counter_step):
         pipe1 = pipe_generator(counter_step=counter_step)
-        pipe1.set_pipeline_name("first_pipe")
         pipe = Pipeline([
             Node(pipe1, output_node="first_pipe"),
             Node(NotOp(), input_nodes=["first_pipe"], output_node=ReservedNodes.pipeline_output)
-        ])
-        pipe.set_pipeline_name("complete_pipe")
+        ], name="outer_pipe")
         return pipe
     return inner
 
@@ -48,13 +46,11 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     assert res == [not i % 2 for i in range(10)]
 
     saver = FileSaver(tmpdir)
-    pipe.set_pipeline_name("my_pipe")
     pipe.save(saver)
 
     del pipe
 
     pipe_load = pipe_generator(counter_step=1)
-    pipe_load.set_pipeline_name("my_pipe")
     pipe_load.load(saver)
 
     res = pipe_load(SequentialRunner())
@@ -75,13 +71,11 @@ def test_savable_pipeline_wrong_version(pipe_generator, tmpdir):
     assert res == [not i % 2 for i in range(10)]
 
     saver = FileSaver(tmpdir)
-    pipe.set_pipeline_name("my_pipe")
     pipe.save(saver)
 
     del pipe
 
     pipe_load = pipe_generator(counter_step=2)
-    pipe_load.set_pipeline_name("my_pipe")
     with pytest.raises(ValueError):
         pipe_load.load(saver)
 
@@ -102,13 +96,11 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     assert res == [bool(i % 2) for i in range(10)]
 
     saver = FileSaver(tmpdir)
-    pipe.set_pipeline_name("my_pipe")
     pipe.save(saver)
 
     del pipe
 
     pipe_load = enchrined_pipelines_generator(counter_step=1)
-    pipe_load.set_pipeline_name("my_pipe")
     pipe_load.load(saver)
 
     res = pipe_load(SequentialRunner())
@@ -134,7 +126,7 @@ def test_data_ops(tmpdir, NotOp):
         in_node,
         Node(NotOp(), input_nodes=["data_in"], output_node="data_trans"),
         out_node
-    ])
+    ], name="my_pipe")
 
     pipe(SequentialRunner())
 

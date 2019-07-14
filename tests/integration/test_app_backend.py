@@ -1,7 +1,8 @@
 import json
 
 from chariots.backend.app import Chariot, PipelineResponse
-from chariots.core.pipelines import Pipeline, Node, ReservedNodes
+from chariots.core.pipelines import Pipeline, ReservedNodes
+from chariots.core.nodes import Node
 from chariots.core.versioning import Version
 
 
