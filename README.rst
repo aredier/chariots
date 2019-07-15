@@ -18,7 +18,7 @@ chariots
 
 chariots aims to be a complete framework to build and deploy versioned machine learning pipelines.
 
-Chariots allow you to painlessly integrate semantic verisoning to your machine learning pipeline. For instance if one of your preprcessors's major version changes, a Chariot pipeline will not accept to be executed (prompting you to retrain the downstream nodes of your pipeline.
+Chariots allow you to painlessly integrate semantic verisoning to your machine learning pipeline. For instance if one of your preprcessors's major version changes, a Chariot pipeline will not accept to be executed (prompting you to retrain the downstream nodes of your pipeline).
 
 * Free software: GNU General Public License v3
 * Documentation: https://chariots.readthedocs.io.
