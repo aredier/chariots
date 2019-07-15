@@ -29,7 +29,7 @@ in this section we will build a very small pipeline that counts the number it re
 
 the atomic building blocks of chariots are the `Ops` those are the basic compute units of your pipeline.
 
-first we create an op that returns one if it's input is positive and 0 otherwise::
+first we create an op that returns one if it's input is positive and zero otherwise::
 
     from chariots.core import pipelines, ops, saving, versioning, nodes
 
@@ -38,7 +38,7 @@ first we create an op that returns one if it's input is positive and 0 otherwise
             return int(input_number>0)
 
 
-we can then build an op that counts the number of signals it received from upstream. This op will have to be a `LoadableOp`as the counter needs to be persisted::
+we can then build another op that counts the number of signals it received from upstream. This op will have to be a `LoadableOp`as the counter needs to be persisted::
 
     class Counter(ops.LoadableOp):
         def __init__(self):
@@ -56,7 +56,7 @@ we can then build an op that counts the number of signals it received from upstr
             return self.count
 
 
-we can now build our first pipeline. A pipeline is collection of nodes linked together (a node usually corresponds to an op)::
+we can now build our first pipeline. A pipeline is collection of nodes linked together (a node usually wraps around an op)::
 
     pipe = pipelines.Pipeline([
         nodes.Node(IsInteresting(), input_nodes=["__pipeline_input__"],
@@ -66,7 +66,7 @@ we can now build our first pipeline. A pipeline is collection of nodes linked to
     ], "hello_world")
 
 
-once this is done, we can build an app to deploy our pipeline. This is an enhanced `Flask` app (meaning you can use and customize it the same way)::
+once this is done, we can build an app to deploy our pipeline. This is an enhanced `Flask` app (meaning you can use and customize it in the same way)::
 
     from chariots.backend import app
 
@@ -78,6 +78,7 @@ we can than deploy it by running::
     $ flask
 
 as you would with any flask app.
+
 Once this is done we can query our pipeline using the Chariot `Client`::
 
     from chariots.backend import client
@@ -87,25 +88,25 @@ Once this is done we can query our pipeline using the Chariot `Client`::
 
 we can than save our counter by curling the address `http://127.0.0.1:5000/pipelines/hello_world/save` (integration in the client soon)
 
-once this is done. if we want to change the logic of `IsInteresting` by ading a step (that will be a versioned field)::
+once this is done. if we want to change the logic of `IsInteresting` by ading a step, we need to add a `VersionedField` which will vhange its `affected_version`::
 
     class IsInteresting(ops.AbstractOp):
 
-        step = versioning.VersionedField(0, versioning.VersionType.MAJOR)
+        step = versioning.VersionedField(0, affected_version=versioning.VersionType.MAJOR)
 
         def __call__(self, input_number):
             return int(input_number>0) * step
 
-and when we redeploy if we check if the pipeline loaded properly by curling `http://127.0.0.1:5000/pipelines/hello_world/health_check`  (client integration coming) we will recieve::
+and when we redeploy, if we check if the pipeline loaded properly by curling `http://127.0.0.1:5000/pipelines/hello_world/health_check` (client integration coming soon) we will recieve::
 
     {"is_loaded": false}
 
-and trying to execute this will fail
+and trying to execute this pipeline will fail (all other unafected pipelines will still work normally)
 
 Features
 --------
 
-* versioned op
+* versionable individual op
 * easy pipeline building
 * easy pipelines deployment
 
@@ -114,10 +115,10 @@ Comming Soon
 
 Some key features of Chariot are still in development and should be coming soon
 
-* ML utils (implementation of ops for most popular ML libraries) for sklearn and keras at first
+* ML utils (implementation of ops for most popular ML libraries with adequate `Versionedfield`) for sklearn and keras at first
 * Cloud integration (integration with cloud services to fetch and load models from)
 * A CookieCutter to properly structure your ML project
-* More examples (the example above is quite barebones and we are going to write more of those to provide with some use cases and examples)
+* More examples (the example above is quite simple and we are going to write more of those to provide with some use cases and examples)
 
 Credits
 -------
