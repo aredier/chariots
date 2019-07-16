@@ -11,6 +11,34 @@ from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
 PIPELINE_PATH = "/pipelines"
 
 
+class _OpStore:
+
+    # the format of the app's op repo is:
+    # {
+    #     op_name: {
+    #         pipeline: {
+    #             op_version: upstream_version
+    #         }
+    #     }
+    # }
+
+    def __init__(self, saver: Saver):
+        pass
+
+    def get_op(self, op: AbstractOp, fallback=None):
+        pass
+
+    def get_op_from_pipeline(self, op: AbstractOp, pipeline: "Pipeline", fallback=None):
+        pass
+
+    def save_op_for_pipeline(self, op: AbstractOp, pipeline: "Pipeline"):
+        """
+        saves a loadable op present in pipeline
+        :param op: the op to save
+        :param pipeline: tha the op originated from
+        """
+        pass
+
 class ReservedNodes(Enum):
     """
     enum of reserved node names
@@ -141,6 +169,7 @@ class Pipeline(AbstractOp):
 
     def __call__(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
+        print(results)
         if len(results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled")
 
@@ -181,6 +210,16 @@ class Pipeline(AbstractOp):
         :param saver: the saver to look for a persisted version of this pipeline into
         :return: this pipeline loaded
         """
+
+        # the format of the app's op repo is:
+        # {
+        #     op_name: {
+        #         pipeline: {
+        #             op_version: upstream_version
+        #         }
+        #     }
+        # }
+
         persisted_versions = self._load_versions(saver)
 
         new_graph = self._graph
