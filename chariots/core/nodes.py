@@ -5,7 +5,7 @@ from abc import abstractmethod, ABC, ABCMeta
 from typing import Any, Union, Mapping, Optional
 
 from chariots.core.ops import AbstractOp, OPS_PATH, LoadableOp
-from chariots.core.pipelines import Pipeline, ReservedNodes, _OpStore
+from chariots.core import pipelines
 from chariots.core.saving import Saver, Serializer
 from chariots.core.versioning import Version
 from chariots.helpers.errors import VersionError
@@ -22,12 +22,12 @@ class AbstractNode(ABC):
         """
         :param input_nodes: the input_nodes on which this node should be executed
         :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
+        output of the pipeline use "pipeline_output" or `pipelines.ReservedNodes.pipeline_output`
         """
         self.input_nodes = input_nodes or []
         self.output_node = output_node
-        if self.output_node == ReservedNodes.pipeline_output:
-            self.output_node = ReservedNodes.pipeline_output.value
+        if self.output_node == pipelines.ReservedNodes.pipeline_output:
+            self.output_node = pipelines.ReservedNodes.pipeline_output.value
 
     @property
     @abstractmethod
@@ -64,7 +64,7 @@ class AbstractNode(ABC):
         return node
 
     def get_version_with_ancestry(
-            self, ancestry_versions: Mapping[Union["AbstractNode", "ReservedNodes"], Version]
+            self, ancestry_versions: Mapping[Union["AbstractNode", "pipelines.ReservedNodes"], Version]
     ) -> Version:
         """
         adds this node's version to those of it's input (themselves computed on their ancestry)
@@ -76,7 +76,7 @@ class AbstractNode(ABC):
             return self.node_version
         return self.node_version + sum((ancestry_versions[input_node] for input_node in self.input_nodes), Version())
 
-    def check_and_load(self, op_store: _OpStore, pipeline: Pipeline) -> "Node":
+    def check_and_load(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline") -> "Node":
         """
         loads the op the node as persisted in node path
         raises ValueError if the node is not loadable
@@ -106,12 +106,12 @@ class AbstractNode(ABC):
         :return: the string of the name
         """
 
-    def persist(self, saver: Saver, pipeline_version: Version):
+    def persist(self, op_store: "pipelines._OpStore", pipeline_version: Version):
         """
         persists the inner op of the node in saver
 
+        :param op_store: the store in which to store the node
         :param pipeline_version: the pipeline version of the op (including ancestry)
-        :param saver: the saver to save the op in
         """
         if not self.is_loadable:
             raise ValueError("trying to save a non savable/loadable op")
@@ -180,7 +180,7 @@ class Node(AbstractNode):
         res = self._op(*params)
         return res
 
-    def check_and_load(self, op_store: _OpStore, pipeline: Pipeline) -> "Node":
+    def check_and_load(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline") -> "Node":
         """
         loads the op the node as persisted in node path
         raises ValueError if the node is not loadable
@@ -191,7 +191,7 @@ class Node(AbstractNode):
         """
         if not self.is_loadable:
             raise ValueError("trying to load a non loadable node")
-        if isinstance(self._op, Pipeline):
+        if isinstance(self._op, pipelines.Pipeline):
             self._op.load(op_store)
             return self
         op_version, saved_upstream_version = op_store.get_op_versions_from_pipeline(self._op, pipeline, (None, None))
@@ -212,12 +212,13 @@ class Node(AbstractNode):
         :param current_upstream_version: the compounded upstream version at time of check
 
         """
+        print(persisted_op_version, persisted_upstream_version, current_upstream_version)
         if self.node_version.major != persisted_op_version.major:
             raise VersionError("cannot load an with different major version")
         if current_upstream_version.major != persisted_upstream_version.major:
             raise VersionError("cannot laod an op with different major upstream version")
 
-    def _load_any_version(self, op_store: _OpStore):
+    def _load_any_version(self, op_store: "pipelines._OpStore"):
         versions = op_store.get_all_op_verisons(self._op, None)
         if versions is None:
             return self
@@ -230,7 +231,7 @@ class Node(AbstractNode):
         """
         :return: whether or not this node and its inner op can be loaded
         """
-        return isinstance(self._op, (LoadableOp, Pipeline))
+        return isinstance(self._op, (LoadableOp, pipelines.Pipeline))
 
     @property
     def name(self) -> str:
@@ -241,19 +242,20 @@ class Node(AbstractNode):
         """
         return self._op.name
 
-    def persist(self, saver: Saver, pipeline_version: Version):
+    def persist(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline"):
         """
         persists the inner op of the node in saver
 
-        :param pipeline_version: the pipeline version of the op (including ancestry)
-        :param saver: the saver to save the op in
+        :param op_store: the store in which to store the node
+        :param pipeline: the pipeline version of the op (including ancestry)
         """
         if not self.is_loadable:
             raise ValueError("trying to save a non savable/loadable op")
-        if isinstance(self._op, Pipeline):
-            return self._op.save(saver)
-        op_bytes = self._op.serialize()
-        saver.save(op_bytes, os.path.join(OPS_PATH, self.name, str(pipeline_version)))
+        if isinstance(self._op, pipelines.Pipeline):
+            return self._op.save(op_store)
+        op_store.save_op_bytes_for_pipeline(self._op, pipeline_name=pipeline.name,
+                                            pipeline_version=pipeline.get_pipeline_versions()[self],
+                                            op_bytes=self._op.serialize())
 
     @property
     def requires_runner(self) -> bool:
@@ -263,7 +265,7 @@ class Node(AbstractNode):
 
         :return: bool
         """
-        return isinstance(self._op, Pipeline)
+        return isinstance(self._op, pipelines.Pipeline)
 
     def __repr__(self):
         return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_node)
@@ -314,7 +316,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
         if self._saver is None:
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
-        file_hash = sha1(self._saver.check_and_load(self.path)).hexdigest()
+        file_hash = sha1(self._saver.load(self.path)).hexdigest()
         version.update_major(file_hash)
         return version
 
@@ -329,7 +331,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
 
         if self._saver is None:
             raise ValueError("cannot load data without a saver")
-        return self.serializer.deserialize_object(self._saver.check_and_load(self.path))
+        return self.serializer.deserialize_object(self._saver.load(self.path))
 
     @property
     def require_saver(self) -> bool:
@@ -363,7 +365,7 @@ class DataLoadingNode(DataNode):
         if self._saver is None:
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
-        file_hash = sha1(self._saver.check_and_load(self.path)).hexdigest()
+        file_hash = sha1(self._saver.load(self.path)).hexdigest()
         version.update_major(file_hash.encode("utf-8"))
         return version
 
@@ -377,7 +379,7 @@ class DataLoadingNode(DataNode):
 
         if self._saver is None:
             raise ValueError("cannot load data without a saver")
-        return self.serializer.deserialize_object(self._saver.check_and_load(self.path))
+        return self.serializer.deserialize_object(self._saver.load(self.path))
 
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)
