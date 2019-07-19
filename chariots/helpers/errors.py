@@ -1,0 +1,2 @@
+class VersionError(TypeError):
+    pass

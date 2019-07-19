@@ -135,5 +135,5 @@ class Chariot(Flask):
                 continue
 
     def _load_single_pipeline(self, pipeline_name):
-        self._pipelines[pipeline_name].load(self.saver)
+        self._pipelines[pipeline_name].check_and_load(self.saver)
         self._loaded_pipelines[pipeline_name] = True
