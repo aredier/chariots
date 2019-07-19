@@ -194,7 +194,7 @@ class Node(AbstractNode):
         if isinstance(self._op, pipelines.Pipeline):
             self._op.load(op_store)
             return self
-        op_version, saved_upstream_version = op_store.get_op_versions_from_pipeline(self._op, pipeline, (None, None))
+        op_version, saved_upstream_version = op_store.get_last_op_versions_from_pipeline(self._op, pipeline, (None, None))
         if op_version is None:
             return self._load_any_version(op_store)
         self.check_version(op_version, saved_upstream_version, pipeline.get_pipeline_versions()[self])
@@ -219,7 +219,7 @@ class Node(AbstractNode):
             raise VersionError("cannot laod an op with different major upstream version")
 
     def _load_any_version(self, op_store: "pipelines._OpStore"):
-        versions = op_store.get_all_op_verisons(self._op, None)
+        versions = op_store.get_all_verisons_of_op(self._op, None)
         if versions is None:
             return self
         op_bytes = op_store.get_op_bytes_for_version(self._op, max(versions))
