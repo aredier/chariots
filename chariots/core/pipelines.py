@@ -2,18 +2,21 @@ import os
 import json
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Mapping, Text, Set, Any, Dict, Optional
+from typing import List, Mapping, Text, Set, Any, Dict, Optional, Union, Tuple
 
 from chariots.core import nodes
 from chariots.core.ops import AbstractOp, OPS_PATH
 from chariots.core.saving import Saver, JSONSerializer
 from chariots.core.versioning import Version
-from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
+from chariots.helpers.typing import ResultDict, SymbolicToRealMapping, OpStoreMetaJson, OpStoreMeta
 
 PIPELINE_PATH = "/pipelines"
 
 
 class _OpStore:
+    """
+    The op store abstracts the saving of ops and their relevant versions.
+    """
 
     # the format of the app's op repo is:
     # {
@@ -24,59 +27,118 @@ class _OpStore:
     #         ]
     #     }
     # }
+
     _location = "/_meta.json"
 
     def __init__(self, saver: Saver):
+        """
+        :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
+        """
         self._saver = saver
-        self.mapping = {}
+        self._all_op_versions = {}
+        self._load_from_saver()
 
-    def load_from_saver(self):
-        mapping = json.loads(self._saver.load(path=self._location))
-        self.mapping = self._parse_mapping(mapping)
+    def _load_from_saver(self):
+        """
+        loads and parses all the versions from the meta json
+        """
+        try:
+            mapping = json.loads(self._saver.load(path=self._location))
+            self._all_op_versions = self._parse_mapping(mapping)
+        except FileNotFoundError:
+            pass
 
-    def _parse_mapping(self, mapping: dict):
-        for key, value in mapping.items():
+    def _parse_mapping(
+            self, op_version_json: Mapping[str: Union[Mapping, List[Mapping[str, str]]]]
+    ) -> Mapping[str: Union[Mapping, List[Mapping[str, Version]]]]:
+        """
+        parses the saved meta and returns a valid metadata (with versions as object rather than strings)
+
+        :param op_version_json: all the op version metadata in json format
+        :return: the op version metadata
+        """
+        for key, value in op_version_json.items():
             if isinstance(value, dict):
-                mapping[key] = self._parse_mapping(value)
+                op_version_json[key] = self._parse_mapping(value)
             if isinstance(value, list):
-                mapping[key] = [
+                op_version_json[key] = [
                     {k: Version.parse(v) for k, v in version_dict.items()}
                     for version_dict in value
                 ]
-            return mapping
+            return op_version_json
 
     def save(self):
-        self._saver.save(json.dumps(self.mapping), path=self._location)
+        """
+        persists the the op version metadata.
+        """
+        self._saver.save(json.dumps(self._all_op_versions), path=self._location)
 
-    def get_all_op_verisons(self, op: AbstractOp, fallback=None):
-        op_data = self.mapping.get(op.name, None)
+    def get_all_verisons_of_op(self, op: AbstractOp, fallback: Any = None) -> Optional[List[Version]]:
+        """
+        gets all the versions of an op that were previously persisted (the op version and not the upstream one)
+        regardless of which pipeline saved it
+
+        :param op: the op to get the previous persisted versions
+        :param fallback: the fallback to give back if the op has never been persisted
+        """
+
+        op_data = self._all_op_versions.get(op.name, None)
         if op_data is None:
             return fallback
         return [version_dict["op_version"] for pipeline_data in op_data.values() for version_dict in pipeline_data]
 
-    def get_op_versions_from_pipeline(self, op: AbstractOp, pipeline: "Pipeline", fallback=None):
-        pipe_versions = self.mapping.get(op.name, {}).get(pipeline.name, None)
+    def get_last_op_versions_from_pipeline(
+            self, op: AbstractOp, pipeline: "Pipeline", fallback: Any = None
+    ) -> Optional[Tuple[Version, Version]]:
+        """
+        get's the latest versions (both op version and upstream version) of an op inside of a pipeline (upstream of the
+        same pipeline in previous saves)
+
+        :param op: the op to find the versions for
+        :param pipeline: the pipeline that was used to save this op
+        :param fallback: a fallback to return in case no op was found saved with this pipeline
+        :return: the op version and the upstram version (in that order)
+        """
+
+        pipe_versions = self._all_op_versions.get(op.name, {}).get(pipeline.name, None)
         if pipe_versions is None:
             return fallback
         return pipe_versions[-1]["op_version"], pipe_versions[-1]["upstream_version"]
 
-    def get_op_bytes_for_version(self, op: AbstractOp, version: Version):
+    def get_op_bytes_for_version(self, op: AbstractOp, version: Version) -> bytes:
+        """
+        loads the persisted bytes of an op given the version that needs loading
+
+        :param op: the op to laod
+        :param version: the version of the op to load
+        :return: the bytes of the op
+        """
         path = self._build_op_path(op.name, version)
         return self._saver.load(path=path)
 
     @staticmethod
-    def _build_op_path(op_name: str, version: Version):
+    def _build_op_path(op_name: str, version: Version) -> str:
+        """
+        builds the path an op should be persisted at given it's version
+
+        :param op_name: the name of the op to build the path for
+        :param version: th the version of that op
+        :return: the path at which to save
+        """
+
         return "/models/{}/{}".format(op_name, str(version))
 
     def save_op_bytes_for_pipeline(self, op: AbstractOp, pipeline_name: str, pipeline_version: Version,
                                    op_bytes: bytes):
         """
         saves a loadable op present in pipeline
-        :param op_bytes: the bytes of the op to save
+
         :param op: the op to save
-        :param pipeline: tha the op originated from
+        :param pipeline_version: the upstream version of the op to save
+        :param pipeline_name: the name of the op to save
+        :param op_bytes: the bytes of the op to save
         """
-        self.mapping.setdefault(
+        self._all_op_versions.setdefault(
             op.name, {}
         ).setdefault(
             pipeline_name, []
