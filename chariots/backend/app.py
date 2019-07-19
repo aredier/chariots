@@ -4,7 +4,7 @@ from typing import Mapping, Any, List, Type
 import requests
 from flask import Flask, request
 
-from chariots.core.pipelines import Pipeline, SequentialRunner
+from chariots.core import pipelines
 from chariots.core.versioning import Version
 from chariots.core.nodes import AbstractNode
 from chariots.core.saving import Saver, FileSaver
@@ -31,7 +31,7 @@ class PipelineResponse:
         }
 
     @classmethod
-    def from_request(cls, response: requests.Response, query_pipeline: Pipeline) -> "PipelineResponse":
+    def from_request(cls, response: requests.Response, query_pipeline: pipelines.Pipeline) -> "PipelineResponse":
         """
         builds the response from the response that was received through http and the pipeline used to query it
 
@@ -63,27 +63,29 @@ class Chariot(Flask):
     - /available_pipelines
     """
 
-    def __init__(self, pipelines: List[Pipeline], path: str, saver_cls: Type[Saver] = FileSaver, *args, **kwargs):
+    def __init__(self, app_pipelines: List[pipelines.Pipeline], path: str, saver_cls: Type[Saver] = FileSaver, *args,
+                 **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
-        pipelines = self._prepare_pipelines(pipelines)
+        self._op_store = pipelines._OpStore(self.saver)
+        app_pipelines = self._prepare_pipelines(app_pipelines)
 
         self._pipelines = {
-            pipe.name: pipe for pipe in pipelines
+            pipe.name: pipe for pipe in app_pipelines
         }
 
         self._loaded_pipelines = {
-            pipe.name: False for pipe in pipelines
+            pipe.name: False for pipe in app_pipelines
         }
 
         self._load_pipelines()
         self._build_route()
 
-    def _prepare_pipelines(self, pipelines: List[Pipeline]):
-        for pipe in pipelines:
+    def _prepare_pipelines(self, app_pipeline: List[pipelines.Pipeline]):
+        for pipe in app_pipeline:
             pipe.prepare(self.saver)
-        return pipelines
+        return app_pipeline
 
     def _build_route(self):
 
@@ -93,7 +95,8 @@ class Chariot(Flask):
                 raise ValueError("pipeline not loaded, load before execution")
             pipeline = self._pipelines[pipeline_name]
             pipeline_input = request.json.get("pipeline_input") if request.json else None
-            response = PipelineResponse(pipeline(SequentialRunner(), pipeline_input), pipeline.get_pipeline_versions())
+            response = PipelineResponse(pipeline(pipelines.SequentialRunner(), pipeline_input),
+                                        pipeline.get_pipeline_versions())
             return json.dumps(response.json())
 
         @self.route("/pipelines/<pipeline_name>/load", methods=["POST"])
@@ -111,7 +114,7 @@ class Chariot(Flask):
         @self.route("/pipelines/<pipeline_name>/save", methods=["POST"])
         def save_pipeline(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
-            pipeline.save(self.saver)
+            pipeline.save(self._op_store)
             return json.dumps({})
 
         @self.route("/pipelines/<pipeline_name>/health_check", methods=["GET"])
@@ -135,5 +138,5 @@ class Chariot(Flask):
                 continue
 
     def _load_single_pipeline(self, pipeline_name):
-        self._pipelines[pipeline_name].check_and_load(self.saver)
+        self._pipelines[pipeline_name].load(self._op_store)
         self._loaded_pipelines[pipeline_name] = True
