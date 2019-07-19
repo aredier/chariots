@@ -1,8 +1,10 @@
 import os
+import json
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Mapping, Text, Set, Any, Dict, Optional
 
+from chariots.core import nodes
 from chariots.core.ops import AbstractOp, OPS_PATH
 from chariots.core.saving import Saver, JSONSerializer
 from chariots.core.versioning import Version
@@ -16,28 +18,74 @@ class _OpStore:
     # the format of the app's op repo is:
     # {
     #     op_name: {
-    #         pipeline: {
-    #             op_version: upstream_version
-    #         }
+    #         pipeline: [
+    #             "op_version": the op version
+    #             "upstream_version": the upstream version
+    #         ]
     #     }
     # }
+    _location = "/_meta.json"
 
     def __init__(self, saver: Saver):
-        pass
+        self._saver = saver
+        self.mapping = {}
 
-    def get_op(self, op: AbstractOp, fallback=None):
-        pass
+    def load_from_saver(self):
+        mapping = json.loads(self._saver.load(path=self._location))
+        self.mapping = self._parse_mapping(mapping)
 
-    def get_op_from_pipeline(self, op: AbstractOp, pipeline: "Pipeline", fallback=None):
-        pass
+    def _parse_mapping(self, mapping: dict):
+        for key, value in mapping.items():
+            if isinstance(value, dict):
+                mapping[key] = self._parse_mapping(value)
+            if isinstance(value, list):
+                mapping[key] = [
+                    {k: Version.parse(v) for k, v in version_dict.items()}
+                    for version_dict in value
+                ]
+            return mapping
 
-    def save_op_for_pipeline(self, op: AbstractOp, pipeline: "Pipeline"):
+    def save(self):
+        self._saver.save(json.dumps(self.mapping), path=self._location)
+
+    def get_all_op_verisons(self, op: AbstractOp, fallback=None):
+        op_data = self.mapping.get(op.name, None)
+        if op_data is None:
+            return fallback
+        return [version_dict["op_version"] for pipeline_data in op_data for version_dict in pipeline_data]
+
+    def get_op_versions_from_pipeline(self, op: AbstractOp, pipeline: "Pipeline", fallback=None):
+        pipe_versions = self.mapping.get(op.name, {}).get(pipeline.name, None)
+        if pipe_versions is None:
+            return fallback
+        return pipe_versions[-1]["op_version"], pipe_versions[-1]["upstream_version"]
+
+    def get_op_bytes_for_version(self, op: AbstractOp, version: Version):
+        path = self._build_op_path(op.name, version)
+        return self._saver.load(path=path)
+
+    @staticmethod
+    def _build_op_path(op_name: str, version: Version):
+        return "/models/{}/{}".format(op_name, str(version))
+
+    def save_op_bytes_for_pipeline(self, op: AbstractOp, pipeline: "Pipeline", op_bytes: bytes):
         """
         saves a loadable op present in pipeline
+        :param op_bytes: the bytes of the op to save
         :param op: the op to save
         :param pipeline: tha the op originated from
         """
-        pass
+        self.mapping.setdefault(
+            op.name, {}
+        ).setdefault(
+            pipeline.name, []
+        ).append({
+            "op_version": op.__version__,
+            "upstream_version": pipeline.get_pipeline_versions()
+        })
+        path = self._build_op_path(op.name, version=op.__version__)
+        self._saver.save(serialized_object=op_bytes, path=path)
+
 
 class ReservedNodes(Enum):
     """
@@ -54,7 +102,7 @@ class AbstractRunner(ABC):
     """
 
     @abstractmethod
-    def run_graph(self, pipeline_input: Any, graph: List["AbstractNode"]) -> Optional[Any]:
+    def run_graph(self, pipeline_input: Any, graph: List[nodes.AbstractNode]) -> Optional[Any]:
         """
         executes the whole graph of q pipeline
 
@@ -70,13 +118,13 @@ class SequentialRunner(AbstractRunner):
     runner that executes a node graph sequentially
     """
 
-    def run_graph(self, pipeline_input: Any, graph: List["AbstractNode"]) -> ResultDict:
+    def run_graph(self, pipeline_input: Any, graph: List[nodes.AbstractNode]) -> ResultDict:
         temp_results = {ReservedNodes.pipeline_input: pipeline_input} if pipeline_input else {}
         for node in graph:
             temp_results = self._execute_node(node, temp_results)
         return temp_results
 
-    def _execute_node(self, node: "AbstractNode", temp_results: ResultDict) -> ResultDict:  # noqa
+    def _execute_node(self, node: nodes.AbstractNode, temp_results: ResultDict) -> ResultDict:
         inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
         if node.requires_runner:
             temp_results[node] = node.execute(self, *inputs)
@@ -90,12 +138,12 @@ class Pipeline(AbstractOp):
     a pipeline is a collection of linked nodes to be executed together
     """
 
-    def __init__(self, nodes: List["AbstractNode"], name: str):  # noqa
+    def __init__(self, pipeline_nodes: List[nodes.AbstractNode], name: str):
         """
-        :param nodes: the nodes of the pipeline
+        :param pipeline_nodes: the nodes of the pipeline
         :param name: the name of the pipeline
         """
-        self._graph = self.resolve_graph(nodes)
+        self._graph = self.resolve_graph(pipeline_nodes)
         self._name = name
 
     def prepare(self, saver: Saver):
@@ -112,46 +160,46 @@ class Pipeline(AbstractOp):
         return self._name
 
     @classmethod
-    def resolve_graph(cls, nodes: List["AbstractNode"]) -> List["AbstractNode"]:  # noqa
+    def resolve_graph(cls, pipeline_nodes: List[nodes.AbstractNode]) -> List[nodes.AbstractNode]:
         """
         transforms a user provided graph into a usable graph: checking linkage, replacing symbolic references by
         real ones, ...
 
-        :param nodes: the list of linked nodes
+        :param pipeline_nodes: the list of linked nodes
         :return: the transformed list of linked nodes
         """
-        symbolic_to_real_node_map = cls._build_symbolic_real_node_mapping(nodes)
-        real_nodes = [node.replace_symbolic_references(symbolic_to_real_node_map) for node in nodes]
+        symbolic_to_real_node_map = cls._build_symbolic_real_node_mapping(pipeline_nodes)
+        real_nodes = [node.replace_symbolic_references(symbolic_to_real_node_map) for node in pipeline_nodes]
         cls._check_graph(real_nodes)
         return real_nodes
 
     @staticmethod
-    def _build_symbolic_real_node_mapping(nodes: List["AbstractNode"]) -> SymbolicToRealMapping:  # noqa
+    def _build_symbolic_real_node_mapping(pipeline_nodes: List[nodes.AbstractNode]) -> SymbolicToRealMapping:
         """
         builds a mapping of nodes with their symbolic name in key and the object in value
 
-        :param nodes: the nodes to build the mapping from
+        :param pipeline_nodes: the nodes to build the mapping from
         :return: the mapping
         """
-        symbolic_to_real_mapping = {node.output_node: node for node in nodes if node.output_node}
+        symbolic_to_real_mapping = {node.output_node: node for node in pipeline_nodes if node.output_node}
         symbolic_to_real_mapping.update({node.value: node for node in ReservedNodes})
         return symbolic_to_real_mapping
 
     @classmethod
-    def _check_graph(cls, nodes: List["AbstractNode"]):  # noqa
+    def _check_graph(cls, pipeline_nodes: List[nodes.AbstractNode]):
         """
         checks a graph for potential problems.
         raises if a node's input is not in the graph or if a node is used twice in the pipeline
 
-        :param nodes: the nodes to check
+        :param pipeline_nodes: the nodes to check
         """
         available_nodes = {ReservedNodes.pipeline_input}
-        for node in nodes:
+        for node in pipeline_nodes:
             available_nodes = cls._update_ancestry(node, available_nodes)
 
     @classmethod
-    def _update_ancestry(cls, node: "AbstractNode",  # noqa
-                         available_nodes: Set["AbstractNode"]) -> Set["AbstractNode"]:  # noqa
+    def _update_ancestry(cls, node: nodes.AbstractNode,
+                         available_nodes: Set[nodes.AbstractNode]) -> Set[nodes.AbstractNode]:
         """
         updates the list of available nodes with a node of interest if possible
 
@@ -177,7 +225,7 @@ class Pipeline(AbstractOp):
             return self.extract_results(results)
 
     @staticmethod
-    def extract_results(results: Dict["AbstractNode", Any]) -> Any:  # noqa
+    def extract_results(results: Dict[nodes.AbstractNode, Any]) -> Any:
         """
         extracts the output of a pipeline.
         raises ValueError if some output was unused once every node is computed and the remaining is not the output of
@@ -191,7 +239,7 @@ class Pipeline(AbstractOp):
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    def get_pipeline_versions(self) -> Mapping["AbstractNode", Version]:
+    def get_pipeline_versions(self) -> Mapping[nodes.AbstractNode, Version]:
         """
         builds the version with ancestry of every node in the pipeline
 
@@ -203,11 +251,11 @@ class Pipeline(AbstractOp):
         versions.pop(ReservedNodes.pipeline_input, None)
         return versions
 
-    def load(self, saver: Saver):
+    def load(self, op_store: _OpStore):
         """
         loads this pipeline as last saved in saver
 
-        :param saver: the saver to look for a persisted version of this pipeline into
+        :type op_store: the op store to collect the ops and versions from
         :return: this pipeline loaded
         """
 
@@ -220,34 +268,24 @@ class Pipeline(AbstractOp):
         #     }
         # }
 
-        persisted_versions = self._load_versions(saver)
-
         new_graph = self._graph
         for i, node in enumerate(self._graph):
-            new_node = self._load_single_node(node, persisted_versions, saver)
-            new_graph[i] = new_node
+            new_graph[i] = self._load_single_node(node, op_store)
             self._graph = new_graph
         return self
 
-    def _load_single_node(self, node: "AbstractNode",  # noqa
-                          versions: Mapping["AbstractNode", List[Version]], saver: Saver):  # noqa
+    def _load_single_node(self, node: nodes.AbstractNode,  op_store: _OpStore):  # noqa
         """
         loads a single node as persisted in saver (with the last compatible version) if possible
 
         :param node: the node to load
-        :param versions: the node to version mapping of the pipeline
-        :param saver: the saver to load the node from
         :return: the loaded node
         """
         if not node.is_loadable:
             return node
-        if node not in versions:
-            return node
-        node.check_version(persisted_versions=versions, current_versions=self.get_pipeline_versions())
-        node_path = self._get_path_from_versions(versions, node)
-        return node.load(saver, node_path)
+        return node.check_and_load(op_store, self)
 
-    def _load_versions(self, saver: Saver) -> Mapping["AbstractNode", List[Version]]:
+    def _load_versions(self, saver: Saver) -> Mapping[nodes.AbstractNode, List[Version]]:
         """
         loads the versions of nodes as they were previously saved
 
@@ -276,8 +314,8 @@ class Pipeline(AbstractOp):
         return os.path.join(PIPELINE_PATH, self.name, "_meta.json")
 
     @staticmethod
-    def _get_path_from_versions(versions: Mapping["AbstractNode", List[Version]],
-                                node: "AbstractNode") -> Text:  # noqa
+    def _get_path_from_versions(versions: Mapping[nodes.AbstractNode, List[Version]],
+                                node: nodes.AbstractNode) -> Text:  # noqa
         """
         generates the path a persisted node should be at on the saver for it's most up to date version
 
@@ -289,7 +327,7 @@ class Pipeline(AbstractOp):
         return os.path.join(OPS_PATH, node.name, str(node_version))
 
     @property
-    def node_for_name(self) -> Mapping[Text, "AbstractNode"]:
+    def node_for_name(self) -> Mapping[Text, nodes.AbstractNode]:
         """
         generates a mapping with each nodes's name in key and the object as value
 
@@ -313,7 +351,7 @@ class Pipeline(AbstractOp):
         self._save_meta(persisted_versions, saver)
         return self._persist_nodes(saver, pipeline_versions)
 
-    def _save_meta(self, meta: Mapping["AbstractNode", List[Version]], saver: Saver):
+    def _save_meta(self, meta: Mapping[nodes.AbstractNode, List[Version]], saver: Saver):
         """
         saves the metadata of the pipeline in saver
 
@@ -326,7 +364,7 @@ class Pipeline(AbstractOp):
         })
         saver.save(new_meta_bytes, self.pipeline_meta_path)
 
-    def _persist_nodes(self, saver: Saver, pipeline_versions: Mapping["AbstractNode", Version]):
+    def _persist_nodes(self, saver: Saver, pipeline_versions: Mapping[nodes.AbstractNode, Version]):
         """
         persists the nodes of the pipeline to the saver
 
@@ -337,9 +375,9 @@ class Pipeline(AbstractOp):
                 node.persist(saver, pipeline_versions[node])
 
     @staticmethod
-    def _update_versions(historic_versions: Mapping["AbstractNode", List[Version]],
-                         pipeline_versions: Mapping["AbstractNode", Version],
-                         node: "AbstractNode") -> Mapping["AbstractNode", List[Version]]:  # noqa
+    def _update_versions(historic_versions: Mapping[nodes.AbstractNode, List[Version]],
+                         pipeline_versions: Mapping[nodes.AbstractNode, Version],
+                         node: nodes.AbstractNode) -> Mapping[nodes.AbstractNode, List[Version]]:
         """
         updates the historic versions of the pipeline with the current versions
 

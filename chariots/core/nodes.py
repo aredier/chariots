@@ -2,12 +2,13 @@ import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
-from typing import Any, List, Text, Union, Mapping, Optional
+from typing import Any, Union, Mapping, Optional
 
 from chariots.core.ops import AbstractOp, OPS_PATH, LoadableOp
-from chariots.core.pipelines import Pipeline, ReservedNodes
+from chariots.core.pipelines import Pipeline, ReservedNodes, _OpStore
 from chariots.core.saving import Saver, Serializer
 from chariots.core.versioning import Version
+from chariots.helpers.errors import VersionError
 from chariots.helpers.typing import SymbolicToRealMapping, InputNodes
 
 
@@ -75,27 +76,14 @@ class AbstractNode(ABC):
             return self.node_version
         return self.node_version + sum((ancestry_versions[input_node] for input_node in self.input_nodes), Version())
 
-    def check_version(self, persisted_versions: Mapping["AbstractNode", List[Version]],
-                      current_versions: Mapping["AbstractNode", Version]):
-        """
-        checks the current pipeline version (with ancestry) against the persisted version
-
-        :param persisted_versions: the persisted versions of loadable ops in the pipeline
-        :param current_versions: the current versions of the ops (as submitted in the pipeline)
-        """
-        current_version = current_versions[self]
-        last_loaded_version = max(persisted_versions[self])
-        if current_version > last_loaded_version and current_version.major != last_loaded_version.major:
-            # TODO create custom errors
-            raise ValueError("trying to load incompatible version")
-
-    def load(self, saver: Saver, node_path: Text) -> "AbstractNode":
+    def check_and_load(self, op_store: _OpStore, pipeline: Pipeline) -> "Node":
         """
         loads the op the node as persisted in node path
         raises ValueError if the node is not loadable
 
-        :param saver: the saver to load the op from
-        :param node_path: the path the node as persisted at
+        :param op_store: the store to load the ops from
+        :param pipeline: the pipeline to load this node for
+
         :return: the loaded node
         """
         if not self.is_loadable:
@@ -192,21 +180,48 @@ class Node(AbstractNode):
         res = self._op(*params)
         return res
 
-    def load(self, saver: Saver, node_path: Text) -> "Node":
+    def check_and_load(self, op_store: _OpStore, pipeline: Pipeline) -> "Node":
         """
         loads the op the node as persisted in node path
         raises ValueError if the node is not loadable
 
-        :param saver: the saver to load the op from
-        :param node_path: the path the node as persisted at
+        :param pipeline: the pipeline to load the node for
+        :type op_store: the op store to get the version from and collect bytes if needed
         :return: the loaded node
         """
         if not self.is_loadable:
             raise ValueError("trying to load a non loadable node")
         if isinstance(self._op, Pipeline):
-            self._op.load(saver)
+            self._op.load(op_store)
             return self
-        op_bytes = saver.load(node_path)
+        op_version, saved_upstream_version = op_store.get_op_versions_from_pipeline(self._op, pipeline, (None, None))
+        if op_version is None:
+            return self._load_any_version(op_store)
+        self.check_version(op_version, saved_upstream_version, pipeline.get_pipeline_versions()[self])
+        op_bytes = op_store.get_op_bytes_for_version(self._op, op_version)
+        self._op.load(op_bytes)
+        return self
+
+    def check_version(self, persisted_op_version: Version, persisted_upstream_version: Version,
+                      current_upstream_version: Version):
+        """
+        checks the current pipeline version (with ancestry) against the persisted version
+
+        :param persisted_op_version: the inner version of the op at the time it was last persisted
+        :param persisted_upstream_version: the compounded upstream version at the time of saving
+        :param current_upstream_version: the compounded upstream version at time of check
+
+        """
+        if self.node_version.major != persisted_op_version.major:
+            raise VersionError("cannot load an with different major version")
+        if current_upstream_version.major != persisted_upstream_version.major:
+            raise VersionError("cannot laod an op with different major upstream version")
+
+    def _load_any_version(self, op_store: _OpStore):
+        versions = op_store.get_all_op_verisons(self._op, None)
+        if versions is None:
+            return self
+        op_bytes = op_store.get_op_bytes_for_version(self._op, max(versions))
         self._op.load(op_bytes)
         return self
 
@@ -299,7 +314,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
         if self._saver is None:
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
-        file_hash = sha1(self._saver.load(self.path)).hexdigest()
+        file_hash = sha1(self._saver.check_and_load(self.path)).hexdigest()
         version.update_major(file_hash)
         return version
 
@@ -314,7 +329,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
 
         if self._saver is None:
             raise ValueError("cannot load data without a saver")
-        return self.serializer.deserialize_object(self._saver.load(self.path))
+        return self.serializer.deserialize_object(self._saver.check_and_load(self.path))
 
     @property
     def require_saver(self) -> bool:
@@ -348,7 +363,7 @@ class DataLoadingNode(DataNode):
         if self._saver is None:
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
-        file_hash = sha1(self._saver.load(self.path)).hexdigest()
+        file_hash = sha1(self._saver.check_and_load(self.path)).hexdigest()
         version.update_major(file_hash.encode("utf-8"))
         return version
 
@@ -362,7 +377,7 @@ class DataLoadingNode(DataNode):
 
         if self._saver is None:
             raise ValueError("cannot load data without a saver")
-        return self.serializer.deserialize_object(self._saver.load(self.path))
+        return self.serializer.deserialize_object(self._saver.check_and_load(self.path))
 
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)
