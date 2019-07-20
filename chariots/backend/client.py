@@ -44,3 +44,42 @@ class Client:
         :return: the result of the pipeline
         """
         return self.request(pipeline, pipeline_input).value
+
+    def save_pipeline(self, pipeline: Pipeline):
+        """
+        saves the current state of the pipeline
+
+        :param pipeline: the pipeline to save
+        """
+        save_url = "{}/pipelines/{}/save".format(self.backend_url, pipeline.name)
+        requests.post(
+            save_url,
+        )
+
+    def load_pipeline(self, pipeline: Pipeline):
+        """
+        reloads the pipeline (for instance if another pipeline saved an op)
+
+        :param pipeline: the pipeline to reload
+        """
+        load_url = "{}/pipelines/{}/load".format(self.backend_url, pipeline.name)
+        requests.post(
+            load_url,
+        )
+
+    def is_pipeline_loaded(self, pipeline: Pipeline) -> bool:
+        """
+        checks if the pipeline managed to load properly at setup
+
+        :param pipeline: the pipeline to load
+        """
+        check_url = "{}/pipelines/{}/health_check".format(self.backend_url, pipeline.name)
+        response = requests.post(
+            check_url,
+        )
+
+        if response.status_code == 404:
+            raise ValueError("the pipeline you requested is not present on the app")
+        if response.status_code == 500:
+            raise ValueError("the health check failed, see backend logs for traceback")
+        return response.json()["is_loaded"]
