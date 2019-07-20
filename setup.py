@@ -15,7 +15,7 @@ requirements = ['Click>=6.0', 'dill==0.2.9', 'flask==1.0.3', 'requests==2.22.0']
 
 setup_requirements = ['pytest-runner', ]
 
-test_requirements = ['pytest', ]
+test_requirements = ['pytest', "numpy", "scikit-learn"]
 
 setup(
     author="Antoine Redier",

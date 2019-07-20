@@ -2,13 +2,13 @@ import os
 import json
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Mapping, Text, Set, Any, Dict, Optional, Union, Tuple
+from typing import List, Mapping, Text, Set, Any, Dict, Optional, Union, Tuple, AnyStr
 
 from chariots.core import nodes
 from chariots.core.ops import AbstractOp, OPS_PATH
 from chariots.core.saving import Saver, JSONSerializer
 from chariots.core.versioning import Version
-from chariots.helpers.typing import ResultDict, SymbolicToRealMapping, OpStoreMetaJson, OpStoreMeta
+from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
 
 PIPELINE_PATH = "/pipelines"
 
@@ -49,8 +49,8 @@ class _OpStore:
             pass
 
     def _parse_mapping(
-            self, op_version_json: Mapping[str: Union[Mapping, List[Mapping[str, str]]]]
-    ) -> Mapping[str: Union[Mapping, List[Mapping[str, Version]]]]:
+            self, op_version_json: Mapping[AnyStr, Union[Mapping, List[Mapping[AnyStr, AnyStr]]]]
+    ) -> Mapping[AnyStr, Union[Mapping, List[Mapping[AnyStr, Version]]]]:
         """
         parses the saved meta and returns a valid metadata (with versions as object rather than strings)
 
