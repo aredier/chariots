@@ -1,10 +1,9 @@
-import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
 from typing import Any, Union, Mapping, Optional
 
-from chariots.core.ops import AbstractOp, OPS_PATH, LoadableOp
+from chariots.core.ops import AbstractOp, LoadableOp
 from chariots.core import pipelines
 from chariots.core.saving import Saver, Serializer
 from chariots.core.versioning import Version
@@ -194,7 +193,8 @@ class Node(AbstractNode):
         if isinstance(self._op, pipelines.Pipeline):
             self._op.load(op_store)
             return self
-        op_version, saved_upstream_version = op_store.get_last_op_versions_from_pipeline(self._op, pipeline, (None, None))
+        op_version, saved_upstream_version = op_store.get_last_op_versions_from_pipeline(self._op, pipeline,
+                                                                                         (None, None))
         if op_version is None:
             return self._load_any_version(op_store)
         self.check_version(op_version, saved_upstream_version, pipeline.get_pipeline_versions()[self])

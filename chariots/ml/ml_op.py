@@ -47,7 +47,6 @@ class MLOp(LoadableOp):
         print("loaded")
         print(self._model.predict([[1]]))
 
-
     def serialize(self) -> bytes:
         print(self._model.predict([[1]]))
         return self.serializer.serialize_object(self._model)
