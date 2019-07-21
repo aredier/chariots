@@ -31,17 +31,14 @@ class PipelineResponse:
         }
 
     @classmethod
-    def from_request(cls, response: requests.Response, query_pipeline: pipelines.Pipeline) -> "PipelineResponse":
+    def from_request(cls, response_json: Any, query_pipeline: pipelines.Pipeline) -> "PipelineResponse":
         """
         builds the response from the response that was received through http and the pipeline used to query it
 
-        :param response: the response of the call
+        :param response_json: the response json of the call
         :param query_pipeline: the pipeline that was used in the query that generated the response
         :return: the corresponding PipelineResponse
         """
-        if not response.status_code == 200:
-            raise ValueError("trying to parse non nominal response")
-        response_json = response.json()
         return cls(
             value=response_json["pipeline_output"],
             versions={query_pipeline.node_for_name[node_name]: Version.parse(version_string)
