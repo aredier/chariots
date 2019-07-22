@@ -9,6 +9,7 @@ Subpackages
     chariots.backend
     chariots.core
     chariots.helpers
+    chariots.ml
 
 Submodules
 ----------

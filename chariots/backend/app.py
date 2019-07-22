@@ -1,7 +1,6 @@
 import json
 from typing import Mapping, Any, List, Type
 
-import requests
 from flask import Flask, request
 
 from chariots.core import pipelines

@@ -152,4 +152,3 @@ class TestClient(AbstractClient):
         response = self._test_client.ge(route)
         self._check_code(response.status_code)
         return json.loads(response.data)
-
