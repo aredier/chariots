@@ -280,7 +280,6 @@ class Pipeline(AbstractOp):
 
     def __call__(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
-        print(results)
         if len(results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled")
 

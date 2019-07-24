@@ -1,7 +1,12 @@
+import io
+import json
+import time
 from abc import abstractmethod
 from enum import Enum
 from typing import Any
+from zipfile import ZipFile
 
+from chariots.core import versioning
 from chariots.core.ops import LoadableOp
 from chariots.core.saving import DillSerializer
 
@@ -31,6 +36,7 @@ class MLOp(LoadableOp):
     - use the prediction pipeline
     """
 
+    training_update_version = versioning.VersionType.PATCH
     serializer_cls = DillSerializer
 
     def __init__(self, mode: MLMode):
@@ -40,6 +46,7 @@ class MLOp(LoadableOp):
         self._call_mode = mode
         self.serializer = self.serializer_cls()
         self._model = self._init_model()
+        self._last_training_time = 0
 
     @property
     def mode(self) -> MLMode:
@@ -50,7 +57,7 @@ class MLOp(LoadableOp):
 
     def __call__(self, *args, **kwargs):
         if self.mode == MLMode.FIT:
-            self.fit(*args, **kwargs)
+            self._fit(*args, **kwargs)
             return
         if self.mode == MLMode.PREDICT:
             return self.predict(*args, **kwargs)
@@ -59,6 +66,13 @@ class MLOp(LoadableOp):
             return self.predict(*args, **kwargs)
         raise ValueError("unknown mode for {}: {}".format(type(self), self.mode))
 
+    def _fit(self, *args, **kwargs):
+        """
+        method that wraps fit and performs necessary actions (update version)
+        """
+        self.fit(*args, **kwargs)
+        self._last_training_time = time.time()
+
     @abstractmethod
     def fit(self, *args, **kwargs):
         """
@@ -66,7 +80,6 @@ class MLOp(LoadableOp):
         this method must not return any data (use the FIT_PREDICT mode to predict on the same data the op was trained
         on)
         """
-        pass
 
     @abstractmethod
     def predict(self, *args, **kwargs) -> Any:
@@ -83,6 +96,11 @@ class MLOp(LoadableOp):
         """
         pass
 
+    @property
+    def op_version(self):
+        time_version = versioning.Version().update(self.training_update_version, str(self._last_training_time).encode("utf-8"))
+        return super().op_version + time_version
+
     def load(self, serialized_object: bytes):
         """
         loads the internals of the op with bytes that where saved
@@ -90,9 +108,11 @@ class MLOp(LoadableOp):
         :param serialized_object: the serialized bytes
         """
 
-        self._model = self.serializer.deserialize_object(serialized_object)
-        print("loaded")
-        print(self._model.predict([[1]]))
+        io_file = io.BytesIO(serialized_object)
+        with ZipFile(io_file, "r") as zip_file:
+            self._model = self.serializer   .deserialize_object(zip_file.read("model"))
+            meta = json.loads(zip_file.read("_meta.json"))
+            self._last_training_time = meta["train_time"]
 
     def serialize(self) -> bytes:
         """
@@ -100,6 +120,8 @@ class MLOp(LoadableOp):
 
         :return: the serialized bytes
         """
-
-        print(self._model.predict([[1]]))
-        return self.serializer.serialize_object(self._model)
+        io_file = io.BytesIO()
+        with ZipFile(io_file, "w") as zip_file:
+            zip_file.writestr("model", self.serializer.serialize_object(self._model))
+            zip_file.writestr("_meta.json", json.dumps({"train_time": self._last_training_time}))
+        return io_file.getvalue()
