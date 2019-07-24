@@ -22,6 +22,10 @@ class AbstractOp(metaclass=VersionableMeta):
         """
         return self.__class__.__name__.lower()
 
+    @property
+    def op_version(self):
+        return self.__version__
+
     def __str__(self):
         return f"<OP {self.name}>"
 

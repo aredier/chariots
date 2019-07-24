@@ -160,7 +160,7 @@ class Node(AbstractNode):
         """
         the version of the op this node represents
         """
-        return self._op.__version__
+        return self._op.op_version
 
     @property
     def has_symbolic_references(self) -> bool:
