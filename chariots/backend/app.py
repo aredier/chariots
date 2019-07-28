@@ -7,6 +7,7 @@ from chariots.core import pipelines
 from chariots.core.versioning import Version
 from chariots.core.nodes import AbstractNode
 from chariots.core.saving import Saver, FileSaver
+from chariots.helpers.errors import VersionError
 
 
 class PipelineResponse:
@@ -77,6 +78,10 @@ class Chariot(Flask):
 
         self._load_pipelines()
         self._build_route()
+        self._build_error_handlers()
+
+    def _build_error_handlers(self):
+        self.register_error_handler(VersionError, VersionError.handle)
 
     def _prepare_pipelines(self, app_pipeline: List[pipelines.Pipeline]):
         for pipe in app_pipeline:

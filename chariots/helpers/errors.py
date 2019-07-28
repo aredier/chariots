@@ -1,2 +1,5 @@
 class VersionError(TypeError):
-    pass
+
+    @staticmethod
+    def handle():
+        return "trying to load/execute an outdated version, retrain", 419
