@@ -98,7 +98,8 @@ class MLOp(LoadableOp):
 
     @property
     def op_version(self):
-        time_version = versioning.Version().update(self.training_update_version, str(self._last_training_time).encode("utf-8"))
+        time_version = versioning.Version().update(self.training_update_version,
+                                                   str(self._last_training_time).encode("utf-8"))
         return super().op_version + time_version
 
     def load(self, serialized_object: bytes):
