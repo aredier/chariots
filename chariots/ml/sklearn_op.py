@@ -13,7 +13,7 @@ class SKSupervisedModel(ml_op.MLOp):
         self._model.fit(X, y)
 
     def predict(self, X) -> Any:
-        self._model.predict(X)
+        return self._model.predict(X).tolist()
 
     def _init_model(self):
         return self.model_class(**self.model_parameters)

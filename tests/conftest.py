@@ -1,5 +1,7 @@
 import pytest
 
+import numpy as np
+
 from chariots.core.ops import LoadableOp, AbstractOp
 from chariots.core.saving import DillSerializer
 from chariots.core.versioning import VersionedField, VersionType
@@ -71,7 +73,7 @@ def XTrainOp():
     class XTrainOpInner(AbstractOp):
 
         def __call__(self):
-            return list(range(10))
+            return np.array(range(10)).reshape(-1, 1)
     return XTrainOpInner
 
 

@@ -1,18 +1,15 @@
-
 import pytest
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
 from chariots.backend import app
 from chariots.backend.client import TestClient
-from chariots.core import pipelines, nodes, ops
-from chariots.ml.ml_op import MLOp, MLMode
-
-
+from chariots.core import pipelines, nodes, versioning
+from chariots.ml import ml_op, sklearn_op
 
 @pytest.fixture
 def LROp():
-    class LROpInner(MLOp):
+    class LROpInner(ml_op.MLOp):
 
         def fit(self, x_train, y_train):
             self._model.fit(np.array(x_train).reshape(-1, 1), y_train)
@@ -27,20 +24,21 @@ def LROp():
     return LROpInner
 
 
-def test_training_pipeline(LROp, YOp, XTrainOp):
+def test_raw_training_pipeline(LROp, YOp, XTrainOp):
     train_pipe = pipelines.Pipeline([
         nodes.Node(XTrainOp(), output_node="x_train"),
         nodes.Node(YOp(), output_node="y_train"),
-        nodes.Node(LROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
+        nodes.Node(LROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train")
     pred_pipe = pipelines.Pipeline([
-        nodes.Node(LROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="__pipeline_output__")
+        nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
+                   output_node="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path="/tmp/chariots", import_name="my_app")
 
     test_client = TestClient(my_app)
-    pior_versions_train = test_client.pipeline_versions(train_pipe)
-    pior_versions_pred = test_client.pipeline_versions(pred_pipe)
+    prior_versions_train = test_client.pipeline_versions(train_pipe)
+    prior_versions_pred = test_client.pipeline_versions(pred_pipe)
     test_client.request(train_pipe)
     test_client.save_pipeline(train_pipe)
     test_client.load_pipeline(pred_pipe)
@@ -53,8 +51,50 @@ def test_training_pipeline(LROp, YOp, XTrainOp):
     # testing verison uodate
     lrop_train = train_pipe.node_for_name["lropinner"]
     lrop_pred = pred_pipe.node_for_name["lropinner"]
-    assert pior_versions_train[lrop_train]["node_version"] == pior_versions_pred[lrop_pred]["node_version"]
+    assert prior_versions_train[lrop_train]["node_version"] == prior_versions_pred[lrop_pred]["node_version"]
     assert posterior_versions_train[lrop_train]["node_version"] == posterior_versions_pred[lrop_pred]["node_version"]
-    assert pior_versions_pred[lrop_pred]["node_version"] < posterior_versions_pred[lrop_pred]["node_version"]
+    assert prior_versions_pred[lrop_pred]["node_version"] < posterior_versions_pred[lrop_pred]["node_version"]
+
+
+@pytest.fixture
+def SKLROp():
+    class SKLROpInner(sklearn_op.SKSupervisedModel):
+        model_class = versioning.VersionedField(LinearRegression, versioning.VersionType.MINOR)
+
+    return SKLROpInner
+
+
+def test_sk_training_pipeline(SKLROp, YOp, XTrainOp):
+    train_pipe = pipelines.Pipeline([
+        nodes.Node(XTrainOp(), output_node="x_train"),
+        nodes.Node(YOp(), output_node="y_train"),
+        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    ], "train")
+    pred_pipe = pipelines.Pipeline([
+        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
+                   output_node="__pipeline_output__")
+    ], "pred")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path="/tmp/chariots", import_name="my_app")
+
+    test_client = TestClient(my_app)
+    prior_versions_train = test_client.pipeline_versions(train_pipe)
+    prior_versions_pred = test_client.pipeline_versions(pred_pipe)
+    test_client.request(train_pipe)
+    test_client.save_pipeline(train_pipe)
+    test_client.load_pipeline(pred_pipe)
+    posterior_versions_train = test_client.pipeline_versions(train_pipe)
+    posterior_versions_pred = test_client.pipeline_versions(pred_pipe)
+    response = test_client.request(pred_pipe, pipeline_input=[[100], [101], [102]])
+
+    assert len(response.value) == 3
+    for i, individual_value in enumerate(response.value):
+        assert abs(101 + i - individual_value) < 1e-5
+
+    # testing verison uodate
+    lrop_train = train_pipe.node_for_name["sklropinner"]
+    lrop_pred = pred_pipe.node_for_name["sklropinner"]
+    assert prior_versions_train[lrop_train]["node_version"] == prior_versions_pred[lrop_pred]["node_version"]
+    assert posterior_versions_train[lrop_train]["node_version"] == posterior_versions_pred[lrop_pred]["node_version"]
+    assert prior_versions_pred[lrop_pred]["node_version"] < posterior_versions_pred[lrop_pred]["node_version"]
 
 
