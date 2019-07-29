@@ -64,3 +64,21 @@ def IsPair():
         def __call__(self, data):
             return [not i % 2 for i in data]
     return Inner
+
+
+@pytest.fixture
+def XTrainOp():
+    class XTrainOpInner(AbstractOp):
+
+        def __call__(self):
+            return list(range(10))
+    return XTrainOpInner
+
+
+@pytest.fixture
+def YOp():
+    class YOpInner(AbstractOp):
+
+        def __call__(self):
+            return list(range(1, 11))
+    return YOpInner

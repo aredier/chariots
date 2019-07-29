@@ -5,8 +5,9 @@ import hashlib
 import enum
 import operator
 import time
+import collections
 from _hashlib import HASH
-from typing import Any, Union, Optional, Mapping, Text
+from typing import Any, Union, Optional, Mapping, Text, Iterator
 
 Hash = Union[HASH, str]
 
@@ -37,8 +38,13 @@ class VersionableMeta(type):
         )
 
     def _get_atomic_versions_dict(cls) -> Mapping[Text, "Version"]:
-        return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
-                for attr_name, attr_value in cls.__dict__.items() if isinstance(attr_value, VersionedField)}
+        version_dict = {}
+        for attr_name, attr_value in cls.__dict__.items():
+            if isinstance(attr_value, VersionedField):
+                version_dict[attr_name] = Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
+            if isinstance(attr_value, VersionedFieldDict):
+                version_dict.update(attr_value.version_dict)
+        return version_dict
 
 
 class VersionedField:
@@ -74,6 +80,38 @@ class VersionedField:
         """
         # TODO find better way to hash
         return hashlib.sha1(str(self.value).encode("utf-8")).hexdigest()
+
+
+class VersionedFieldDict(collections.MutableMapping):
+
+    def __init__(self, default_version=VersionType.MAJOR, *args, **kwargs):
+        self.default_version = default_version
+        self.store = dict()
+        self.update(dict(*args, **kwargs))
+
+    def __delitem__(self, key) -> None:
+        del self.store[key]
+
+    def __getitem__(self, key) -> Any:
+        return self.store[key].value
+
+    def __len__(self) -> int:
+        return len(self.store)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.store)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        if not isinstance(value, VersionedField):
+            value = VersionedField(value, self.default_version)
+        if not isinstance(key, str):
+            raise TypeError("`VersionedFieldDict` keys must be strings")
+        self.store[key] = value
+
+    @property
+    def version_dict(self):
+        return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
+                for attr_name, attr_value in self.store.items() if isinstance(attr_value, VersionedField)}
 
 
 class Version:

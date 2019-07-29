@@ -66,3 +66,49 @@ def test_inheritance(versioned_subclass):
     assert normal.minor == major_change.minor
     assert normal.patch == major_change.patch
     assert major_change > normal
+
+
+def test_versioned_field_dict_only_defaults():
+    empty_version = versioning.Version()
+    versioned_dict = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+        "foo": 3,
+        "bar": 5
+    })
+    assert set(versioned_dict.version_dict) == {"foo", "bar"}
+    assert versioned_dict["foo"] == 3
+    assert versioned_dict["bar"] == 5
+
+    # testing foo
+    assert versioned_dict.version_dict["foo"] > empty_version
+    assert versioned_dict.version_dict["foo"].major != empty_version.major
+    assert versioned_dict.version_dict["foo"].minor == empty_version.minor
+    assert versioned_dict.version_dict["foo"].patch == empty_version.patch
+
+    # testing bar
+    assert versioned_dict.version_dict["bar"] > empty_version
+    assert versioned_dict.version_dict["bar"].major != empty_version.major
+    assert versioned_dict.version_dict["bar"].minor == empty_version.minor
+    assert versioned_dict.version_dict["bar"].patch == empty_version.patch
+
+
+def test_versioned_field_dict_only_defaults():
+    empty_version = versioning.Version()
+    versioned_dict = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+        "foo": 3,
+        "bar": versioning.VersionedField(5, versioning.VersionType.PATCH)
+    })
+    assert set(versioned_dict.version_dict) == {"foo", "bar"}
+    assert versioned_dict["foo"] == 3
+    assert versioned_dict["bar"] == 5
+
+    # testing foo
+    assert versioned_dict.version_dict["foo"] > empty_version
+    assert versioned_dict.version_dict["foo"].major != empty_version.major
+    assert versioned_dict.version_dict["foo"].minor == empty_version.minor
+    assert versioned_dict.version_dict["foo"].patch == empty_version.patch
+
+    # testing bar
+    assert versioned_dict.version_dict["bar"] > empty_version
+    assert versioned_dict.version_dict["bar"].major == empty_version.major
+    assert versioned_dict.version_dict["bar"].minor == empty_version.minor
+    assert versioned_dict.version_dict["bar"].patch != empty_version.patch
