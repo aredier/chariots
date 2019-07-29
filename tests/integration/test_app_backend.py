@@ -1,17 +1,11 @@
 import json
 import os
 
-from chariots.backend.app import Chariot, PipelineResponse
+from chariots.backend.app import Chariot
 from chariots.backend.client import TestClient
 from chariots.core.pipelines import Pipeline, ReservedNodes
 from chariots.core.nodes import Node, DataLoadingNode, DataSavingNode
 from chariots.core.saving import JSONSerializer
-from chariots.core.versioning import Version
-
-
-def post_app(client, route, data=None):
-    response = client.post(route, data=json.dumps(data), content_type='application/json')
-    return json.loads(response.data)
 
 
 def test_app_response(Range10, IsPair, NotOp, tmpdir):

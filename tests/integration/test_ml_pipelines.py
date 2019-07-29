@@ -4,31 +4,10 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 from chariots.backend import app
-from chariots.backend.app import PipelineResponse
 from chariots.backend.client import TestClient
 from chariots.core import pipelines, nodes, ops
-from chariots.core.versioning import Version
 from chariots.ml.ml_op import MLOp, MLMode
 
-from .test_app_backend import post_app
-
-
-@pytest.fixture
-def XTrainOp():
-    class XTrainOpInner(ops.AbstractOp):
-
-        def __call__(self):
-            return list(range(10))
-    return XTrainOpInner
-
-
-@pytest.fixture
-def YOp():
-    class YOpInner(ops.AbstractOp):
-
-        def __call__(self):
-            return list(range(1, 11))
-    return YOpInner
 
 
 @pytest.fixture
