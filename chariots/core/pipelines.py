@@ -151,6 +151,15 @@ class _OpStore:
 
     def link_pipeline_to_op_version(self, op: AbstractOp, op_version: Version, pipeline_version: Version,
                                     pipeline_name: str):
+        """
+        creates a link between an existing (previously saved) op_version and a pipeline/pipeline_version combinasion.
+        This is used when a pipeline loads an op saved from another pipeline (as though it had saved it itself)
+        :param op: the op to link versions for
+        :param op_version: the op version to link to the pipeline
+        :param pipeline_version: the pipeline version to link the version to
+        :param pipeline_name: the pipeline to link the version to
+        :return:
+        """
         if self.get_all_verisons_of_op(op, None) is None:
             raise ValueError("cannot link op {} to version {} as it doesn't exist "
                              "in the store".format(op.name, op_version))

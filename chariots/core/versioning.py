@@ -84,6 +84,10 @@ class VersionedField:
 
 
 class VersionedFieldDict(collections.MutableMapping):
+    """
+    a versioned field dict acts as a normal dictionary but the values as interpreted as versioned fields when it is
+    a VersionedClass class attribute
+    """
 
     def __init__(self, default_version=VersionType.MAJOR, *args, **kwargs):
         self.default_version = default_version
@@ -110,7 +114,11 @@ class VersionedFieldDict(collections.MutableMapping):
         self.store[key] = value
 
     @property
-    def version_dict(self):
+    def version_dict(self) -> Mapping[str, "Version"]:
+        """
+        proprety to retrieve the name of the fields and the Versions associated to each of them
+        :return: the mapping with the key and the version of the value
+        """
         return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
                 for attr_name, attr_value in self.store.items() if isinstance(attr_value, VersionedField)}
 
