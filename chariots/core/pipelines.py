@@ -149,6 +149,16 @@ class _OpStore:
         path = self._build_op_path(op.name, version=op.__version__)
         self._saver.save(serialized_object=op_bytes, path=path)
 
+    def link_pipeline_to_op_version(self, op: AbstractOp, op_version: Version, pipeline_version: Version,
+                                    pipeline_name: str):
+        if self.get_all_verisons_of_op(op, None) is None:
+            raise ValueError("cannot link op {} to version {} as it doesn't exist "
+                             "in the store".format(op.name, op_version))
+        self._all_op_versions[op.name].setdefault(pipeline_name, []).append({
+            "op_version": op.__version__,
+            "upstream_version": pipeline_version
+        })
+
 
 class ReservedNodes(Enum):
     """

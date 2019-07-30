@@ -41,7 +41,8 @@ class VersionableMeta(type):
         version_dict = {}
         for attr_name, attr_value in cls.__dict__.items():
             if isinstance(attr_value, VersionedField):
-                version_dict[attr_name] = Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
+                version_dict[attr_name] = Version().update(attr_value.affected_version,
+                                                           attr_value.__chariots_hash__.encode("utf-8"))
             if isinstance(attr_value, VersionedFieldDict):
                 version_dict.update(attr_value.version_dict)
         return version_dict
