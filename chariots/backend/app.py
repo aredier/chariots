@@ -81,7 +81,7 @@ class Chariot(Flask):
         self._build_error_handlers()
 
     def _build_error_handlers(self):
-        self.register_error_handler(VersionError, VersionError.handle)
+        self.register_error_handler(VersionError, lambda error: error.handle())
 
     def _prepare_pipelines(self, app_pipeline: List[pipelines.Pipeline]):
         for pipe in app_pipeline:

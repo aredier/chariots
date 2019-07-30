@@ -41,7 +41,7 @@ class AbstractClient(ABC):
             raise ValueError("the pipeline you requested is not present on the app")
         if code == 500:
             raise ValueError("the execution of the pipeline failed, see backend logs for traceback")
-        if code == 41:
+        if code == 419:
             raise VersionError("the pipeline you requested cannot be loaded because of version incompatibility"
                                "HINT: retrain and save/reload in order to have a loadable version")
 

@@ -196,7 +196,7 @@ class Node(AbstractNode):
         op_version, saved_upstream_version = op_store.get_last_op_versions_from_pipeline(self._op, pipeline,
                                                                                          (None, None))
         if op_version is None:
-            return self._load_any_version(op_store)
+            return self._load_any_version(op_store, pipeline)
         self.check_version(op_version, saved_upstream_version, pipeline.get_pipeline_versions()[self])
         op_bytes = op_store.get_op_bytes_for_version(self._op, op_version)
         self._op.load(op_bytes)
@@ -218,12 +218,16 @@ class Node(AbstractNode):
         if current_upstream_version.major != persisted_upstream_version.major:
             raise VersionError("cannot laod an op with different major upstream version")
 
-    def _load_any_version(self, op_store: "pipelines._OpStore"):
+    def _load_any_version(self, op_store: "pipelines._OpStore", node_pipeline: "pipelines.Pipeline"):
         versions = op_store.get_all_verisons_of_op(self._op, None)
         if versions is None:
             return self
-        op_bytes = op_store.get_op_bytes_for_version(self._op, max(versions))
+        final_op_version = max(versions)
+        op_bytes = op_store.get_op_bytes_for_version(self._op, final_op_version)
         self._op.load(op_bytes)
+        op_store.link_pipeline_to_op_version(op=self._op, op_version=final_op_version,
+                                             pipeline_version=node_pipeline.get_pipeline_versions()[self],
+                                             pipeline_name=node_pipeline.name)
         return self
 
     @property

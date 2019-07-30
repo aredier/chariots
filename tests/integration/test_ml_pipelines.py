@@ -1,10 +1,13 @@
 import pytest
 import numpy as np
+from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
 from chariots.backend import app
 from chariots.backend.client import TestClient
 from chariots.core import pipelines, nodes, versioning
+from chariots.core.ops import AbstractOp
+from chariots.helpers.errors import VersionError
 from chariots.ml import ml_op, sklearn_op
 
 @pytest.fixture
@@ -90,11 +93,101 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp):
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
 
-    # testing verison uodate
+    # testing version update
     lrop_train = train_pipe.node_for_name["sklropinner"]
     lrop_pred = pred_pipe.node_for_name["sklropinner"]
     assert prior_versions_train[lrop_train]["node_version"] == prior_versions_pred[lrop_pred]["node_version"]
     assert posterior_versions_train[lrop_train]["node_version"] == posterior_versions_pred[lrop_pred]["node_version"]
     assert prior_versions_pred[lrop_pred]["node_version"] < posterior_versions_pred[lrop_pred]["node_version"]
 
+
+@pytest.fixture
+def PCAOp():
+    class PCAInner(sklearn_op.SKUnsupervisedModel):
+        training_update_version = versioning.VersionType.MAJOR
+        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+            "n_components": 2,
+        })
+        model_class = versioning.VersionedField(PCA, versioning.VersionType.MAJOR)
+
+    return PCAInner
+
+
+@pytest.fixture
+def XTrainOpL():
+    class XTrainOpInner(AbstractOp):
+
+        def __call__(self):
+            return np.array([range(10), range(1, 11), range(2, 12)]).T
+    return XTrainOpInner
+
+
+def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
+
+    train_transform = pipelines.Pipeline([
+        nodes.Node(XTrainOpL(), output_node="x_raw"),
+        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT), input_nodes=["x_raw"], output_node="x_train"),
+    ], "train_pca")
+    train_pipe = pipelines.Pipeline([
+        nodes.Node(XTrainOpL(), output_node="x_raw"),
+        nodes.Node(YOp(), output_node="y_train"),
+        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_raw"], output_node="x_train"),
+        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    ], "train")
+    pred_pipe = pipelines.Pipeline([
+        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_train"),
+        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_node="__pipeline_output__")
+    ], "pred")
+    my_app = app.Chariot(app_pipelines=[train_transform, train_pipe, pred_pipe],
+                         path="/tmp/chariots", import_name="my_app")
+
+    test_client = TestClient(my_app)
+    test_client.request(train_transform)
+    test_client.save_pipeline(train_transform)
+    test_client.load_pipeline(train_pipe)
+    test_client.request(train_pipe)
+    test_client.save_pipeline(train_pipe)
+    test_client.load_pipeline(pred_pipe)
+    response = test_client.request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+
+    assert len(response.value) == 3
+    for i, individual_value in enumerate(response.value):
+        assert abs(101 + i - individual_value) < 1e-5
+
+    test_client.request(train_transform)
+    test_client.save_pipeline(train_transform)
+    with pytest.raises(VersionError):
+        test_client.load_pipeline(pred_pipe)
+
+
+def test_fit_predict_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
+
+    train_pipe = pipelines.Pipeline([
+        nodes.Node(XTrainOpL(), output_node="x_raw"),
+        nodes.Node(YOp(), output_node="y_train"),
+        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT_PREDICT), input_nodes=["x_raw"], output_node="x_train"),
+        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    ], "train")
+    pred_pipe = pipelines.Pipeline([
+        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_train"),
+        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_node="__pipeline_output__")
+    ], "pred")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe],
+                         path="/tmp/chariots", import_name="my_app")
+
+    test_client = TestClient(my_app)
+    test_client.load_pipeline(train_pipe)
+    test_client.request(train_pipe)
+    test_client.save_pipeline(train_pipe)
+    test_client.load_pipeline(pred_pipe)
+    response = test_client.request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+
+    assert len(response.value) == 3
+    for i, individual_value in enumerate(response.value):
+        assert abs(101 + i - individual_value) < 1e-5
+
+    test_client.request(train_pipe)
+    test_client.save_pipeline(train_pipe)
+    with pytest.raises(VersionError):
+        test_client.load_pipeline(pred_pipe)
 
