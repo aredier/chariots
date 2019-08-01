@@ -25,52 +25,87 @@ Chariots allow you to painlessly integrate semantic verisoning to your machine l
 
 Getting Started: 30 seconds to Chariots:
 ----------------------------------------
-in this section we will build a very small pipeline that counts the number it recieved a positive:
+in this section we will build a very small pipeline that tries to classify iris species from their phisilogical properties:
 
 the atomic building blocks of chariots are the `Ops` those are the basic compute units of your pipeline.
 
-first we create an op that returns one if it's input is positive and zero otherwise::
+first we can create ops that return the training data::
 
-    from chariots.core import pipelines, ops, saving, versioning, nodes
+   class IrisX(ops.AbstractOp):
 
-    class IsInteresting(ops.AbstractOp):
-        def __call__(self, input_number):
-            return int(input_number>0)
+        fields_of_interest = versioning.VersionedField(['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
+           'petal width (cm)'], versioning.VersionType.MINOR)
+
+        def __call__(self):
+            iris = datasets.load_iris()
+
+            data1 = pd.DataFrame(data=iris['data'],
+                                 columns= iris['feature_names'])
+            return data1.loc[:, self.fields_of_interest]
+
+    class IrisY(ops.AbstractOp):
+
+        def __call__(self):
+            iris = datasets.load_iris()
+            return iris["target"]
 
 
-we can then build another op that counts the number of signals it received from upstream. This op will have to be a `LoadableOp`as the counter needs to be persisted::
+you will notice that `IrisX` has a special `versioning.VersionedField` this means that each time this field gets updated, the version of the op changes
 
-    class Counter(ops.LoadableOp):
-        def __init__(self):
-            self.count = 0
+we can then build the machine learning part of our pipleine::
 
-        def load(self, serialized_object: bytes):
-            self.count = saving.JSONSerializer().deserialize_object(serialized_object)
+    class PCAOp(sklearn_op.SKUnsupervisedModel):
 
+        model_class = versioning.VersionedField(PCA, versioning.VersionType.MAJOR)
+        training_update_version = versioning.VersionType.MAJOR
+        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+            "n_components": 2,
+        })
 
-        def serialize(self) -> bytes:
-            return saving.JSONSerializer().serialize_object(self.count)
+    class RandomForestOp(sklearn_op.SKSupervisedModel):
+        model_class = versioning.VersionedField(RandomForestClassifier, versioning.VersionType.MAJOR)
+        training_update_version = versioning.VersionType.MAJOR
+        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MINOR, {
+            "n_estimators" : versioning.VersionedField(5, versioning.VersionType.MAJOR),
+            "max_depth": 2
+        })
 
-        def __call__(self, is_positive):
-            self.count += is_positive
-            return self.count
 
 
 we can now build our first pipeline. A pipeline is collection of nodes linked together (a node usually wraps around an op)::
 
-    pipe = pipelines.Pipeline([
-        nodes.Node(IsInteresting(), input_nodes=["__pipeline_input__"],
-                   output_node="is_pos"),
-        nodes.Node(Counter(), input_nodes=["is_pos"],
-                   output_node="__pipeline_output__")
-    ], "hello_world")
+    train = pipelines.Pipeline([
+        nodes.Node(IrisX(), output_node="x_raw"),
+        nodes.Node(PCAOp(ml_op.MLMode.FIT_PREDICT), input_nodes=["x_raw"], output_node="x_transformed"),
+        nodes.Node(IrisY(), output_node="y"),
+        nodes.Node(RandomForestOp(ml_op.MLMode.FIT), input_nodes=["x_transformed", "y"])
+    ], "train")
 
 
-once this is done, we can build an app to deploy our pipeline. This is an enhanced `Flask` app (meaning you can use and customize it in the same way)::
+we also have to create an op for prediction::
+
+    predict = pipelines.Pipeline([
+        nodes.Node(PCAOp(ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_transformed"),
+        nodes.Node(RandomForestOp(ml_op.MLMode.PREDICT), input_nodes=["x_transformed"], output_node="__pipeline_output__")
+    ], "predict")
+
+we can now use our pipleines, save and load them::
+
+    train(SequentialRunner())
+    store = OpStore(FileSaver("/tmp/chariots_test"))
+    train.save(store)
+    predict.load(store)
+    predict(SequentialRunner(), [[5.4, 3.5, 1.4, .2]])
+
+here we are running the training pipeline, persisting the ops of our pipleine and reloading the equivalent ops in the prediction pipeline and running a prediction
+One of the advantage of chariots is to enforce your versioning. meaning if you change the `n_components` of your PCA, and try to reload an old pipeline, this will raise a `VersionError`, avoiding undefined behavior.
+
+once your are done with prototyping locally (or if you don't want to redefine your runners and savers each time), you can deploy a Chariot app.
+this is flask app built to handle Chariot pipleines::
 
     from chariots.backend import app
 
-    app = app.Chariot(pipelines=[pipe], path="/tmp/chariots", import_name="my_app")
+    app = app.Chariot(app_pipelines=[train, predict], path="/tmp/chariots", import_name="my_app")
 
 
 we can than deploy it by running::
@@ -83,25 +118,11 @@ Once this is done we can query our pipeline using the Chariot `Client`::
 
     from chariots.backend import client
 
-    c = client.Client()
-    c.call_pipeline(pipe, pipeline_input=-2)
-
-we can than save our counter by curling the address `http://127.0.0.1:5000/pipelines/hello_world/save` (integration in the client soon)
-
-once this is done. if we want to change the logic of `IsInteresting` by ading a step, we need to add a `VersionedField` which will vhange its `affected_version`::
-
-    class IsInteresting(ops.AbstractOp):
-
-        step = versioning.VersionedField(0, affected_version=versioning.VersionType.MAJOR)
-
-        def __call__(self, input_number):
-            return int(input_number>0) * step
-
-and when we redeploy, if we check if the pipeline loaded properly by curling `http://127.0.0.1:5000/pipelines/hello_world/health_check` (client integration coming soon) we will recieve::
-
-    {"is_loaded": false}
-
-and trying to execute this pipeline will fail (all other unafected pipelines will still work normally)
+    c = Client()
+    c.call_pipeline(train)
+    c.save_pipeline(train)
+    c.load_pipeline(predict)
+    c.call_pipeline(predict, pipeline_input=[[5.4, 3.5, 1.4, .2]])
 
 Features
 --------

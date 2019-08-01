@@ -13,7 +13,7 @@ from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
 PIPELINE_PATH = "/pipelines"
 
 
-class _OpStore:
+class OpStore:
     """
     The op store abstracts the saving of ops and their relevant versions.
     """
@@ -332,7 +332,7 @@ class Pipeline(AbstractOp):
         versions.pop(ReservedNodes.pipeline_input, None)
         return versions
 
-    def load(self, op_store: _OpStore):
+    def load(self, op_store: OpStore):
         """
         loads this pipeline as last saved in saver
 
@@ -355,7 +355,7 @@ class Pipeline(AbstractOp):
             self._graph = new_graph
         return self
 
-    def _load_single_node(self, node: "nodes.AbstractNode",  op_store: _OpStore):  # noqa
+    def _load_single_node(self, node: "nodes.AbstractNode", op_store: OpStore):  # noqa
         """
         loads a single node as persisted in saver (with the last compatible version) if possible
 
@@ -416,7 +416,7 @@ class Pipeline(AbstractOp):
         """
         return {node.name: node for node in self._graph}
 
-    def save(self, op_store: _OpStore):
+    def save(self, op_store: OpStore):
         """
         saves this pipeline in saver
 
