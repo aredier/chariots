@@ -135,7 +135,7 @@ class Client(AbstractClient):
         return response.json()
 
     def _format_route(self, route):
-        return os.path.join(self.backend_url, route)
+        return self.backend_url + route
 
 
 class TestClient(AbstractClient):

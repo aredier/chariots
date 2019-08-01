@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from chariots.core.pipelines import Pipeline, SequentialRunner, ReservedNodes, _OpStore
+from chariots.core.pipelines import Pipeline, SequentialRunner, ReservedNodes, OpStore
 from chariots.core.nodes import Node, DataLoadingNode, DataSavingNode
 from chariots.core.saving import FileSaver, JSONSerializer
 from chariots.helpers.errors import VersionError
@@ -46,7 +46,7 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
-    op_store = _OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(tmpdir))
     pipe.save(op_store)
 
     del pipe
@@ -71,7 +71,7 @@ def test_savable_pipeline_wrong_version(pipe_generator, tmpdir):
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
-    op_store = _OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(tmpdir))
     pipe.save(op_store)
 
     del pipe
@@ -96,7 +96,7 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     assert len(res) == 10
     assert res == [bool(i % 2) for i in range(10)]
 
-    op_store = _OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(tmpdir))
     pipe.save(op_store)
 
     del pipe

@@ -65,7 +65,7 @@ class Chariot(Flask):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
-        self._op_store = pipelines._OpStore(self.saver)
+        self._op_store = pipelines.OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
         self._pipelines = {
