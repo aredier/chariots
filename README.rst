@@ -31,10 +31,10 @@ the atomic building blocks of chariots are the `Ops` those are the basic compute
 
 first we can create ops that return the training data::
 
-   class IrisX(ops.AbstractOp):
+   class IrisX(AbstractOp):
 
-        fields_of_interest = versioning.VersionedField(['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
-           'petal width (cm)'], versioning.VersionType.MINOR)
+        fields_of_interest = VersionedField(['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)',
+           'petal width (cm)'], VersionType.MINOR)
 
         def __call__(self):
             iris = datasets.load_iris()
@@ -43,30 +43,30 @@ first we can create ops that return the training data::
                                  columns= iris['feature_names'])
             return data1.loc[:, self.fields_of_interest]
 
-    class IrisY(ops.AbstractOp):
+    class IrisY(AbstractOp):
 
         def __call__(self):
             iris = datasets.load_iris()
             return iris["target"]
 
 
-you will notice that `IrisX` has a special `versioning.VersionedField` this means that each time this field gets updated, the version of the op changes
+you will notice that `IrisX` has a special `VersionedField` this means that each time this field gets updated, the version of the op changes
 
 we can then build the machine learning part of our pipleine::
 
-    class PCAOp(sklearn_op.SKUnsupervisedModel):
+    class PCAOp(SKUnsupervisedModel):
 
-        model_class = versioning.VersionedField(PCA, versioning.VersionType.MAJOR)
-        training_update_version = versioning.VersionType.MAJOR
-        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+        model_class = VersionedField(PCA, VersionType.MAJOR)
+        training_update_version = VersionType.MAJOR
+        model_parameters = VersionedFieldDict(VersionType.MAJOR, {
             "n_components": 2,
         })
 
-    class RandomForestOp(sklearn_op.SKSupervisedModel):
-        model_class = versioning.VersionedField(RandomForestClassifier, versioning.VersionType.MAJOR)
-        training_update_version = versioning.VersionType.MAJOR
-        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MINOR, {
-            "n_estimators" : versioning.VersionedField(5, versioning.VersionType.MAJOR),
+    class RandomForestOp(SKSupervisedModel):
+        model_class = VersionedField(RandomForestClassifier, VersionType.MAJOR)
+        training_update_version = VersionType.MAJOR
+        model_parameters = VersionedFieldDict(VersionType.MINOR, {
+            "n_estimators" : VersionedField(5, VersionType.MAJOR),
             "max_depth": 2
         })
 
@@ -74,19 +74,19 @@ we can then build the machine learning part of our pipleine::
 
 we can now build our first pipeline. A pipeline is collection of nodes linked together (a node usually wraps around an op)::
 
-    train = pipelines.Pipeline([
-        nodes.Node(IrisX(), output_node="x_raw"),
-        nodes.Node(PCAOp(ml_op.MLMode.FIT_PREDICT), input_nodes=["x_raw"], output_node="x_transformed"),
-        nodes.Node(IrisY(), output_node="y"),
-        nodes.Node(RandomForestOp(ml_op.MLMode.FIT), input_nodes=["x_transformed", "y"])
+    train = Pipeline([
+        Node(IrisX(), output_node="x_raw"),
+        Node(PCAOp(MLMode.FIT_PREDICT), input_nodes=["x_raw"], output_node="x_transformed"),
+        Node(IrisY(), output_node="y"),
+        Node(RandomForestOp(MLMode.FIT), input_nodes=["x_transformed", "y"])
     ], "train")
 
 
-we also have to create an op for prediction::
+we also have to create a pipeline for prediction::
 
-    predict = pipelines.Pipeline([
-        nodes.Node(PCAOp(ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_transformed"),
-        nodes.Node(RandomForestOp(ml_op.MLMode.PREDICT), input_nodes=["x_transformed"], output_node="__pipeline_output__")
+    predict = Pipeline([
+        Node(PCAOp(MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_transformed"),
+        Node(RandomForestOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_node="__pipeline_output__")
     ], "predict")
 
 we can now use our pipleines, save and load them::
@@ -105,7 +105,7 @@ this is flask app built to handle Chariot pipleines::
 
     from chariots.backend import app
 
-    app = app.Chariot(app_pipelines=[train, predict], path="/tmp/chariots", import_name="my_app")
+    app = Chariot(app_pipelines=[train, predict], path="/tmp/chariots", import_name="my_app")
 
 
 we can than deploy it by running::
