@@ -1,0 +1,10 @@
+{
+    "project_name": "iris",
+    "author": "Antoine Redier",
+    "author_email": "foo.bar@mail.com",
+    "project_short_description": "an awsome project :)",
+    "use_iris_example": "n",
+    "use_cli": "y",
+    "use_git": "y",
+    "open_source_license": ["MIT license", "BSD license", "ISC license", "Apache Software License 2.0", "GNU General Public License v3", "Not open source"]
+}
