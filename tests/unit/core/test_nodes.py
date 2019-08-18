@@ -6,8 +6,9 @@ from chariots.core.saving import JSONSerializer, FileSaver
 
 
 def test_loading_node(tmpdir):
-    json_file_path = "mhy_file"
-    with open(os.path.join(tmpdir, json_file_path), "w") as file:
+    json_file_path = "m_file"
+    os.makedirs(os.path.join(tmpdir, "data"), exist_ok=True)
+    with open(os.path.join(tmpdir, "data", json_file_path), "w") as file:
         json.dump({"foo": 1}, file)
 
     node = DataLoadingNode(serializer=JSONSerializer(), path=json_file_path)
@@ -18,13 +19,13 @@ def test_loading_node(tmpdir):
 
 
 def test_saving_node(tmpdir):
-    json_file_path = "mhy_file"
+    json_file_path = "my_file"
 
     node = DataSavingNode(serializer=JSONSerializer(), path=json_file_path, input_nodes=["_"])
     saver = FileSaver(tmpdir)
     node.attach_saver(saver)
     node.execute({"foo": 2})
 
-    with open(os.path.join(tmpdir, json_file_path), "r") as file:
+    with open(os.path.join(tmpdir, "data", json_file_path), "r") as file:
         assert json.load(file) == {"foo": 2}
 

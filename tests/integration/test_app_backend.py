@@ -45,7 +45,8 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     input_path = "in.json"
     output_path = "out.json"
 
-    with open(os.path.join(tmpdir, input_path), "w") as file:
+    os.makedirs(os.path.join(tmpdir, "data"), exist_ok=True)
+    with open(os.path.join(tmpdir, "data", input_path), "w") as file:
         json.dump(list(range(10)), file)
 
     in_node = DataLoadingNode(JSONSerializer(), input_path, output_node="data_in")
@@ -61,7 +62,7 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     test_client = TestClient(app)
     test_client.request(pipe)
 
-    with open(os.path.join(tmpdir, output_path), "r") as file:
+    with open(os.path.join(tmpdir, "data", output_path), "r") as file:
         res = json.load(file)
 
     assert len(res) == 10
