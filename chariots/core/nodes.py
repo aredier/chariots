@@ -1,8 +1,10 @@
+import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
 from typing import Any, Union, Mapping, Optional
 
+from chariots.constants import DATA_PATH
 from chariots.core.ops import AbstractOp, LoadableOp
 from chariots.core import pipelines
 from chariots.core.saving import Saver, Serializer
@@ -289,7 +291,7 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
         """
 
         super().__init__(input_nodes=input_nodes, output_node=output_node)
-        self.path = path
+        self.path = os.path.join(DATA_PATH, path)
         self.serializer = serializer
         self._name = name
         self._saver = None

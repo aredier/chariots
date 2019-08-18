@@ -1,9 +1,12 @@
+import io
 import json
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Text
 
 import dill
+
+from chariots.optional_libraries import load_pandas, BackendError
 
 
 class Serializer(ABC):
@@ -55,6 +58,24 @@ class JSONSerializer(Serializer):
     def deserialize_object(self, serialized_object: bytes) -> Any:
         object_json = serialized_object.decode("utf-8")
         return json.loads(object_json)
+
+
+try:
+    pd = load_pandas()
+
+
+    class CSVSerializer(Serializer):
+        """
+        serializes a pandas data frame to and from csv format
+        """
+
+        def serialize_object(self, target: pd.DataFrame) -> bytes:
+            return target.to_csv().encode("utf)8")
+
+        def deserialize_object(self, serialized_object: bytes) -> pd.DataFrame:
+            return pd.read_csv(io.BytesIO(serialized_object), encoding="utf8")
+except BackendError:
+    pass
 
 
 class Saver(ABC):
