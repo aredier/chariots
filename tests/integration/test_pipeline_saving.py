@@ -114,7 +114,8 @@ def test_data_ops(tmpdir, NotOp):
     input_path = "in.json"
     output_path = "out.json"
 
-    with open(os.path.join(tmpdir, input_path), "w") as file:
+    os.makedirs(os.path.join(tmpdir, "data"), exist_ok=True)
+    with open(os.path.join(tmpdir, "data", input_path), "w") as file:
         json.dump(list(range(10)), file)
 
     saver = FileSaver(tmpdir)
@@ -131,7 +132,7 @@ def test_data_ops(tmpdir, NotOp):
 
     pipe(SequentialRunner())
 
-    with open(os.path.join(tmpdir, output_path), "r") as file:
+    with open(os.path.join(tmpdir, "data", output_path), "r") as file:
         res = json.load(file)
 
     assert len(res) == 10
