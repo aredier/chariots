@@ -13,10 +13,12 @@ __pycache__/
 /.tox/
 /.eggs/
 .pytest_cache/
-.ipynb_checkpoints/
 .DS_Store
 node_modules
 /dist
+
+# notebooks
+.ipynb_checkpoints/
 
 # local env files
 .env.local
