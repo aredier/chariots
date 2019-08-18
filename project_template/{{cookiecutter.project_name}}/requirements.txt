@@ -1,0 +1,11 @@
+chariots>=0.1.2
+{% if cookiecutter.use_cli == 'y' -%}
+click==7.0
+{%- endif %}
+
+{% if cookiecutter.use_iris_example == 'y' -%}
+# iris requirements
+numpy==1.16.4
+scikit-learn==0.21.2
+pandas==0.24.2
+{%- endif %}
