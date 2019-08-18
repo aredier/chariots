@@ -7,7 +7,10 @@ Cargo.lock
 .vscode/
 *.pyc
 __pycache__/
+.python-version
 /chariots.egg-info/
+/.tox/
+/.eggs/
 .pytest_cache/
 .ipynb_checkpoints/
 .DS_Store
@@ -36,3 +39,6 @@ yarn.lock
 
 # doc
 docs/_build/*
+
+# notebooks
+*.ipynb
