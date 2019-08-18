@@ -12,6 +12,6 @@ pytest==3.8.2
 pytest-runner==4.2
 
 # ml stuff
-
 numpy==1.16.4
 scikit-learn==0.21.2
+pandas==0.24.2
