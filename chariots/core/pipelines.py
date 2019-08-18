@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Mapping, Text, Set, Any, Dict, Optional, Union, Tuple, AnyStr
 
+from chariots.constants import OPS_PATH
 from chariots.core import nodes
-from chariots.core.ops import AbstractOp, OPS_PATH
+from chariots.core.ops import AbstractOp
 from chariots.core.saving import Saver, JSONSerializer
 from chariots.core.versioning import Version
 from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
@@ -300,7 +301,7 @@ class Pipeline(AbstractOp):
     def __call__(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
         if len(results) > 1:
-            raise ValueError("multiple pipeline outputs cases not handled")
+            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(results))
 
         if results:
             return self.extract_results(results)

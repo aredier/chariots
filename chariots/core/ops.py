@@ -1,9 +1,6 @@
 from chariots.core.versioning import VersionableMeta
 
 
-OPS_PATH = "/models"
-
-
 class AbstractOp(metaclass=VersionableMeta):
     """
     An op represent an atomic unit in a pipeline.
