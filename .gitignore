@@ -42,3 +42,4 @@ docs/_build/*
 
 # notebooks
 *.ipynb
+!project_template/{{cookiecutter.project_name}}/notebooks/*.ipynb
