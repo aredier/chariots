@@ -20,6 +20,9 @@ node_modules
 # notebooks
 .ipynb_checkpoints/
 
+{% if cookiecutter.include_ipynb_in_git == 'n' -%}
+notebooks/*
+{%- endif %}
 # local env files
 .env.local
 .env.*.local

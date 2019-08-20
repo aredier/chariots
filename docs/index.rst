@@ -8,6 +8,7 @@ Welcome to chariots's documentation!
    installation
    usage
    modules
+   template
    contributing
    authors
    history
