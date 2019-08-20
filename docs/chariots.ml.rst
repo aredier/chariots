@@ -12,6 +12,14 @@ chariots.ml.ml\_op module
     :undoc-members:
     :show-inheritance:
 
+chariots.ml.sklearn\_op module
+------------------------------
+
+.. automodule:: chariots.ml.sklearn_op
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

@@ -4,6 +4,14 @@ chariots.helpers package
 Submodules
 ----------
 
+chariots.helpers.errors module
+------------------------------
+
+.. automodule:: chariots.helpers.errors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 chariots.helpers.typing module
 ------------------------------
 

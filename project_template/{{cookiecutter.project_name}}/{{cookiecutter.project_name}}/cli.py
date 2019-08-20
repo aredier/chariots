@@ -18,7 +18,8 @@ def {{cookiecutter.project_name}}_cli():
 @{{cookiecutter.project_name}}_cli.command()
 def start():
     """
-    start the {{cookiecutter.project_name}} server to be used by remote and local clients
+    start the {{cookiecutter.project_name}} server to be used by remote
+     and local clients
     """
 
     {{cookiecutter.project_name}}_app.run()
@@ -28,7 +29,8 @@ def start():
 @{{cookiecutter.project_name}}_cli.command()
 def download_and_train():
     """
-    example of how to use the CLI to execute some interesting pipelines once the chariots server is started
+    example of how to use the CLI to execute some interesting pipelines
+    once the chariots server is started
     """
 
     client = Client()
