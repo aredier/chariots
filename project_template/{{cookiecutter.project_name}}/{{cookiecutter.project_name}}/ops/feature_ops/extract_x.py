@@ -4,7 +4,8 @@ from chariots.core import ops, versioning
 
 class ExtractX(ops.AbstractOp):
     """
-    op that extracts the relevant X from a pd DataFrame representing the iris data set
+    op that extracts the relevant X from a pd DataFrame representing the
+    iris data set
     """
 
     train_cols = versioning.VersionedField([

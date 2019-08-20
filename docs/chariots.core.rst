@@ -12,6 +12,14 @@ chariots.core.nodes module
     :undoc-members:
     :show-inheritance:
 
+chariots.core.op\_store module
+------------------------------
+
+.. automodule:: chariots.core.op_store
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 chariots.core.ops module
 ------------------------
 

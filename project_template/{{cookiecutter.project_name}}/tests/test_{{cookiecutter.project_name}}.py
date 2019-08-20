@@ -7,9 +7,11 @@ from {{cookiecutter.project_name}}.pipelines.download_iris import download_iris
 from {{cookiecutter.project_name}}.pipelines.train_iris import train_iris
 from {{cookiecutter.project_name}}.pipelines.pred_iris import pred_iris
 
+
 @pytest.fixture
 def {{cookiecutter.project_name}}_test_client():
     return TestClient({{cookiecutter.project_name}}_app)
+
 
 def test_iris_app({{cookiecutter.project_name}}_test_client):
     {{cookiecutter.project_name}}_test_client.call_pipeline(download_iris)

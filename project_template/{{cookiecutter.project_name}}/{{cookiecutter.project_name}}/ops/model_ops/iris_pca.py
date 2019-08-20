@@ -9,7 +9,9 @@ class IrisPCA(SKUnsupervisedModel):
     """
 
     model_class = PCA
-    model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
-        "n_components": 2,
-    })
-
+    model_parameters = versioning.VersionedFieldDict(
+        versioning.VersionType.MAJOR,
+        {
+            "n_components": 2,
+        }
+    )
