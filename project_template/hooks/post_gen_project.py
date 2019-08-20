@@ -19,6 +19,7 @@ if __name__ == '__main__':
         remove_file("{{cookiecutter.project_name}}/ops/model_ops/iris_pca.py")
         remove_file("{{cookiecutter.project_name}}/ops/model_ops/iris_rf.py")
         remove_file("tests/test_{{cookiecutter.project_name}}.py")
+        remove_file("notebooks/example_notebook.ipynb")
 
     if "{{cookiecutter.use_cli}}" == "n":
         remove_file("{{cookiecutter.project_name}}/cli.py")

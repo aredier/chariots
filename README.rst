@@ -130,21 +130,22 @@ Features
 * versionable individual op
 * easy pipeline building
 * easy pipelines deployment
+* ML utils (implementation of ops for most popular ML libraries with adequate `Versionedfield`) for sklearn and keras at first
+* A CookieCutter to properly structure your Chariots project
 
 Comming Soon
 ------------
 
 Some key features of Chariot are still in development and should be coming soon
 
-* ML utils (implementation of ops for most popular ML libraries with adequate `Versionedfield`) for sklearn and keras at first
 * Cloud integration (integration with cloud services to fetch and load models from)
-* A CookieCutter to properly structure your ML project
 * More examples (the example above is quite simple and we are going to write more of those to provide with some use cases and examples)
 
 Credits
 -------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+`audreyr/cookiecutter-pypackage`_'s project is also the basis of the Chariiots project template
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypac
