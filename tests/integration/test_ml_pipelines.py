@@ -27,7 +27,7 @@ def LROp():
     return LROpInner
 
 
-def test_raw_training_pipeline(LROp, YOp, XTrainOp):
+def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
     train_pipe = pipelines.Pipeline([
         nodes.Node(XTrainOp(), output_node="x_train"),
         nodes.Node(YOp(), output_node="y_train"),
@@ -37,7 +37,7 @@ def test_raw_training_pipeline(LROp, YOp, XTrainOp):
         nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
                    output_node="__pipeline_output__")
     ], "pred")
-    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path="/tmp/chariots", import_name="my_app")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=tmpdir, import_name="my_app")
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -67,7 +67,7 @@ def SKLROp():
     return SKLROpInner
 
 
-def test_sk_training_pipeline(SKLROp, YOp, XTrainOp):
+def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
     train_pipe = pipelines.Pipeline([
         nodes.Node(XTrainOp(), output_node="x_train"),
         nodes.Node(YOp(), output_node="y_train"),
@@ -77,7 +77,7 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp):
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
                    output_node="__pipeline_output__")
     ], "pred")
-    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path="/tmp/chariots", import_name="my_app")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=tmpdir, import_name="my_app")
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -122,7 +122,7 @@ def XTrainOpL():
     return XTrainOpInner
 
 
-def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
+def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
 
     train_transform = pipelines.Pipeline([
         nodes.Node(XTrainOpL(), output_node="x_raw"),
@@ -139,7 +139,7 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_node="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_transform, train_pipe, pred_pipe],
-                         path="/tmp/chariots", import_name="my_app")
+                         path=tmpdir, import_name="my_app")
 
     test_client = TestClient(my_app)
     test_client.request(train_transform)
@@ -160,25 +160,33 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
         test_client.load_pipeline(pred_pipe)
 
 
-def test_fit_predict_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
+def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
 
-    train_pipe = pipelines.Pipeline([
+    train_pca = pipelines.Pipeline([
+        nodes.Node(XTrainOpL(), output_node="x_raw"),
+        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT), input_nodes=["x_raw"]),
+        ], "train_pca")
+    train_rf = pipelines.Pipeline([
         nodes.Node(XTrainOpL(), output_node="x_raw"),
         nodes.Node(YOp(), output_node="y_train"),
-        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT_PREDICT), input_nodes=["x_raw"], output_node="x_train"),
+        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_raw"], output_node="x_train"),
         nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train")
+    ], "train_rf")
     pred_pipe = pipelines.Pipeline([
         nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="x_train"),
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_node="__pipeline_output__")
     ], "pred")
-    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe],
-                         path="/tmp/chariots", import_name="my_app")
+    my_app = app.Chariot(app_pipelines=[train_pca, train_rf, pred_pipe],
+                         path=tmpdir, import_name="my_app")
 
     test_client = TestClient(my_app)
-    test_client.load_pipeline(train_pipe)
-    test_client.request(train_pipe)
-    test_client.save_pipeline(train_pipe)
+
+    # test that the train save load is working
+    test_client.request(train_pca)
+    test_client.save_pipeline(train_pca)
+    test_client.load_pipeline(train_rf)
+    test_client.request(train_rf)
+    test_client.save_pipeline(train_rf)
     test_client.load_pipeline(pred_pipe)
     response = test_client.request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
 
@@ -186,8 +194,27 @@ def test_fit_predict_pipeline(SKLROp, YOp, XTrainOpL, PCAOp):
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
 
-    test_client.request(train_pipe)
-    test_client.save_pipeline(train_pipe)
+    # test that that retrain is possible
+    test_client.request(train_pca)
+    test_client.save_pipeline(train_pca)
+    test_client.load_pipeline(train_rf)
+    test_client.request(train_rf)
+    test_client.save_pipeline(train_rf)
+    test_client.load_pipeline(pred_pipe)
+    response = test_client.request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+
+    assert len(response.value) == 3
+    for i, individual_value in enumerate(response.value):
+        assert abs(101 + i - individual_value) < 1e-5
+
+    # test that that wrong loading is raising
+    test_client.request(train_pca)
+    test_client.save_pipeline(train_pca)
     with pytest.raises(VersionError):
         test_client.load_pipeline(pred_pipe)
+    response = test_client.request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+
+    assert len(response.value) == 3
+    for i, individual_value in enumerate(response.value):
+        assert abs(101 + i - individual_value) < 1e-5
 

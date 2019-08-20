@@ -3,7 +3,7 @@ import os
 
 from chariots.backend.app import Chariot
 from chariots.backend.client import TestClient
-from chariots.core.pipelines import Pipeline, ReservedNodes
+from chariots.core.pipelines import Pipeline, ReservedNodes, SequentialRunner
 from chariots.core.nodes import Node, DataLoadingNode, DataSavingNode
 from chariots.core.saving import JSONSerializer
 
@@ -68,3 +68,37 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     assert len(res) == 10
     assert res == [True] + [False] * 9
 
+
+def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
+    pipe = enchrined_pipelines_generator(counter_step=1)
+
+    app = Chariot([pipe], path=tmpdir, import_name="some_app")
+    test_client = TestClient(app)
+    res = test_client.request(pipe)
+    assert len(res.value) == 10
+    assert res.value == [bool(i % 1) for i in range(10)]
+
+    res = test_client.request(pipe)
+    assert len(res.value) == 10
+    assert res.value == [bool(i % 2) for i in range(10)]
+
+    test_client.save_pipeline(pipe)
+    test_client.load_pipeline(pipe)
+
+    res = test_client.request(pipe)
+    assert len(res.value) == 10
+    assert res.value == [bool(i % 3) for i in range(10)]
+
+    test_client.save_pipeline(pipe)
+    del test_client
+    del app
+    del pipe
+
+    pipe = enchrined_pipelines_generator(counter_step=1)
+    app = Chariot([pipe], path=tmpdir, import_name="some_app")
+    test_client = TestClient(app)
+
+    test_client.load_pipeline(pipe)
+    res = test_client.request(pipe)
+    assert len(res.value) == 10
+    assert res.value == [bool(i % 4) for i in range(10)]

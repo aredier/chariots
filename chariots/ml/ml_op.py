@@ -49,6 +49,11 @@ class MLOp(LoadableOp):
         self._last_training_time = 0
 
     @property
+    def allow_version_change(self):
+        # we only want to check the version on prediction
+        return self.mode != MLMode.PREDICT
+
+    @property
     def mode(self) -> MLMode:
         """
         the mode this op was instantiated with

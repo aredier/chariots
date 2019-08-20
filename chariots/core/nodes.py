@@ -2,11 +2,11 @@ import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
-from typing import Any, Union, Mapping, Optional
+from typing import Any, Union, Mapping, Optional, List
 
 from chariots.constants import DATA_PATH
 from chariots.core.ops import AbstractOp, LoadableOp
-from chariots.core import pipelines
+from chariots.core import pipelines, op_store
 from chariots.core.saving import Saver, Serializer
 from chariots.core.versioning import Version
 from chariots.helpers.errors import VersionError
@@ -64,6 +64,7 @@ class AbstractNode(ABC):
             return symbolic_real_node_map[node]
         return node
 
+    # TODO delete
     def get_version_with_ancestry(
             self, ancestry_versions: Mapping[Union["AbstractNode", "pipelines.ReservedNodes"], Version]
     ) -> Version:
@@ -77,19 +78,29 @@ class AbstractNode(ABC):
             return self.node_version
         return self.node_version + sum((ancestry_versions[input_node] for input_node in self.input_nodes), Version())
 
-    def check_and_load(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline") -> "Node":
+    @abstractmethod
+    def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """
-        loads the op the node as persisted in node path
-        raises ValueError if the node is not loadable
-
-        :param op_store: the store to load the ops from
-        :param pipeline: the pipeline to load this node for
-
-        :return: the loaded node
+        reloads the latest version of this op by looking into the available versions of the store
+        :param store_to_look_in:  the store to look for new versions in
+        :return:
         """
-        if not self.is_loadable:
-            raise ValueError("trying to load a non loadable node")
-        raise NotImplementedError("loading is not implemented for {} nodes".format(type(self)))
+
+    def check_version_compatibility(self, upstream_node: "AbstractNode", store_to_look_in: op_store.OpStore):
+        """
+        checks that this node is compatible with a potentially new upstream
+
+        :raises VersionError: When the nodes are not compatible
+
+        :param upstream_node: the node to check the version for
+        :param store_to_look_in: the op_store to look for previous relationships between the nodes in
+        """
+        validated_links = store_to_look_in.get_validated_links(self.name, upstream_node.name)
+        if validated_links is None:
+            return
+        if upstream_node.node_version.major not in {version.major for version in validated_links}:
+            print("non valid", upstream_node.name, "--->", self.name, repr(upstream_node.node_version), validated_links)
+            raise VersionError("cannot find a validated link from {} to {}".format(upstream_node.name, self.name))
 
     @property
     def is_loadable(self) -> bool:
@@ -107,16 +118,24 @@ class AbstractNode(ABC):
         :return: the string of the name
         """
 
-    def persist(self, op_store: "pipelines._OpStore", pipeline_version: Version):
+    def persist(self, store: op_store.OpStore, downstream_nodes: Optional[List["AbstractNode"]]) -> Version:
         """
         persists the inner op of the node in saver
 
-        :param op_store: the store in which to store the node
-        :param pipeline_version: the pipeline version of the op (including ancestry)
+        :param store: the store in which to store the node
+        :param downstream_nodes: the node(s) that are going to accept this node downstrem
         """
-        if not self.is_loadable:
-            raise ValueError("trying to save a non savable/loadable op")
-        raise NotImplementedError("persisting is not implemented for {} nodes".format(type(self)))
+        version = self.node_version
+        print("sending register", self.name, version)
+        if downstream_nodes is None:
+            store.register_valid_link(downstream_op=None, upstream_op=self.name,
+                                      upstream_op_version=version)
+            return version
+        for downstream_node in downstream_nodes:
+            store.register_valid_link(downstream_op=downstream_node.name, upstream_op=self.name,
+                                      upstream_op_version=version)
+        return version
+
 
     @property
     def requires_runner(self) -> bool:
@@ -181,56 +200,38 @@ class Node(AbstractNode):
         res = self._op(*params)
         return res
 
-    def check_and_load(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline") -> "Node":
+    def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """
-        loads the op the node as persisted in node path
-        raises ValueError if the node is not loadable
-
-        :param pipeline: the pipeline to load the node for
-        :type op_store: the op store to get the version from and collect bytes if needed
-        :return: the loaded node
+        reloads the latest version of this op by looking into the available versions of the store
+        :param store_to_look_in:  the store to look for new versions in
+        :return:
         """
         if not self.is_loadable:
-            raise ValueError("trying to load a non loadable node")
+            return self
         if isinstance(self._op, pipelines.Pipeline):
-            self._op.load(op_store)
+            self._op.load(store_to_look_in)
             return self
-        op_version, saved_upstream_version = op_store.get_last_op_versions_from_pipeline(self._op, pipeline,
-                                                                                         (None, None))
-        if op_version is None:
-            return self._load_any_version(op_store, pipeline)
-        self.check_version(op_version, saved_upstream_version, pipeline.get_pipeline_versions()[self])
-        op_bytes = op_store.get_op_bytes_for_version(self._op, op_version)
-        self._op.load(op_bytes)
+        all_versions = store_to_look_in.get_all_verisons_of_op(self._op)
+        # if no node has been saved we return None as the pipeline will need to register this Op
+        # we also save this version as is (untrained for instance) so that it is not registered as new later
+        if all_versions is None:
+            return None
+
+        # if the node is newer than persisted, we keep the in memory version
+        if self.node_version.major not in {version.major for version in all_versions}:
+            print("got a new version of an opp")
+            return self
+
+        print("all_versions", self.name, all_versions)
+        relevant_version = max(all_versions)
+        print("trying to load ", self.name, relevant_version)
+        self._op.load(store_to_look_in.get_op_bytes_for_version(self._op, relevant_version))
         return self
 
-    def check_version(self, persisted_op_version: Version, persisted_upstream_version: Version,
-                      current_upstream_version: Version):
-        """
-        checks the current pipeline version (with ancestry) against the persisted version
-
-        :param persisted_op_version: the inner version of the op at the time it was last persisted
-        :param persisted_upstream_version: the compounded upstream version at the time of saving
-        :param current_upstream_version: the compounded upstream version at time of check
-
-        """
-        print(persisted_op_version, persisted_upstream_version, current_upstream_version)
-        if self.node_version.major != persisted_op_version.major:
-            raise VersionError("cannot load an with different major version")
-        if current_upstream_version.major != persisted_upstream_version.major:
-            raise VersionError("cannot laod an op with different major upstream version")
-
-    def _load_any_version(self, op_store: "pipelines._OpStore", node_pipeline: "pipelines.Pipeline"):
-        versions = op_store.get_all_verisons_of_op(self._op, None)
-        if versions is None:
-            return self
-        final_op_version = max(versions)
-        op_bytes = op_store.get_op_bytes_for_version(self._op, final_op_version)
-        self._op.load(op_bytes)
-        op_store.link_pipeline_to_op_version(op=self._op, op_version=final_op_version,
-                                             pipeline_version=node_pipeline.get_pipeline_versions()[self],
-                                             pipeline_name=node_pipeline.name)
-        return self
+    def check_version_compatibility(self, upstream_node: "AbstractNode", store_to_look_in: op_store.OpStore):
+        if self._op.allow_version_change:
+            return
+        super().check_version_compatibility(upstream_node, store_to_look_in)
 
     @property
     def is_loadable(self) -> bool:
@@ -248,20 +249,22 @@ class Node(AbstractNode):
         """
         return self._op.name
 
-    def persist(self, op_store: "pipelines._OpStore", pipeline: "pipelines.Pipeline"):
+    def persist(self, store: op_store.OpStore, downstream_nodes: Optional[List["AbstractNode"]]) -> Version:
         """
         persists the inner op of the node in saver
 
-        :param op_store: the store in which to store the node
-        :param pipeline: the pipeline version of the op (including ancestry)
+        :param store: the store in which to store the node
+        :param downstream_nodes: the node(s) that are going to accept this node downstrem
         """
+
+        version = super().persist(store, downstream_nodes)
         if not self.is_loadable:
-            raise ValueError("trying to save a non savable/loadable op")
+            return
         if isinstance(self._op, pipelines.Pipeline):
-            return self._op.save(op_store)
-        op_store.save_op_bytes_for_pipeline(self._op, pipeline_name=pipeline.name,
-                                            pipeline_version=pipeline.get_pipeline_versions()[self],
-                                            op_bytes=self._op.serialize())
+            return self._op.save(store)
+        print("saving", self.name, version)
+        store.save_op_bytes(self._op, version, op_bytes=self._op.serialize())
+        return version
 
     @property
     def requires_runner(self) -> bool:
@@ -295,6 +298,14 @@ class DataNode(AbstractNode, metaclass=ABCMeta):
         self.serializer = serializer
         self._name = name
         self._saver = None
+
+    def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
+        """
+        reloads the latest version of this op by looking into the available versions of the store
+        :param store_to_look_in:  the store to look for new versions in
+        :return:
+        """
+        return self
 
     def attach_saver(self, saver: Saver):
         """

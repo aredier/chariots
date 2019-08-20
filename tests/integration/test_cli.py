@@ -4,6 +4,7 @@
 """Tests for `chariots` package."""
 import json
 import os
+import subprocess
 
 import pytest
 
@@ -34,5 +35,8 @@ def test_command_line_interface(cookiecutter_config):
             json.dump(cookiecutter_config, config_file)
         result = runner.invoke(cli.main, ["new", "-c", "config.json"])
         assert result.exit_code == 0
-        iris_test_res = pytest.main("./iris/tests")
-        assert iris_test_res == 0
+        try:
+            assert subprocess.call(["py.test"], cwd="iris/") == 0
+        except subprocess.CalledProcessError as err:
+            print(err.output.decode("utf-8"))
+            raise

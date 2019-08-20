@@ -157,6 +157,9 @@ class Version:
         result.update_patch(other.patch.encode("utf-8"))
         return result
 
+    def __hash__(self):
+        return hash(str(self))
+
     @property
     def creation_time(self) -> float:
         """
