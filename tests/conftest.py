@@ -33,6 +33,7 @@ def savable_op_generator():
                 print("saving", self.count)
                 return serializer.serialize_object(self.count)
 
+        print("counter modulo version", CounterModulo.__version__)
         return CounterModulo
     return gen
 

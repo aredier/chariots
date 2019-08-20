@@ -1,4 +1,4 @@
-from chariots.core.versioning import VersionableMeta
+from chariots.core.versioning import VersionableMeta, Version
 
 
 class AbstractOp(metaclass=VersionableMeta):
@@ -13,6 +13,15 @@ class AbstractOp(metaclass=VersionableMeta):
         raise NotImplementedError("you must define a call for the op to be valid")
 
     @property
+    def allow_version_change(self):
+        """
+        whether or not this op accepts to be loaded with the wrong version.
+        this is usually False but is useful when loading an op for retraining
+        :return:
+        """
+        return False
+
+    @property
     def name(self) -> str:
         """
         name of the op
@@ -20,7 +29,7 @@ class AbstractOp(metaclass=VersionableMeta):
         return self.__class__.__name__.lower()
 
     @property
-    def op_version(self):
+    def op_version(self) -> Version:
         return self.__version__
 
     def __str__(self):

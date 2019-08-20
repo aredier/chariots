@@ -3,6 +3,7 @@ from typing import Mapping, Any, List, Type
 
 from flask import Flask, request
 
+import chariots.core.op_store
 from chariots.core import pipelines
 from chariots.core.versioning import Version
 from chariots.core.nodes import AbstractNode
@@ -65,7 +66,7 @@ class Chariot(Flask):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
-        self._op_store = pipelines.OpStore(self.saver)
+        self._op_store = chariots.core.op_store.OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
         self._pipelines = {
@@ -117,6 +118,7 @@ class Chariot(Flask):
         def save_pipeline(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
             pipeline.save(self._op_store)
+            self._op_store.save()
             return json.dumps({})
 
         @self.route("/pipelines/<pipeline_name>/health_check", methods=["GET"])
