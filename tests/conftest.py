@@ -49,6 +49,17 @@ def Range10():
 
 
 @pytest.fixture
+def AddOne():
+
+    class AddOneInner(AbstractOp):
+
+        def __call__(self, input_value):
+            return [i + 1 for i in input_value]
+
+    return AddOneInner
+
+
+@pytest.fixture
 def NotOp():
 
     class NotOp(AbstractOp):
@@ -62,11 +73,11 @@ def NotOp():
 @pytest.fixture
 def IsPair():
 
-    class Inner(AbstractOp):
+    class IsPairInner(AbstractOp):
 
         def __call__(self, data):
             return [not i % 2 for i in data]
-    return Inner
+    return IsPairInner
 
 
 @pytest.fixture

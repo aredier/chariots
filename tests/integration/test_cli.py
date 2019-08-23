@@ -36,6 +36,7 @@ def test_command_line_interface(cookiecutter_config):
         result = runner.invoke(cli.main, ["new", "-c", "config.json"])
         assert result.exit_code == 0
         try:
+            subprocess.call(["pip", "install","-e", "./"], cwd="iris/")
             assert subprocess.call(["py.test"], cwd="iris/") == 0
         except subprocess.CalledProcessError as err:
             print(err.output.decode("utf-8"))

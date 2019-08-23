@@ -104,14 +104,14 @@ def test_data_ops(tmpdir, NotOp):
         json.dump(list(range(10)), file)
 
     saver = FileSaver(tmpdir)
-    in_node = DataLoadingNode(JSONSerializer(), input_path, output_node="data_in")
+    in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes="data_in")
     out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=["data_trans"])
     in_node.attach_saver(saver)
     out_node.attach_saver(saver)
 
     pipe = Pipeline([
         in_node,
-        Node(NotOp(), input_nodes=["data_in"], output_node="data_trans"),
+        Node(NotOp(), input_nodes=["data_in"], output_nodes="data_trans"),
         out_node
     ], name="my_pipe")
 
