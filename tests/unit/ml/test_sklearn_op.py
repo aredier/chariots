@@ -18,12 +18,12 @@ def LROp():
 
 def test_sk_training_pipeline(LROp, YOp, XTrainOp):
     train_pipe = pipelines.Pipeline([
-        nodes.Node(XTrainOp(), output_node="x_train"),
-        nodes.Node(YOp(), output_node="y_train"),
+        nodes.Node(XTrainOp(), output_nodes="x_train"),
+        nodes.Node(YOp(), output_nodes="y_train"),
         nodes.Node(LROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train")
     pred_pipe = pipelines.Pipeline([
-        nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_node="__pipeline_output__")
+        nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="__pipeline_output__")
     ], "pred")
 
     train_pipe(pipelines.SequentialRunner())

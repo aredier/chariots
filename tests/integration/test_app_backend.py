@@ -10,13 +10,13 @@ from chariots.core.saving import JSONSerializer
 
 def test_app_response(Range10, IsPair, NotOp, tmpdir):
     pipe1 = Pipeline([
-        Node(Range10(), output_node="my_list"),
-        Node(IsPair(), input_nodes=["my_list"], output_node="__pipeline_output__")
+        Node(Range10(), output_nodes="my_list"),
+        Node(IsPair(), input_nodes=["my_list"], output_nodes="__pipeline_output__")
     ], name="inner_pipe")
 
     pipe = Pipeline([
-        Node(pipe1, output_node="og_pipe"),
-        Node(NotOp(), input_nodes=["og_pipe"], output_node=ReservedNodes.pipeline_output)
+        Node(pipe1, output_nodes="og_pipe"),
+        Node(NotOp(), input_nodes=["og_pipe"], output_nodes=ReservedNodes.pipeline_output)
     ], name="outer_pipe")
 
     app = Chariot([pipe1, pipe], path=tmpdir, import_name="some_app")
@@ -31,7 +31,7 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
 
 def test_app_response_with_input(Range10, IsPair, NotOp, tmpdir):
     pipe1 = Pipeline([
-        Node(IsPair(), input_nodes=["__pipeline_input__"], output_node="__pipeline_output__")
+        Node(IsPair(), input_nodes=["__pipeline_input__"], output_nodes="__pipeline_output__")
     ], name="inner_pipe")
 
     app = Chariot([pipe1], path=tmpdir, import_name="some_app")
@@ -49,12 +49,12 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     with open(os.path.join(tmpdir, "data", input_path), "w") as file:
         json.dump(list(range(10)), file)
 
-    in_node = DataLoadingNode(JSONSerializer(), input_path, output_node="data_in")
+    in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes="data_in")
     out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=["data_trans"])
 
     pipe = Pipeline([
         in_node,
-        Node(NotOp(), input_nodes=["data_in"], output_node="data_trans"),
+        Node(NotOp(), input_nodes=["data_in"], output_nodes="data_trans"),
         out_node
     ], name="my_pipe")
 
