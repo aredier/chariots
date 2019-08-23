@@ -95,9 +95,14 @@ class AbstractNode(ABC):
     @staticmethod
     def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping) -> "AbstractNode":
         if isinstance(node, AbstractNode):
-            return symbolic_real_node_map[node.name]
+            output_refs = node.output_references
+            if not len(output_refs) == 1:
+                raise ValueError("cannot use {} as input reference as it has {} output "
+                                 "references".format(node.name, len(output_refs)))
+            ref = output_refs[0]
+            return symbolic_real_node_map[ref.reference]
         return symbolic_real_node_map[node]
-    
+
     @abstractmethod
     def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """
