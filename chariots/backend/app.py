@@ -109,10 +109,7 @@ class Chariot(Flask):
         @self.route("/pipelines/<pipeline_name>/versions", methods=["POST"])
         def pipeline_versions(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
-            versions = pipeline.get_pipeline_versions()
-            full_versions = {node.name: {"node_version": str(node.node_version), "upstream_version": str(up_version)}
-                             for node, up_version in versions.items()}
-            return json.dumps(full_versions)
+            return json.dumps({node.name: str(version) for node, version in pipeline.get_pipeline_versions().items()})
 
         @self.route("/pipelines/<pipeline_name>/save", methods=["POST"])
         def save_pipeline(pipeline_name):
