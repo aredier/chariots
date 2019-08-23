@@ -33,7 +33,6 @@ class OpStore:
         """
         self._saver = saver
         self._all_op_links: _OpGraph = self._load_from_saver()
-        print(self._all_op_links)
 
     def _load_from_saver(self) -> _OpGraph:
         """
@@ -126,11 +125,9 @@ class OpStore:
         :param op_bytes: the bytes of the op to save
         """
         path = self._build_op_path(op_to_save.name, version=version)
-        print("saving", op_to_save.name, path)
         self._saver.save(serialized_object=op_bytes, path=path)
 
     def register_valid_link(self, downstream_op, upstream_op, upstream_op_version):
-        print("______foo_____ registering", upstream_op, upstream_op_version)
         self._all_op_links.setdefault(
             downstream_op if downstream_op is not None else "__end_of_pipe__", {}
         ).setdefault(upstream_op, set()).add(upstream_op_version)
