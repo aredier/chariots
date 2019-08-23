@@ -67,7 +67,7 @@ class MLOp(LoadableOp):
         if self.mode == MLMode.PREDICT:
             return self.predict(*args, **kwargs)
         if self.mode == MLMode.FIT_PREDICT:
-            self.fit(*args, **kwargs)
+            self._fit(*args, **kwargs)
             return self.predict(*args, **kwargs)
         raise ValueError("unknown mode for {}: {}".format(type(self), self.mode))
 
