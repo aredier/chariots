@@ -1,10 +1,10 @@
-{%- if cookiecutter.use_iris_example == "y" -%}
+{%- if cookiecutter.use_iris_example == "y" %}
 import multiprocessing as mp
 import time
 
-{%- endif -%}
+{% endif -%}
 from click import testing
-{% if cookiecutter.use_iris_example == "y" -%}
+{%- if cookiecutter.use_iris_example == "y" %}
 from chariots.backend.client import Client
 {% endif -%}
 
@@ -32,14 +32,14 @@ def start_server():
 
 def test_server():
     """tests that the pipelines are running correctly"""
-    {%- if cookiecutter.use_iris_example== "y" -%}
+    {% if cookiecutter.use_iris_example== "y" -%}
     process = mp.Process(target=start_server, args=())
     try:
         process.start()
         time.sleep(1)
         client = Client()
 
-        {%- if cookiecutter.use_cli == 'y' -%}
+        {%- if cookiecutter.use_cli == 'y' %}
         runner = testing.CliRunner()
         runner.invoke(cli.download_and_train)
         {% else %}
@@ -47,7 +47,7 @@ def test_server():
         client.call_pipeline(train_iris)
         client.save_pipeline(train_iris)
         client.load_pipeline(pred_iris)
-        {%- endif -%}
+        {%- endif %}
         assert client.call_pipeline(
             pred_iris,
             pipeline_input=[[1, 2, 3, 4]]
@@ -58,4 +58,4 @@ def test_server():
     {% else %}
     # TODO write a test
     pass
-    {%- endif -%}
+    {%- endif %}

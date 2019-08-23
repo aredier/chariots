@@ -5,7 +5,7 @@ from {{cookiecutter.project_name}}.ops.data_ops.download_iris import DownloadIri
 
 download_iris = pipelines.Pipeline(
     [
-        nodes.Node(DownloadIris(), output_node="iris_df"),
+        nodes.Node(DownloadIris(), output_nodes="iris_df"),
         nodes.DataSavingNode(serializer=saving.CSVSerializer(),
                              path="iris.csv", input_nodes=["iris_df"])
     ], "download_iris"
