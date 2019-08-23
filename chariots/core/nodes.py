@@ -2,7 +2,7 @@ import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
-from typing import Any, Union, Mapping, Optional, List
+from typing import Any, Union, Mapping, Optional, List, Text
 
 from chariots.constants import DATA_PATH
 from chariots.core.ops import AbstractOp, LoadableOp
@@ -11,6 +11,28 @@ from chariots.core.saving import Saver, Serializer
 from chariots.core.versioning import Version
 from chariots.helpers.errors import VersionError
 from chariots.helpers.typing import SymbolicToRealMapping, InputNodes
+
+
+class NodeReference:
+
+    def __init__(self, node: Union["AbstractNode", "pipelines.ReservedNodes"], reference: Text):
+        self.node = node
+        if isinstance(reference, pipelines.ReservedNodes):
+            reference = reference.value
+        if not isinstance(reference, str):
+            raise TypeError("cannot reference with other than string")
+        self.reference = reference
+
+    def __repr__(self):
+        return "<NodeReference {} of {}>".format(self.reference, self.node.name)
+
+    def __eq__(self, other):
+        if not isinstance(other, NodeReference):
+            raise TypeError("cannot compare NodeReference to {}".format(type(other)))
+        return self.node == other.node and self.reference == other.reference
+
+    def __hash__(self):
+        return hash((self.node, self.reference))
 
 
 class AbstractNode(ABC):

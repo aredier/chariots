@@ -21,6 +21,10 @@ class ReservedNodes(Enum):
     pipeline_input = "__pipeline_input__"
     pipeline_output = "__pipeline_output__"
 
+    @property
+    def reference(self):
+        return nodes.NodeReference(self, self.value)
+
 
 class AbstractRunner(ABC):
     """
