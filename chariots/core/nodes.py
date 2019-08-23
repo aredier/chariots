@@ -41,16 +41,28 @@ class AbstractNode(ABC):
     It represents a slot in the pipeline.
     """
 
-    def __init__(self, input_nodes=None, output_node=None):
+    def __init__(self, input_nodes: Optional[List[Union[Text, "AbstractNode"]]] = None,
+                 output_nodes: Union[List[Text], Text] = None):
         """
         :param input_nodes: the input_nodes on which this node should be executed
-        :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use "pipeline_output" or `pipelines.ReservedNodes.pipeline_output`
+        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
+        output of the pipeline use `__pipeline_output__` or `ReservedNodes.pipeline_output`. If the output of the node
+        should be split (for different downstream ops to consume) use a list
         """
         self.input_nodes = input_nodes or []
-        self.output_node = output_node
-        if self.output_node == pipelines.ReservedNodes.pipeline_output:
-            self.output_node = pipelines.ReservedNodes.pipeline_output.value
+        if not isinstance(output_nodes, list):
+            output_nodes = [output_nodes]
+        if output_nodes is None:
+            output_nodes = self.name
+        self.output_nodes = output_nodes
+        if self.output_nodes == pipelines.ReservedNodes.pipeline_output:
+            self.output_nodes = pipelines.ReservedNodes.pipeline_output.value
+
+    @property
+    def output_references(self) -> List[NodeReference]:
+        if self.output_nodes[0] is None:
+            return [NodeReference(self, self.name)]
+        return [NodeReference(self, reference) for reference in self.output_nodes]
 
     @property
     @abstractmethod
@@ -82,24 +94,10 @@ class AbstractNode(ABC):
 
     @staticmethod
     def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping) -> "AbstractNode":
-        if isinstance(node, str):
-            return symbolic_real_node_map[node]
-        return node
-
-    # TODO delete
-    def get_version_with_ancestry(
-            self, ancestry_versions: Mapping[Union["AbstractNode", "pipelines.ReservedNodes"], Version]
-    ) -> Version:
-        """
-        adds this node's version to those of it's input (themselves computed on their ancestry)
-
-        :param ancestry_versions: a mapping with a version for each op which's version with ancestry has been computed
-        :return: the resulting version
-        """
-        if not self.input_nodes:
-            return self.node_version
-        return self.node_version + sum((ancestry_versions[input_node] for input_node in self.input_nodes), Version())
-
+        if isinstance(node, AbstractNode):
+            return symbolic_real_node_map[node.name]
+        return symbolic_real_node_map[node]
+    
     @abstractmethod
     def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """
@@ -121,7 +119,6 @@ class AbstractNode(ABC):
         if validated_links is None:
             return
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
-            print("non valid", upstream_node.name, "--->", self.name, repr(upstream_node.node_version), validated_links)
             raise VersionError("cannot find a validated link from {} to {}".format(upstream_node.name, self.name))
 
     @property
@@ -148,7 +145,6 @@ class AbstractNode(ABC):
         :param downstream_nodes: the node(s) that are going to accept this node downstrem
         """
         version = self.node_version
-        print("sending register", self.name, version)
         if downstream_nodes is None:
             store.register_valid_link(downstream_op=None, upstream_op=self.name,
                                       upstream_op_version=version)
@@ -157,7 +153,6 @@ class AbstractNode(ABC):
             store.register_valid_link(downstream_op=downstream_node.name, upstream_op=self.name,
                                       upstream_op_version=version)
         return version
-
 
     @property
     def requires_runner(self) -> bool:
@@ -188,15 +183,17 @@ class Node(AbstractNode):
     It represents a slot in the pipeline.
     """
 
-    def __init__(self, op: AbstractOp, input_nodes=None, output_node=None):
+    def __init__(self, op: AbstractOp, input_nodes: Optional[List[Union[Text, "AbstractNode"]]] = None,
+                 output_nodes: Union[List[Union[Text, "AbstractNode"]], Text, "AbstractNode"]=None):
         """
         :param op: the op this Node wraps
         :param input_nodes: the input_nodes on which this node should be executed
-        :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
+        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
+        output of the pipeline use `__pipeline_output__` or `ReservedNodes.pipeline_output`. If the output of the node
+        should be split (for different downstream ops to consume) use a list
         """
         self._op = op
-        super().__init__(input_nodes=input_nodes, output_node=output_node)
+        super().__init__(input_nodes=input_nodes, output_nodes=output_nodes)
 
     @property
     def node_version(self) -> Version:
@@ -241,12 +238,9 @@ class Node(AbstractNode):
 
         # if the node is newer than persisted, we keep the in memory version
         if self.node_version.major not in {version.major for version in all_versions}:
-            print("got a new version of an opp")
             return self
 
-        print("all_versions", self.name, all_versions)
         relevant_version = max(all_versions)
-        print("trying to load ", self.name, relevant_version)
         self._op.load(store_to_look_in.get_op_bytes_for_version(self._op, relevant_version))
         return self
 
@@ -284,7 +278,6 @@ class Node(AbstractNode):
             return
         if isinstance(self._op, pipelines.Pipeline):
             return self._op.save(store)
-        print("saving", self.name, version)
         store.save_op_bytes(self._op, version, op_bytes=self._op.serialize())
         return version
 
@@ -299,23 +292,23 @@ class Node(AbstractNode):
         return isinstance(self._op, pipelines.Pipeline)
 
     def __repr__(self):
-        return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_node)
+        return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_nodes)
 
 
 class DataNode(AbstractNode, metaclass=ABCMeta):
 
-    def __init__(self, serializer: Serializer,  path: str, input_nodes: Optional[InputNodes] = None, output_node=None,
+    def __init__(self, serializer: Serializer, path: str, input_nodes: Optional[InputNodes] = None, output_nodes=None,
                  name: Optional[str] = None):
         """
         :param serializer: the serializer to use to load the dat
         :param path: the path to load the data from
         :param input_nodes: the input_nodes on which this node should be executed
-        :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
+        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
         output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
         :param name: the name of the op
         """
 
-        super().__init__(input_nodes=input_nodes, output_node=output_node)
+        super().__init__(input_nodes=input_nodes, output_nodes=output_nodes)
         self.path = os.path.join(DATA_PATH, path)
         self.serializer = serializer
         self._name = name
@@ -386,15 +379,15 @@ class DataLoadingNode(DataNode):
     a node for loading data from a saver (that has to be attached after init)
     """
 
-    def __init__(self, serializer: Serializer,  path: str, output_node=None, name: Optional[str] = None):
+    def __init__(self, serializer: Serializer, path: str, output_nodes=None, name: Optional[str] = None):
         """
         :param serializer: the serializer to use to load the dat
         :param path: the path to load the data from
-        :param output_node: an optional symbolic name for the node to be called by other node. If this node is the
+        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
         output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
         :param name: the name of the op
         """
-        super().__init__(serializer=serializer, path=path, output_node=output_node, name=name)
+        super().__init__(serializer=serializer, path=path, output_nodes=output_nodes, name=name)
 
     @property
     def node_version(self) -> Version:

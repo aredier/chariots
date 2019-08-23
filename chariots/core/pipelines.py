@@ -49,7 +49,7 @@ class SequentialRunner(AbstractRunner):
     """
 
     def run_graph(self, pipeline_input: Any, graph: List["nodes.AbstractNode"]) -> ResultDict:
-        temp_results = {ReservedNodes.pipeline_input: pipeline_input} if pipeline_input else {}
+        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
         for node in graph:
             temp_results = self._execute_node(node, temp_results)
         return temp_results
@@ -57,9 +57,15 @@ class SequentialRunner(AbstractRunner):
     def _execute_node(self, node: "nodes.AbstractNode", temp_results: ResultDict) -> ResultDict:
         inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
         if node.requires_runner:
-            temp_results[node] = node.execute(self, *inputs)
-            return temp_results
-        temp_results[node] = node.execute(*inputs)
+            res = node.execute(self, *inputs)
+        else:
+            res = node.execute(*inputs)
+        if not isinstance(res, tuple):
+            res = (res,)
+        if len(res) != len(node.output_references):
+            raise ValueError("found output with inconsistent size for {} got {} and "
+                             "expected".format(node.name, len(res), en(node.output_references)))
+        temp_results.update(dict(zip(node.output_references, res)))
         return temp_results
 
 
@@ -111,8 +117,11 @@ class Pipeline(AbstractOp):
         :param pipeline_nodes: the nodes to build the mapping from
         :return: the mapping
         """
-        symbolic_to_real_mapping = {node.output_node: node for node in pipeline_nodes if node.output_node}
-        symbolic_to_real_mapping.update({node.value: node for node in ReservedNodes})
+        symbolic_to_real_mapping = {output_ref.reference: output_ref
+                                    for node in pipeline_nodes if node.output_nodes
+                                    for output_ref in node.output_references
+                                    }
+        symbolic_to_real_mapping.update({node.value: node.reference for node in ReservedNodes})
         return symbolic_to_real_mapping
 
     @classmethod
@@ -123,13 +132,13 @@ class Pipeline(AbstractOp):
 
         :param pipeline_nodes: the nodes to check
         """
-        available_nodes = {ReservedNodes.pipeline_input}
+        available_nodes = {ReservedNodes.pipeline_input.reference}
         for node in pipeline_nodes:
             available_nodes = cls._update_ancestry(node, available_nodes)
 
     @classmethod
     def _update_ancestry(cls, node: "nodes.AbstractNode",
-                         available_nodes: Set["nodes.AbstractNode"]) -> Set["nodes.AbstractNode"]:
+                         available_nodes: Set["nodes.NodeReference"]) -> Set["nodes.NodeReference"]:
         """
         updates the list of available nodes with a node of interest if possible
 
@@ -142,8 +151,8 @@ class Pipeline(AbstractOp):
             raise ValueError(f"cannot find node(s) {orphan_nodes} in ancestry")
         if node in available_nodes:
             raise ValueError("can only use a node in a graph")
-        update_available_node = available_nodes | {node}
-        return update_available_node.difference(set(node.input_nodes))
+        update_available_node = available_nodes | set(node.output_references)
+        return set(node_ref for node_ref in update_available_node if node_ref not in node.input_nodes)
 
     def __call__(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
@@ -154,7 +163,7 @@ class Pipeline(AbstractOp):
             return self.extract_results(results)
 
     @staticmethod
-    def extract_results(results: Dict["nodes.AbstractNode", Any]) -> Any:
+    def extract_results(results: Dict["nodes.NodeReference", Any]) -> Any:
         """
         extracts the output of a pipeline.
         raises ValueError if some output was unused once every node is computed and the remaining is not the output of
@@ -163,22 +172,18 @@ class Pipeline(AbstractOp):
         :param results: the outputs left unused once the graph has ran
         :return: the result
         """
-        node, output = next(iter(results.items()))
-        if output is not None and node.output_node != ReservedNodes.pipeline_output.value:
+        node_reference, output = next(iter(results.items()))
+        if output is not None and node_reference.reference != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
 
     def get_pipeline_versions(self) -> Mapping["nodes.AbstractNode", Version]:
         """
-        builds the version with ancestry of every node in the pipeline
+        returns the versions of every op in the pipeline
 
         :return: the mapping version for node
         """
-        versions = {ReservedNodes.pipeline_input: Version()}
-        for node in self._graph:
-            versions[node] = node.get_version_with_ancestry(versions)
-        versions.pop(ReservedNodes.pipeline_input, None)
-        return versions
+        return {node: node.node_version for node in self._graph}
 
     def load(self, op_store: OpStore):
         """
@@ -192,9 +197,6 @@ class Pipeline(AbstractOp):
             # against the one next node (that it needs to be compatible with)
             upstream_node = self._graph[i]
             downstream_node = self._find_downstream(upstream_node)
-            print("______________________________________________")
-            print("checking and loading", upstream_node.name)
-            print("______________________________________________")
             self._graph[i] = self._check_and_load_single_node(op_store, upstream_node, downstream_node)
         return self
 
@@ -203,7 +205,6 @@ class Pipeline(AbstractOp):
                                     downstream_node: Optional["nodes.AbstractNode"]) -> "nodes.AbstractNode":
         latest_node = upstream_node.load_latest_version(op_store)
         if latest_node is None:
-            print("got a newby saving")
             upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
             return upstream_node
 
@@ -247,4 +248,4 @@ class Pipeline(AbstractOp):
 
         :param upstream_node: the upstream node to find the downstream of
         """
-        return next((node for node in self._graph if upstream_node in node.input_nodes), None)
+        return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
