@@ -105,8 +105,8 @@ class AbstractClient(ABC):
         versions_route = "/pipelines/{}/versions".format(pipeline.name)
         raw_mapping = self._send_request_to_backend(versions_route)
         return {
-            pipeline.node_for_name[node_name]: {key: Version.parse(value) for key, value in version_json.items()}
-            for node_name, version_json in raw_mapping.items()
+            pipeline.node_for_name[node_name]: Version.parse(version_str)
+            for node_name, version_str in raw_mapping.items()
         }
 
 
