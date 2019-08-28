@@ -2,7 +2,7 @@ import os
 from hashlib import sha1
 from abc import abstractmethod, ABC, ABCMeta
 
-from typing import Any, Union, Mapping, Optional, List, Text
+from typing import Any, Union, Optional, List, Text
 
 from chariots.constants import DATA_PATH
 from chariots.core.ops import AbstractOp, LoadableOp
@@ -189,7 +189,7 @@ class Node(AbstractNode):
     """
 
     def __init__(self, op: AbstractOp, input_nodes: Optional[List[Union[Text, "AbstractNode"]]] = None,
-                 output_nodes: Union[List[Union[Text, "AbstractNode"]], Text, "AbstractNode"]=None):
+                 output_nodes: Union[List[Union[Text, "AbstractNode"]], Text, "AbstractNode"] = None):
         """
         :param op: the op this Node wraps
         :param input_nodes: the input_nodes on which this node should be executed
@@ -270,7 +270,7 @@ class Node(AbstractNode):
         """
         return self._op.name
 
-    def persist(self, store: op_store.OpStore, downstream_nodes: Optional[List["AbstractNode"]]) -> Version:
+    def persist(self, store: op_store.OpStore, downstream_nodes: Optional[List["AbstractNode"]]) -> Optional[Version]:
         """
         persists the inner op of the node in saver
 
