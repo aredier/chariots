@@ -33,7 +33,7 @@ class AbstractOp(metaclass=VersionableMeta):
         return self.__version__
 
     def __str__(self):
-        return f"<OP {self.name}>"
+        return "<OP {}>".format(self.name)
 
 
 class LoadableOp(AbstractOp):

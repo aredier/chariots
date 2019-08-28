@@ -12,7 +12,7 @@ from chariots.helpers.errors import VersionError
 
 def test_savable_pipeline(pipe_generator, tmpdir):
 
-    op_store = OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(str(tmpdir)))
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
 
@@ -42,7 +42,7 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     saved version but use the new code
     """
 
-    op_store = OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(str(tmpdir)))
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
 
@@ -81,7 +81,7 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     assert len(res) == 10
     assert res == [bool(i % 2) for i in range(10)]
 
-    op_store = OpStore(FileSaver(tmpdir))
+    op_store = OpStore(FileSaver(str(tmpdir)))
     pipe.save(op_store)
 
     del pipe
@@ -99,11 +99,11 @@ def test_data_ops(tmpdir, NotOp):
     input_path = "in.json"
     output_path = "out.json"
 
-    os.makedirs(os.path.join(tmpdir, "data"), exist_ok=True)
-    with open(os.path.join(tmpdir, "data", input_path), "w") as file:
+    os.makedirs(os.path.join(str(tmpdir), "data"), exist_ok=True)
+    with open(os.path.join(str(tmpdir), "data", input_path), "w") as file:
         json.dump(list(range(10)), file)
 
-    saver = FileSaver(tmpdir)
+    saver = FileSaver(str(tmpdir))
     in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes="data_in")
     out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=["data_trans"])
     in_node.attach_saver(saver)
@@ -117,7 +117,7 @@ def test_data_ops(tmpdir, NotOp):
 
     pipe(SequentialRunner())
 
-    with open(os.path.join(tmpdir, "data", output_path), "r") as file:
+    with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)
 
     assert len(res) == 10

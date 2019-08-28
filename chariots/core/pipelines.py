@@ -148,7 +148,7 @@ class Pipeline(AbstractOp):
         """
         orphan_nodes = [input_node for input_node in node.input_nodes if input_node not in available_nodes]
         if orphan_nodes:
-            raise ValueError(f"cannot find node(s) {orphan_nodes} in ancestry")
+            raise ValueError("cannot find node(s) {} in ancestry".format(orphan_nodes))
         if node in available_nodes:
             raise ValueError("can only use a node in a graph")
         update_available_node = available_nodes | set(node.output_references)

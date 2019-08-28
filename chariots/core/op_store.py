@@ -32,14 +32,14 @@ class OpStore:
         :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
         """
         self._saver = saver
-        self._all_op_links: _OpGraph = self._load_from_saver()
+        self._all_op_links = self._load_from_saver()  # type: _OpGraph
 
     def _load_from_saver(self) -> _OpGraph:
         """
         loads and parses all the versions from the meta json
         """
         try:
-            mapping = json.loads(self._saver.load(path=self._location))
+            mapping = json.loads(self._saver.load(path=self._location).decode("utf-8"))
             return self._parse_mapping(mapping)
         except FileNotFoundError:
             return {}

@@ -9,11 +9,11 @@ from chariots.core import saving
 
 
 def test_file_saver(tmpdir):
-    saver = saving.FileSaver(tmpdir)
+    saver = saving.FileSaver(str(tmpdir))
     fake_string = hashlib.sha1(str(random.randint(0, 1000)).encode("utf-8")).hexdigest()
     saver.save(fake_string.encode("utf-8"), "/foo/bar.bin")
 
-    file_path = os.path.join(tmpdir, "foo/bar.bin")
+    file_path = os.path.join(str(tmpdir), "foo/bar.bin")
     assert os.path.exists(file_path)
     with open(file_path, "rb") as file:
         assert file.read().decode("utf-8") == fake_string

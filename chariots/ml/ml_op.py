@@ -117,7 +117,7 @@ class MLOp(LoadableOp):
         io_file = io.BytesIO(serialized_object)
         with ZipFile(io_file, "r") as zip_file:
             self._model = self.serializer   .deserialize_object(zip_file.read("model"))
-            meta = json.loads(zip_file.read("_meta.json"))
+            meta = json.loads(zip_file.read("_meta.json").decode("utf-8"))
             self._last_training_time = meta["train_time"]
 
     def serialize(self) -> bytes:
