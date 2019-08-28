@@ -140,14 +140,14 @@ class Version:
         :param patch: the starting hash of the patch version
         :param creation_time: the starting creation time of the version
         """
-        self._major: Hash = major or hashlib.sha1()
-        self._minor: Hash = minor or hashlib.sha1()
-        self._patch: Hash = patch or hashlib.sha1()
+        self._major = major or hashlib.sha1()
+        self._minor = minor or hashlib.sha1()
+        self._patch = patch or hashlib.sha1()
         self._creation_time = creation_time or time.time()
 
     def __add__(self, other):
         if not isinstance(other, Version):
-            raise ValueError(f"can only add Version with version, got {type(other)}")
+            raise ValueError("can only add Version with version, got {}".format(type(other)))
         result = Version()
         result.update_major(self.major.encode("utf-8"))
         result.update_major(other.major.encode("utf-8"))
@@ -251,10 +251,10 @@ class Version:
             return self.update_minor(input_bytes)
         if version_type is VersionType.PATCH:
             return self.update_patch(input_bytes)
-        raise ValueError(f"you provided an invalid version type: {version_type}")
+        raise ValueError("you provided an invalid version type: {}".format(version_type))
 
     def __repr__(self):
-        return f"<Version, major:{self.major[:5]}, minor: {self.minor[:5]}, patch: {self.patch[:5]}>"
+        return "<Version, major:{}, minor: {}, patch: {}>".format(self.major[:5], self.minor[:5], self.patch[:5])
 
     def __str__(self):
         hash_str = ".".join((self.major, self.minor, self.patch))

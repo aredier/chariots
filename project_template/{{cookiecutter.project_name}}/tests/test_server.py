@@ -53,7 +53,7 @@ def test_server():
             pipeline_input=[[1, 2, 3, 4]]
         ) == [1]
     finally:
-        process.kill()
+        process.terminate()
         process.join()
     {% else %}
     # TODO write a test

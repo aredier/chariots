@@ -6,7 +6,8 @@ from typing import Any, Text
 
 import dill
 
-from chariots.helpers.optional_libraries import load_pandas, BackendError
+from chariots.helpers.optional_libraries import load_pandas
+from chariots.helpers.errors import BackendError
 
 
 class Serializer(ABC):
@@ -107,7 +108,7 @@ class FileSaver(Saver):
     a saver that persists to the local file system
     """
 
-    def __init__(self, root_path: os.PathLike):
+    def __init__(self, root_path: str):
         self.root_path = root_path
 
     def _build_path(self, path: Text):

@@ -37,7 +37,7 @@ def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
         nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
                    output_nodes="__pipeline_output__")
     ], "pred")
-    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=tmpdir, import_name="my_app")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -77,7 +77,7 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
                    output_nodes="__pipeline_output__")
     ], "pred")
-    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=tmpdir, import_name="my_app")
+    my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -139,7 +139,7 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_transform, train_pipe, pred_pipe],
-                         path=tmpdir, import_name="my_app")
+                         path=str(tmpdir), import_name="my_app")
 
     test_client = TestClient(my_app)
     test_client.request(train_transform)
@@ -177,7 +177,7 @@ def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
         nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_pca, train_rf, pred_pipe],
-                         path=tmpdir, import_name="my_app")
+                         path=str(tmpdir), import_name="my_app")
 
     test_client = TestClient(my_app)
 

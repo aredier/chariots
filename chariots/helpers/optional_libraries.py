@@ -1,5 +1,4 @@
-class BackendError(ModuleNotFoundError):
-    pass
+from chariots.helpers.errors import BackendError
 
 
 def load_pandas():

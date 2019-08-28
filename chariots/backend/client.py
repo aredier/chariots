@@ -145,9 +145,9 @@ class TestClient(AbstractClient):
     def _post(self, route: str, data: Any):
         response = self._test_client.post(route, data=json.dumps(data), content_type='application/json')
         self._check_code(response.status_code)
-        return json.loads(response.data)
+        return json.loads(response.data.decode("utf-8"))
 
     def _get(self, route: str, data: Any):
         response = self._test_client.ge(route)
         self._check_code(response.status_code)
-        return json.loads(response.data)
+        return json.loads(response.data.decode("utf-8"))

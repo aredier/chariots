@@ -19,7 +19,7 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
         Node(NotOp(), input_nodes=["og_pipe"], output_nodes=ReservedNodes.pipeline_output)
     ], name="outer_pipe")
 
-    app = Chariot([pipe1, pipe], path=tmpdir, import_name="some_app")
+    app = Chariot([pipe1, pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
     response = test_client.request(pipe)
@@ -34,7 +34,7 @@ def test_app_response_with_input(Range10, IsPair, NotOp, tmpdir):
         Node(IsPair(), input_nodes=["__pipeline_input__"], output_nodes="__pipeline_output__")
     ], name="inner_pipe")
 
-    app = Chariot([pipe1], path=tmpdir, import_name="some_app")
+    app = Chariot([pipe1], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
     response = test_client.request(pipe1, pipeline_input=list(range(20)))
@@ -45,8 +45,8 @@ def test_app_with_data_nodes(NotOp, tmpdir):
     input_path = "in.json"
     output_path = "out.json"
 
-    os.makedirs(os.path.join(tmpdir, "data"), exist_ok=True)
-    with open(os.path.join(tmpdir, "data", input_path), "w") as file:
+    os.makedirs(os.path.join(str(tmpdir), "data"), exist_ok=True)
+    with open(os.path.join(str(tmpdir), "data", input_path), "w") as file:
         json.dump(list(range(10)), file)
 
     in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes="data_in")
@@ -58,11 +58,11 @@ def test_app_with_data_nodes(NotOp, tmpdir):
         out_node
     ], name="my_pipe")
 
-    app = Chariot([pipe], path=tmpdir, import_name="some_app")
+    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
     test_client.request(pipe)
 
-    with open(os.path.join(tmpdir, "data", output_path), "r") as file:
+    with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)
 
     assert len(res) == 10
@@ -72,7 +72,7 @@ def test_app_with_data_nodes(NotOp, tmpdir):
 def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe = enchrined_pipelines_generator(counter_step=1)
 
-    app = Chariot([pipe], path=tmpdir, import_name="some_app")
+    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
     res = test_client.request(pipe)
     assert len(res.value) == 10
@@ -95,7 +95,7 @@ def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
     del pipe
 
     pipe = enchrined_pipelines_generator(counter_step=1)
-    app = Chariot([pipe], path=tmpdir, import_name="some_app")
+    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
     test_client.load_pipeline(pipe)
