@@ -64,7 +64,7 @@ class SequentialRunner(AbstractRunner):
             res = (res,)
         if len(res) != len(node.output_references):
             raise ValueError("found output with inconsistent size for {} got {} and "
-                             "expected".format(node.name, len(res), en(node.output_references)))
+                             "expected".format(node.name, len(res), len(node.output_references)))
         temp_results.update(dict(zip(node.output_references, res)))
         return temp_results
 

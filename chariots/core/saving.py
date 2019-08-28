@@ -6,7 +6,7 @@ from typing import Any, Text
 
 import dill
 
-from chariots.optional_libraries import load_pandas, BackendError
+from chariots.helpers.optional_libraries import load_pandas, BackendError
 
 
 class Serializer(ABC):
@@ -62,7 +62,6 @@ class JSONSerializer(Serializer):
 
 try:
     pd = load_pandas()
-
 
     class CSVSerializer(Serializer):
         """
