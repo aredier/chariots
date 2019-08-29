@@ -12,12 +12,13 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     op_store = OpStore(FileSaver(str(tmpdir)))
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
+    runner = SequentialRunner()
 
-    res = pipe.execute(SequentialRunner())
+    res = runner.run(pipe)
     assert len(res) == 10
     assert res == [not i % 1 for i in range(10)]
 
-    res = pipe.execute(SequentialRunner())
+    res = runner.run(pipe)
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -28,7 +29,7 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     pipe_load = pipe_generator(counter_step=1)
     pipe_load.load(op_store)
 
-    res = pipe_load.execute(SequentialRunner())
+    res = runner.run(pipe_load)
     assert len(res) == 10
     assert res == [not i % 3 for i in range(10)]
 
@@ -42,12 +43,13 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     op_store = OpStore(FileSaver(str(tmpdir)))
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
+    runner = SequentialRunner()
 
-    res = pipe.execute(SequentialRunner())
+    res = runner.run(pipe)
     assert len(res) == 10
     assert res == [not i % 1 for i in range(10)]
 
-    res = pipe.execute(SequentialRunner())
+    res = runner.run(pipe)
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -58,23 +60,24 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     pipe_load = pipe_generator(counter_step=2)
     pipe_load.load(op_store)
 
-    res = pipe_load.execute(SequentialRunner())
+    res = runner.run(pipe_load)
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
-    res = pipe_load.execute(SequentialRunner())
+    res = runner.run(pipe_load)
     assert len(res) == 10
     assert res == [not i % 4 for i in range(10)]
 
 
 def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe = enchrined_pipelines_generator(counter_step=1)
-    res = pipe.execute(SequentialRunner())
+    runner = SequentialRunner()
+    res = runner.run(pipe)
 
     assert len(res) == 10
     assert res == [bool(i % 1) for i in range(10)]
 
-    res = pipe.execute(SequentialRunner())
+    res = runner.run(pipe)
     assert len(res) == 10
     assert res == [bool(i % 2) for i in range(10)]
 
@@ -86,7 +89,7 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe_load = enchrined_pipelines_generator(counter_step=1)
     pipe_load.load(op_store)
 
-    res = pipe_load.execute(SequentialRunner())
+    res = runner.run(pipe_load)
     assert len(res) == 10
     assert res == [bool(i % 3) for i in range(10)]
 
@@ -111,8 +114,9 @@ def test_data_ops(tmpdir, NotOp):
         Node(NotOp(), input_nodes=["data_in"], output_nodes="data_trans"),
         out_node
     ], name="my_pipe")
+    runner = SequentialRunner()
 
-    pipe.execute(SequentialRunner())
+    runner.run(pipe)
 
     with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)

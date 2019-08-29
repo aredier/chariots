@@ -32,12 +32,13 @@ class AbstractRunner(ABC):
     """
 
     @abstractmethod
-    def run_graph(self, pipeline_input: Any, graph: List["nodes.AbstractNode"]) -> Optional[Any]:
+    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
         """
-        executes the whole graph of q pipeline
+        runs a whole pipeline
 
         :param pipeline_input: the input to be given to the pipeline
-        :param graph: the list of nodes
+        :param pipeline: the pipeline to run
+
         :return: the output of the graph called on the input if applicable
         """
         pass
@@ -48,25 +49,25 @@ class SequentialRunner(AbstractRunner):
     runner that executes a node graph sequentially
     """
 
-    def run_graph(self, pipeline_input: Any, graph: List["nodes.AbstractNode"]) -> ResultDict:
-        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
-        for node in graph:
-            temp_results = self._execute_node(node, temp_results)
-        return temp_results
+    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
+        """
+        runs a whole pipeline
 
-    def _execute_node(self, node: "nodes.AbstractNode", temp_results: ResultDict) -> ResultDict:
-        inputs = [temp_results.pop(input_node) for input_node in node.input_nodes]
-        if node.requires_runner:
-            res = node.execute(self, *inputs)
-        else:
-            res = node.execute(*inputs)
-        if not isinstance(res, tuple):
-            res = (res,)
-        if len(res) != len(node.output_references):
-            raise ValueError("found output with inconsistent size for {} got {} and "
-                             "expected".format(node.name, len(res), len(node.output_references)))
-        temp_results.update(dict(zip(node.output_references, res)))
-        return temp_results
+        :param pipeline_input: the input to be given to the pipeline
+        :param pipeline: the pipeline to run
+
+        :return: the output of the graph called on the input if applicable
+        """
+
+        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
+        for node in pipeline.nodes:
+            temp_results = pipeline.execute_node(node, temp_results, self)
+
+        if len(temp_results) > 1:
+            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(temp_results))
+
+        if temp_results:
+            return pipeline.extract_results(temp_results)
 
 
 class Pipeline(AbstractOp):
@@ -94,6 +95,11 @@ class Pipeline(AbstractOp):
         :return: string of the name
         """
         return self._name
+
+    @property
+    def nodes(self):
+        """the nodes of the pipeline"""
+        return self._graph
 
     @classmethod
     def resolve_graph(cls, pipeline_nodes: List["nodes.AbstractNode"]) -> List["nodes.AbstractNode"]:
@@ -155,12 +161,8 @@ class Pipeline(AbstractOp):
         return set(node_ref for node_ref in update_available_node if node_ref not in node.input_nodes)
 
     def execute(self, runner: AbstractRunner, pipeline_input=None):
-        results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
-        if len(results) > 1:
-            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(results))
-
-        if results:
-            return self.extract_results(results)
+        raise ValueError("pipelines cannot be executed through the `execute`method. use a runner with "
+                         "`runner.run(this_pipeline)`")
 
     @staticmethod
     def extract_results(results: Dict["nodes.NodeReference", Any]) -> Any:
@@ -176,6 +178,23 @@ class Pipeline(AbstractOp):
         if output is not None and node_reference.reference != ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
+
+    @classmethod
+    def execute_node(cls, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: AbstractRunner):
+        inputs = [intermediate_results.pop(input_node) for input_node in node.input_nodes]
+
+        # we are providing a runner just in case one is needed
+        res = node.execute(inputs, runner)
+
+        if not isinstance(res, tuple):
+            res = (res,)
+
+        if len(res) != len(node.output_references):
+            raise ValueError("found output with inconsistent size for {} got {} and "
+                             "expected".format(node.name, len(res), len(node.output_references)))
+
+        intermediate_results.update(dict(zip(node.output_references, res)))
+        return intermediate_results
 
     def get_pipeline_versions(self) -> Mapping["nodes.AbstractNode", Version]:
         """
