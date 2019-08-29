@@ -1,5 +1,5 @@
 import json
-from typing import Mapping, Any, List, Type
+from typing import Mapping, Any, List, Type, Optional
 
 from flask import Flask, request
 
@@ -61,11 +61,12 @@ class Chariot(Flask):
     - /available_pipelines
     """
 
-    def __init__(self, app_pipelines: List[pipelines.Pipeline], path: str, saver_cls: Type[Saver] = FileSaver, *args,
-                 **kwargs):
+    def __init__(self, app_pipelines: List[pipelines.Pipeline], path: str, saver_cls: Type[Saver] = FileSaver,
+                 runner: Optional[pipelines.AbstractRunner] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
+        self.runner = runner or pipelines.SequentialRunner()
         self._op_store = chariots.core.op_store.OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
@@ -97,7 +98,7 @@ class Chariot(Flask):
                 raise ValueError("pipeline not loaded, load before execution")
             pipeline = self._pipelines[pipeline_name]
             pipeline_input = request.json.get("pipeline_input") if request.json else None
-            response = PipelineResponse(pipeline.execute(pipelines.SequentialRunner(), pipeline_input),
+            response = PipelineResponse(self.runner.run(pipeline, pipeline_input),
                                         pipeline.get_pipeline_versions())
             return json.dumps(response.json())
 

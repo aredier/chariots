@@ -214,15 +214,22 @@ class Node(AbstractNode):
         """
         return any(isinstance(node, str) for node in self.input_nodes)
 
-    def execute(self, *params) -> Any:
+    def execute(self, params: List[Any], runner: Optional["pipelines.AbstractRunner"] = None) -> Any:
         """
         executes the underlying op on params
 
+        :param runner: runner that can be provided if the node needs one
         :param params: the inputs of the underlying op
+
+        :raises ValueError: if the runner is not provided but needed
+
         :return: the output of the op
         """
-        res = self._op.execute(*params)
-        return res
+        if self.requires_runner and runner is None:
+            raise ValueError("runner was not provided but is required to execute this node")
+        if self.requires_runner:
+            return runner.run(self._op, params)
+        return self._op.execute(*params)
 
     def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """
@@ -406,11 +413,13 @@ class DataLoadingNode(DataNode):
         version.update_major(file_hash.encode("utf-8"))
         return version
 
-    def execute(self, *params) -> Any:
+    def execute(self, params: List[Any], runner: Optional["pipelines.AbstractRunner"] = None) -> Any:
         """
         executes the underlying op on params
 
-        :param params: the inputs of the underlying op
+        :param params: the inputs of the node
+        :param runner: present for cross-compatibility with parent class
+
         :return: the output of the op
         """
 
@@ -444,17 +453,18 @@ class DataSavingNode(DataNode):
         """
         return Version()
 
-    def execute(self, data_to_serialize) -> Any:
+    def execute(self, params: List[Any], runner: Optional["pipelines.AbstractRunner"] = None) -> Any:
         """
         executes the underlying op on params
 
-        :param data_to_serialize: the data to save
+        :param runner: present for cross-compatibility with parent class
+        :param params: the data to save
 
         :return: the output of the op
         """
         if self._saver is None:
             raise ValueError("cannot save data without a saver")
-        self._saver.save(self.serializer.serialize_object(data_to_serialize), self.path)
+        self._saver.save(self.serializer.serialize_object(params[0]), self.path)
 
     def __repr__(self):
         return "<DataLoadingNode of {}>".format(self.path)

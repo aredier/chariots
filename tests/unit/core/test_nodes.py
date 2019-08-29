@@ -15,7 +15,7 @@ def test_loading_node(tmpdir):
     saver = FileSaver(str(tmpdir))
     node.attach_saver(saver)
 
-    assert node.execute() == {"foo": 1}
+    assert node.execute([]) == {"foo": 1}
 
 
 def test_saving_node(tmpdir):
@@ -24,7 +24,7 @@ def test_saving_node(tmpdir):
     node = DataSavingNode(serializer=JSONSerializer(), path=json_file_path, input_nodes=["_"])
     saver = FileSaver(str(tmpdir))
     node.attach_saver(saver)
-    node.execute({"foo": 2})
+    node.execute([{"foo": 2}])
 
     with open(os.path.join(str(tmpdir), "data", json_file_path), "r") as file:
         assert json.load(file) == {"foo": 2}
