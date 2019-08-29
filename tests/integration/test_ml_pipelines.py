@@ -117,7 +117,7 @@ def PCAOp():
 def XTrainOpL():
     class XTrainOpInner(AbstractOp):
 
-        def __call__(self):
+        def execute(self):
             return np.array([range(10), range(1, 11), range(2, 12)]).T
     return XTrainOpInner
 

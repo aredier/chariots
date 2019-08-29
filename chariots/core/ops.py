@@ -6,7 +6,7 @@ class AbstractOp(metaclass=VersionableMeta):
     An op represent an atomic unit in a pipeline.
     """
 
-    def __call__(self, *args, **kwargs):
+    def execute(self, *args, **kwargs):
         """
         the method to override to define the behavior of the op (it is what is called in the pipeline)
         """
@@ -38,7 +38,7 @@ class AbstractOp(metaclass=VersionableMeta):
 
 class LoadableOp(AbstractOp):
 
-    def __call__(self, *args, **kwargs):
+    def execute(self, *args, **kwargs):
         raise NotImplementedError("you must define a call for the op to be valid")
 
     def load(self, serialized_object: bytes):
@@ -56,3 +56,7 @@ class LoadableOp(AbstractOp):
         :return: the serialized bytes
         """
         raise NotImplementedError()
+
+
+class OpCallBack:
+    pass

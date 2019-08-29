@@ -60,7 +60,7 @@ class MLOp(LoadableOp):
         """
         return self._call_mode
 
-    def __call__(self, *args, **kwargs):
+    def execute(self, *args, **kwargs):
         if self.mode == MLMode.FIT:
             self._fit(*args, **kwargs)
             return

@@ -1,13 +1,10 @@
 import json
 import os
 
-import pytest
-
-from chariots.core.pipelines import Pipeline, SequentialRunner, ReservedNodes
+from chariots.core.pipelines import Pipeline, SequentialRunner
 from chariots.core.op_store import OpStore
 from chariots.core.nodes import Node, DataLoadingNode, DataSavingNode
 from chariots.core.saving import FileSaver, JSONSerializer
-from chariots.helpers.errors import VersionError
 
 
 def test_savable_pipeline(pipe_generator, tmpdir):
@@ -16,11 +13,11 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 1 for i in range(10)]
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -31,7 +28,7 @@ def test_savable_pipeline(pipe_generator, tmpdir):
     pipe_load = pipe_generator(counter_step=1)
     pipe_load.load(op_store)
 
-    res = pipe_load(SequentialRunner())
+    res = pipe_load.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 3 for i in range(10)]
 
@@ -46,11 +43,11 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     pipe = pipe_generator(counter_step=1)
     pipe.load(op_store)
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 1 for i in range(10)]
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -61,23 +58,23 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     pipe_load = pipe_generator(counter_step=2)
     pipe_load.load(op_store)
 
-    res = pipe_load(SequentialRunner())
+    res = pipe_load.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
-    res = pipe_load(SequentialRunner())
+    res = pipe_load.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 4 for i in range(10)]
 
 
 def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe = enchrined_pipelines_generator(counter_step=1)
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
 
     assert len(res) == 10
     assert res == [bool(i % 1) for i in range(10)]
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [bool(i % 2) for i in range(10)]
 
@@ -89,7 +86,7 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe_load = enchrined_pipelines_generator(counter_step=1)
     pipe_load.load(op_store)
 
-    res = pipe_load(SequentialRunner())
+    res = pipe_load.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [bool(i % 3) for i in range(10)]
 
@@ -115,7 +112,7 @@ def test_data_ops(tmpdir, NotOp):
         out_node
     ], name="my_pipe")
 
-    pipe(SequentialRunner())
+    pipe.execute(SequentialRunner())
 
     with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)

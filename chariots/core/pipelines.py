@@ -154,7 +154,7 @@ class Pipeline(AbstractOp):
         update_available_node = available_nodes | set(node.output_references)
         return set(node_ref for node_ref in update_available_node if node_ref not in node.input_nodes)
 
-    def __call__(self, runner: AbstractRunner, pipeline_input=None):
+    def execute(self, runner: AbstractRunner, pipeline_input=None):
         results = runner.run_graph(pipeline_input=pipeline_input, graph=self._graph)
         if len(results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled, got {}".format(results))
@@ -249,3 +249,7 @@ class Pipeline(AbstractOp):
         :param upstream_node: the upstream node to find the downstream of
         """
         return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
+
+
+class PipelineCallBack:
+    pass

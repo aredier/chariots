@@ -15,5 +15,5 @@ class ExtractX(ops.AbstractOp):
         'petal width (cm)'
     ], affected_version=versioning.VersionType.MAJOR)
 
-    def __call__(self, full_dataset: pd.DataFrame) -> pd.DataFrame:
+    def execute(self, full_dataset: pd.DataFrame) -> pd.DataFrame:
         return full_dataset.loc[:, self.train_cols]

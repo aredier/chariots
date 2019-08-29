@@ -12,7 +12,7 @@ class TimerOp(AbstractOp):
     def __init__(self, stop_time):
         self.time = stop_time
 
-    def __call__(self, previous_time = 0):
+    def execute(self, previous_time = 0):
         time.sleep(self.time)
         return self.time + previous_time
 
@@ -31,7 +31,7 @@ def test_before_op():
     for i in range(10):
         op.execute(i)
 
-    assert op.inputs = list(range(10))
+    assert op.inputs == list(range(10))
 
 
 
@@ -119,7 +119,7 @@ def test_multiple_callbacks():
 
     class RaiseOp(AbstractOp):
 
-        def __call__(self, *args, **kwargs):
+        def execute(self, *args, **kwargs):
             raise ValueError
 
     cb_before = TestBeforePipeline()

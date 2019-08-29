@@ -221,7 +221,7 @@ class Node(AbstractNode):
         :param params: the inputs of the underlying op
         :return: the output of the op
         """
-        res = self._op(*params)
+        res = self._op.execute(*params)
         return res
 
     def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
