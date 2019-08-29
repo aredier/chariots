@@ -10,7 +10,7 @@ class DownloadIris(ops.AbstractOp):
     dataframe
     """
     
-    def __call__(self):
+    def execute(self):
         iris = datasets.load_iris()
         df = pd.DataFrame(data=iris['data'], columns=iris['feature_names'])
         df["target"] = iris["target"]

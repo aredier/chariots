@@ -12,5 +12,5 @@ class ExtractY(ops.AbstractOp):
         "target"
     ], affected_version=versioning.VersionType.MAJOR)
 
-    def __call__(self, full_dataset: pd.DataFrame) -> pd.DataFrame:
+    def execute(self, full_dataset: pd.DataFrame) -> pd.DataFrame:
         return full_dataset.loc[:, self.target_col]

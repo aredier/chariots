@@ -19,7 +19,7 @@ def savable_op_generator():
             def __init__(self):
                 self.count = 0
 
-            def __call__(self, input_list):
+            def execute(self, input_list):
                 self.count += self.step
                 return [not i % self.count for i in input_list]
 
@@ -43,7 +43,7 @@ def Range10():
 
     class Range(AbstractOp):
 
-        def __call__(self, *args, **kwargs):
+        def execute(self, *args, **kwargs):
             return list(range(10))
     return Range
 
@@ -53,7 +53,7 @@ def AddOne():
 
     class AddOneInner(AbstractOp):
 
-        def __call__(self, input_value):
+        def execute(self, input_value):
             return [i + 1 for i in input_value]
 
     return AddOneInner
@@ -64,7 +64,7 @@ def NotOp():
 
     class NotOp(AbstractOp):
 
-        def __call__(self, input):
+        def execute(self, input):
             return [not i for i in input]
 
     return NotOp
@@ -75,7 +75,7 @@ def IsPair():
 
     class IsPairInner(AbstractOp):
 
-        def __call__(self, data):
+        def execute(self, data):
             return [not i % 2 for i in data]
     return IsPairInner
 
@@ -84,7 +84,7 @@ def IsPair():
 def XTrainOp():
     class XTrainOpInner(AbstractOp):
 
-        def __call__(self):
+        def execute(self):
             return np.array(range(10)).reshape(-1, 1)
     return XTrainOpInner
 
@@ -93,6 +93,6 @@ def XTrainOp():
 def YOp():
     class YOpInner(AbstractOp):
 
-        def __call__(self):
+        def execute(self):
             return list(range(1, 11))
     return YOpInner

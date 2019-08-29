@@ -10,7 +10,7 @@ def Sum():
 
     class Inner(AbstractOp):
 
-        def __call__(self, left, right):
+        def execute(self, left, right):
             return [l + r for l, r in zip(left, right)]
     return Inner
 
@@ -20,7 +20,7 @@ def SplitOnes():
 
     class SplitOnesInner(AbstractOp):
 
-        def __call__(self):
+        def execute(self):
             return [1], [1]
 
     return SplitOnesInner
@@ -31,7 +31,7 @@ def test_pipeline_simple(Range10, IsPair):
         Node(Range10(), output_nodes="my_list"),
         Node(IsPair(), input_nodes=["my_list"], output_nodes="__pipeline_output__")
     ], name="my_pipe")
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -43,7 +43,7 @@ def test_pipeline_with_defined_nodes(Range10, IsPair):
         range_node,
         pair_node,
     ], name="my_pipe")
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [not i % 2 for i in range(10)]
 
@@ -59,7 +59,7 @@ def test_pipeline_as_op(Range10, IsPair, NotOp):
         Node(pipe1, output_nodes="og_pipe"),
         Node(NotOp(), input_nodes=["og_pipe"], output_nodes=ReservedNodes.pipeline_output)
     ], name="my_pipe")
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [i % 2 for i in range(10)]
 
@@ -71,7 +71,7 @@ def test_multiple_input(Range10, Sum):
         Node(Sum(), input_nodes=["left", "right"], output_nodes="__pipeline_output__"),
     ], name="my_pipe")
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 10
     assert res == [2 * i for i in range(10)]
 
@@ -84,7 +84,7 @@ def test_splited_outputs(SplitOnes, AddOne, Sum):
         Node(Sum(), input_nodes=["new_left", "new_right"], output_nodes="__pipeline_output__")
     ], "splited_pipeline")
 
-    res = pipe(SequentialRunner())
+    res = pipe.execute(SequentialRunner())
     assert len(res) == 1
     assert res == [4]
 

@@ -97,7 +97,7 @@ class Chariot(Flask):
                 raise ValueError("pipeline not loaded, load before execution")
             pipeline = self._pipelines[pipeline_name]
             pipeline_input = request.json.get("pipeline_input") if request.json else None
-            response = PipelineResponse(pipeline(pipelines.SequentialRunner(), pipeline_input),
+            response = PipelineResponse(pipeline.execute(pipelines.SequentialRunner(), pipeline_input),
                                         pipeline.get_pipeline_versions())
             return json.dumps(response.json())
 
