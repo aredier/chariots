@@ -3,11 +3,11 @@ import json
 import time
 from abc import abstractmethod
 from enum import Enum
-from typing import Any
+from typing import Any, List, Optional
 from zipfile import ZipFile
 
 from chariots.core import versioning
-from chariots.core.ops import LoadableOp
+from chariots.core.ops import LoadableOp, OpCallBack
 from chariots.core.saving import DillSerializer
 
 
@@ -39,10 +39,11 @@ class MLOp(LoadableOp):
     training_update_version = versioning.VersionType.PATCH
     serializer_cls = DillSerializer
 
-    def __init__(self, mode: MLMode):
+    def __init__(self, mode: MLMode, callbacks: Optional[List[OpCallBack]] = None):
         """
         :param mode: the mode to use when instantiating the op
         """
+        super().__init__(callbacks)
         self._call_mode = mode
         self.serializer = self.serializer_cls()
         self._model = self._init_model()
