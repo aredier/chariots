@@ -1,3 +1,5 @@
+from typing import List, Any, Optional
+
 from chariots.core.versioning import VersionableMeta, Version
 
 
@@ -6,11 +8,43 @@ class AbstractOp(metaclass=VersionableMeta):
     An op represent an atomic unit in a pipeline.
     """
 
+    def __init__(self, callbacks: Optional[List["OpCallBack"]] = None):
+        self.callbacks = callbacks or []
+
+    def before_execution(self, args: List[Any]):
+        """
+        method called before the execution of the main operation (for logging, timings or such). The inputs arguments
+        of the operation are provided (do not try to override)
+
+        :param args: the arguments that are going to be passed to the operation
+        """
+        pass
+
     def execute(self, *args, **kwargs):
         """
         the method to override to define the behavior of the op (it is what is called in the pipeline)
         """
         raise NotImplementedError("you must define a call for the op to be valid")
+
+    def after_execution(self, args: List[Any], output: Any) -> Any:
+        """
+        method called just after the execution if the op. The arguments that were passed and the output produced are
+        provided (do not try to override)
+
+        :param args: the arguments that were passed to the op
+        :param output: the output of the op
+        """
+        pass
+
+    def execute_with_all_callbacks(self, args):
+        self.before_execution(args)
+        for callback in self. callbacks:
+            callback.before_execution(self, args)
+        op_result = self.execute(*args)
+        self.after_execution(args, op_result)
+        for callback in self. callbacks:
+            callback.after_execution(self, args, op_result)
+        return op_result
 
     @property
     def allow_version_change(self):
@@ -59,4 +93,26 @@ class LoadableOp(AbstractOp):
 
 
 class OpCallBack:
-    pass
+    """
+    an op callback is used to perform specific nstructions at certain points (before and after) around the operation's
+    execution
+    """
+
+    def before_execution(self, op: AbstractOp, args: List[Any]):
+        """
+        called before the operation is executed (and before the operation's `before_execution`'s method
+
+        :param op: the operation that is being executed
+        :param args: the arguments that are going to be passed to the operation
+        """
+        pass
+
+    def after_execution(self, op: AbstractOp, args: List[Any], output: Any):
+        """
+        called after the operation has been executed (and after it's `after_execution`'s method.
+
+        :param op: the operation that was executed
+        :param args: the arguments that were passed to the op
+        :param output: the output the op produced
+        """
+        pass

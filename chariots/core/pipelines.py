@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Mapping, Text, Set, Any, Dict, Optional
 
-from chariots.core import nodes
+from chariots.core import nodes, ops
 from chariots.core.op_store import OpStore
 from chariots.core.ops import AbstractOp
 from chariots.core.saving import Saver
@@ -59,6 +59,8 @@ class SequentialRunner(AbstractRunner):
         :return: the output of the graph called on the input if applicable
         """
 
+        for callback in pipeline.callbacks:
+            callback.before_execution(pipeline, [pipeline_input])
         temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
         for node in pipeline.nodes:
             temp_results = pipeline.execute_node(node, temp_results, self)
@@ -66,8 +68,11 @@ class SequentialRunner(AbstractRunner):
         if len(temp_results) > 1:
             raise ValueError("multiple pipeline outputs cases not handled, got {}".format(temp_results))
 
-        if temp_results:
-            return pipeline.extract_results(temp_results)
+        if temp_results is not None:
+            temp_results = pipeline.extract_results(temp_results)
+        for callback in pipeline.callbacks:
+            callback.after_execution(pipeline, [pipeline_input], temp_results)
+        return temp_results
 
 
 class Pipeline(AbstractOp):
@@ -75,11 +80,14 @@ class Pipeline(AbstractOp):
     a pipeline is a collection of linked nodes to be executed together
     """
 
-    def __init__(self, pipeline_nodes: List["nodes.AbstractNode"], name: str):
+    def __init__(self, pipeline_nodes: List["nodes.AbstractNode"], name: str,
+                 callbacks: Optional["PipelineCallback"] = None):
         """
         :param pipeline_nodes: the nodes of the pipeline
         :param name: the name of the pipeline
+        :param callbacks: the pipeline callbacks to use with this pipeline
         """
+        self.callbacks = callbacks or []
         self._graph = self.resolve_graph(pipeline_nodes)
         self._name = name
 
@@ -179,13 +187,31 @@ class Pipeline(AbstractOp):
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    @classmethod
-    def execute_node(cls, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: AbstractRunner):
+    def execute_node(self, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: AbstractRunner):
+        """
+        executes a node for the pipeline, this method is called by the runners to make the pipeline execute one of it's
+        node and all necessary callbacks
+
+        :param node: the node to execute
+        :param intermediate_results: the intermediate result to look in in order to fin the node's inputs
+        :param runner: a runner to be used in case the node needs a runner to be executed (internal pipeline)
+
+        :raises ValueError: if the output of the node does not correspond to the length of it's output reference
+
+        :return: the final result of the node after the execution
+        """
         inputs = [intermediate_results.pop(input_node) for input_node in node.input_nodes]
+
+        for callback in self.callbacks:
+            callback.before_node_execution(self, node, inputs)
 
         # we are providing a runner just in case one is needed
         res = node.execute(inputs, runner)
 
+        for callback in self.callbacks:
+            callback.after_node_execution(self, node, inputs, res)
+
+        # recasting result to have consistent output
         if not isinstance(res, tuple):
             res = (res,)
 
@@ -270,5 +296,55 @@ class Pipeline(AbstractOp):
         return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
 
 
-class PipelineCallBack:
-    pass
+class PipelineCallback:
+    """
+    a pipeline callback is used to define instructions that need to be executed at certain points in the pipeline
+    execution:
+
+    - before the pipeline is ran
+    - before each node of the pipeline
+    - after each node of the pipeline
+    - after the pipeline is ran
+    """
+
+    def before_execution(self, pipeline: Pipeline, args: List[Any]):
+        """
+        called before any node in the pipeline is ran. provides the pipeline that is being run and the pipeline input
+
+        :param pipeline: the piepline being ran
+        :param args: the pipeline inputs
+        """
+        pass
+
+    def after_execution(self, pipeline: Pipeline, args: List[Any], output: Any):
+        """
+        called after all the nodes of the pipeline have been ran with the pipeline being run and the output of the run
+
+        :param pipeline: the pipeline being run
+        :param args: the pipeline input that as given at the beginning of the run
+        :param output: the output of the pipeline run
+        """
+        pass
+
+    def before_node_execution(self, pipeline: Pipeline, node: "nodes.AbstractNode", args: List[Any]):
+        """
+        called before each node is executed the pipeline the node is in as well as the node are provided alongside the
+        arguents the node is going to be given
+
+        :param pipeline: the pipeline being run
+        :param node: the node that is about to run
+        :param args: the arguments that are going to be given to the node
+        """
+        pass
+
+    def after_node_execution(self, pipeline: Pipeline, node: "nodes.AbstractNode", args: List[Any], output: Any):
+        """
+        called after each node is executed. The pipeline the node is in as well as the node are provided alongside the
+        input/output of the node that ran
+
+        :param pipeline: the pipeline being run
+        :param node: the node that is about to run
+        :param args: the arguments that was given to the node
+        :param output: the output the node produced
+        """
+        pass

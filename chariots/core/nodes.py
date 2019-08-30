@@ -229,7 +229,7 @@ class Node(AbstractNode):
             raise ValueError("runner was not provided but is required to execute this node")
         if self.requires_runner:
             return runner.run(self._op, params)
-        return self._op.execute(*params)
+        return self._op.execute_with_all_callbacks(params)
 
     def load_latest_version(self, store_to_look_in: op_store.OpStore) -> "AbstractNode":
         """

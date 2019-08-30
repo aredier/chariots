@@ -1,8 +1,9 @@
-import pytest
+from typing import List, Optional
 
+import pytest
 import numpy as np
 
-from chariots.core.ops import LoadableOp, AbstractOp
+from chariots.core.ops import LoadableOp, AbstractOp, OpCallBack
 from chariots.core.saving import DillSerializer
 from chariots.core.versioning import VersionedField, VersionType
 
@@ -16,7 +17,8 @@ def savable_op_generator():
 
             step = VersionedField(counter_step, VersionType.MAJOR)
 
-            def __init__(self):
+            def __init__(self, callbacks: Optional[List[OpCallBack]] = None):
+                super().__init__(callbacks=callbacks)
                 self.count = 0
 
             def execute(self, input_list):
