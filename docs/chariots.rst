@@ -30,14 +30,6 @@ chariots.constants module
     :undoc-members:
     :show-inheritance:
 
-chariots.optional\_libraries module
------------------------------------
-
-.. automodule:: chariots.optional_libraries
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

@@ -51,24 +51,42 @@ class Chariot(Flask):
     """
     the backend app used to run the pipelines
     for each pipeline, sevreal routes will be built:
+
     - /pipelines/<pipeline_name>/main
     - /pipelines/<pipeline_name>/versions
     - /pipelines/<pipeline_name>/load
     - /pipelines/<pipeline_name>/save
     - /piepleines/<pipeline_name>/health_check
+
     as well as some common routes
+
     - /health_check
     - /available_pipelines
+
+    :param app_pipelines: the pipelines this app will serve
+    :param path: the path to mount the app on (whether on local or remote saver)
+    :param saver_cls: the saver class to use. if None the `FileSaver` class will be used as default
+    :param runner: the runner to use to perform pipelines when saving. If None the `SequentialRunner` will be used
+                  as default
+    :param default_pipeline_callbacks: pipeline calbacks to be added to every pipeline this app will serve
+    :param args: additional positional arguments to be passed to the Flask app
+    :param kwargs: additional keywords arguments to be added to the Flask app
     """
 
     def __init__(self, app_pipelines: List[pipelines.Pipeline], path: str, saver_cls: Type[Saver] = FileSaver,
-                 runner: Optional[pipelines.AbstractRunner] = None, *args, **kwargs):
+                 runner: Optional[pipelines.AbstractRunner] = None,
+                 default_pipeline_callbacks: Optional[List[pipelines.PipelineCallback]] = None, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
         self.runner = runner or pipelines.SequentialRunner()
         self._op_store = chariots.core.op_store.OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
+
+        # adding the default pipeline callbacks to all the pipelines of the app
+        for pipeline in app_pipelines:
+            pipeline.callbacks.extend(default_pipeline_callbacks or [])
 
         self._pipelines = {
             pipe.name: pipe for pipe in app_pipelines
