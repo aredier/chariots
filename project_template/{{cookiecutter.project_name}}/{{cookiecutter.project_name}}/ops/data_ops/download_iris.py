@@ -1,5 +1,5 @@
 
-from chariots.core import ops
+from chariots._core import ops
 import pandas as pd
 from sklearn import datasets
 

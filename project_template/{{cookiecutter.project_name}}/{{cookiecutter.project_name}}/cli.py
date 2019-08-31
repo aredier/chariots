@@ -1,8 +1,8 @@
 """
-module providing some cli helpers provided by {{cookiecutter.project_name}}
+module providing some cli _helpers provided by {{cookiecutter.project_name}}
 """
 import click
-from chariots.backend.client import Client
+from chariots._backend.client import Client
 
 from {{cookiecutter.project_name}}.app import {{cookiecutter.project_name}}_app
 from {{cookiecutter.project_name}}.pipelines.download_iris import download_iris

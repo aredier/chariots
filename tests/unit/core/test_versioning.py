@@ -1,6 +1,6 @@
 import pytest
 
-from chariots.core import versioning
+from chariots._core import versioning
 
 
 @pytest.fixture()

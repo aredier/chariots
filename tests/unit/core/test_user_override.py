@@ -4,9 +4,9 @@ from typing import Optional, Any, List
 import pytest
 import numpy as np
 
-from chariots.core.nodes import Node, AbstractNode
-from chariots.core.ops import AbstractOp, OpCallBack
-from chariots.core.pipelines import PipelineCallback, Pipeline, SequentialRunner
+from chariots._core.nodes import Node, AbstractNode
+from chariots._core.ops import AbstractOp, OpCallBack
+from chariots._core.pipelines import PipelineCallback, Pipeline, SequentialRunner
 
 
 class TimerOp(AbstractOp):

@@ -1,5 +1,5 @@
-from chariots.core import pipelines, nodes
-from chariots.ml import ml_op
+from chariots._core import pipelines, nodes
+from chariots._ml import ml_op
 
 from {{cookiecutter.project_name}}.ops.model_ops.iris_pca import IrisPCA
 from {{cookiecutter.project_name}}.ops.model_ops.iris_rf import IrisRF

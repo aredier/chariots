@@ -1,7 +1,7 @@
 from typing import Any
 
-from chariots.core import versioning
-from chariots.ml import ml_op
+from chariots._core import versioning
+from chariots._ml import ml_op
 
 
 class BaseSKOp(ml_op.MLOp):

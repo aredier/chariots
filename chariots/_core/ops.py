@@ -1,6 +1,6 @@
 from typing import List, Any, Optional
 
-from chariots.core.versioning import VersionableMeta, Version
+from chariots._core.versioning import VersionableMeta, Version
 
 
 class AbstractOp(metaclass=VersionableMeta):

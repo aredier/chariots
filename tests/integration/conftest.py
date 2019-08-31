@@ -1,7 +1,7 @@
 import pytest
 
-from chariots.core.nodes import Node
-from chariots.core.pipelines import Pipeline, ReservedNodes
+from chariots._core.nodes import Node
+from chariots._core.pipelines import Pipeline, ReservedNodes
 
 
 @pytest.fixture

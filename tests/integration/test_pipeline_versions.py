@@ -1,5 +1,5 @@
-from chariots.core.pipelines import Pipeline
-from chariots.core.nodes import Node
+from chariots._core.pipelines import Pipeline
+from chariots._core.nodes import Node
 
 
 def test_pipe_version_op_change(savable_op_generator, Range10):

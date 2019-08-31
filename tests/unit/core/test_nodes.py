@@ -1,8 +1,8 @@
 import json
 import os
 
-from chariots.core.nodes import DataLoadingNode, DataSavingNode
-from chariots.core.saving import JSONSerializer, FileSaver
+from chariots._core.nodes import DataLoadingNode, DataSavingNode
+from chariots._core.saving import JSONSerializer, FileSaver
 
 
 def test_loading_node(tmpdir):

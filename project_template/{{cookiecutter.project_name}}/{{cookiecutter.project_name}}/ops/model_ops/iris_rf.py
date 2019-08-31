@@ -1,5 +1,5 @@
-from chariots.core import versioning
-from chariots.ml.sklearn_op import SKSupervisedModel
+from chariots._core import versioning
+from chariots._ml.sklearn_op import SKSupervisedModel
 from sklearn.ensemble import RandomForestClassifier
 
 

@@ -2,10 +2,10 @@ import pytest
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
-from chariots.backend import app
-from chariots.backend.client import TestClient
-from chariots.core import pipelines, nodes, versioning
-from chariots.ml import sklearn_op, ml_op
+from chariots._backend import app
+from chariots._backend.client import TestClient
+from chariots._core import pipelines, nodes, versioning
+from chariots._ml import sklearn_op, ml_op
 
 
 @pytest.fixture

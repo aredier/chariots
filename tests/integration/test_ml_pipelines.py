@@ -3,12 +3,12 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
-from chariots.backend import app
-from chariots.backend.client import TestClient
-from chariots.core import pipelines, nodes, versioning
-from chariots.core.ops import AbstractOp
-from chariots.helpers.errors import VersionError
-from chariots.ml import ml_op, sklearn_op
+from chariots._backend import app
+from chariots._backend.client import TestClient
+from chariots._core import pipelines, nodes, versioning
+from chariots._core.ops import AbstractOp
+from chariots.errors import VersionError
+from chariots._ml import ml_op, sklearn_op
 
 @pytest.fixture
 def LROp():

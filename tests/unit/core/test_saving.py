@@ -5,7 +5,7 @@ import random
 
 import dill
 
-from chariots.core import saving
+from chariots._core import saving
 
 
 def test_file_saver(tmpdir):

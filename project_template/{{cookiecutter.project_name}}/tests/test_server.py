@@ -5,7 +5,7 @@ import time
 {% endif -%}
 from click import testing
 {%- if cookiecutter.use_iris_example == "y" %}
-from chariots.backend.client import Client
+from chariots._backend.client import Client
 {% endif -%}
 
 {% if cookiecutter.use_cli == "y" -%}

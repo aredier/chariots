@@ -1,5 +1,5 @@
-from chariots.core import versioning
-from chariots.ml.sklearn_op import SKUnsupervisedModel
+from chariots._core import versioning
+from chariots._ml.sklearn_op import SKUnsupervisedModel
 from sklearn.decomposition import PCA
 
 

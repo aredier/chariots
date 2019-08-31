@@ -3,9 +3,9 @@ from typing import List, Optional
 import pytest
 import numpy as np
 
-from chariots.core.ops import LoadableOp, AbstractOp, OpCallBack
-from chariots.core.saving import DillSerializer
-from chariots.core.versioning import VersionedField, VersionType
+from chariots._core.ops import LoadableOp, AbstractOp, OpCallBack
+from chariots._core.saving import DillSerializer
+from chariots._core.versioning import VersionedField, VersionType
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from chariots.core import ops, versioning
+from chariots._core import ops, versioning
 
 
 class ExtractY(ops.AbstractOp):

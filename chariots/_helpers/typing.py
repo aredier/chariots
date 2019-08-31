@@ -1,6 +1,6 @@
 from typing import Mapping, Text, Union, Any, Dict, List, AnyStr
 
-from chariots.core import versioning
+from chariots._core import versioning
 
 SymbolicToRealMapping = Mapping[Text, "NodeReference"]
 ResultDict = Dict[Union["NodeReference"], Any]

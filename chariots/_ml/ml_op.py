@@ -6,9 +6,9 @@ from enum import Enum
 from typing import Any, List, Optional
 from zipfile import ZipFile
 
-from chariots.core import versioning
-from chariots.core.ops import LoadableOp, OpCallBack
-from chariots.core.saving import DillSerializer
+from chariots._core import versioning
+from chariots._core.ops import LoadableOp, OpCallBack
+from chariots._core.saving import DillSerializer
 
 
 class MLMode(Enum):
