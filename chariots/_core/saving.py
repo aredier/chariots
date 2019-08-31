@@ -6,8 +6,8 @@ from typing import Any, Text
 
 import dill
 
-from chariots.helpers.optional_libraries import load_pandas
-from chariots.helpers.errors import BackendError
+from chariots._helpers.optional_libraries import load_pandas
+from chariots.errors import BackendError
 
 
 class Serializer(ABC):

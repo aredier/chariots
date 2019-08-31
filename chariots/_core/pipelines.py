@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Mapping, Text, Set, Any, Dict, Optional
 
-from chariots.core import nodes
-from chariots.core.op_store import OpStore
-from chariots.core.ops import AbstractOp
-from chariots.core.saving import Saver
-from chariots.core.versioning import Version
-from chariots.helpers.typing import ResultDict, SymbolicToRealMapping
+from chariots._core import nodes
+from chariots._core.op_store import OpStore
+from chariots._core.ops import AbstractOp
+from chariots._core.saving import Saver
+from chariots._core.versioning import Version
+from chariots._helpers.typing import ResultDict, SymbolicToRealMapping
 
 PIPELINE_PATH = "/pipelines"
 

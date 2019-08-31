@@ -4,20 +4,20 @@ from typing import Any, Optional, Mapping
 
 import requests
 
-from chariots.backend.app import PipelineResponse, Chariot
-from chariots.core.nodes import Node
-from chariots.core.pipelines import Pipeline
-from chariots.core.versioning import Version
-from chariots.helpers.errors import VersionError
+from chariots._backend.app import PipelineResponse, Chariot
+from chariots._core.nodes import Node
+from chariots._core.pipelines import Pipeline
+from chariots._core.versioning import Version
+from chariots.errors import VersionError
 
 
 class AbstractClient(ABC):
 
     def _send_request_to_backend(self, route: str, data: Optional[Any] = None, method: str = "post") -> Any:
         """
-        sends a request to the backend and checks for the relevant error codes
+        sends a request to the _backend and checks for the relevant error codes
         :param route: the route to request
-        :param data: the data to send to the backend (must be JSON serializable)
+        :param data: the data to send to the _backend (must be JSON serializable)
         :return: the response of the request
         """
         if method == "post":
@@ -39,7 +39,7 @@ class AbstractClient(ABC):
         if code == 404:
             raise ValueError("the pipeline you requested is not present on the app")
         if code == 500:
-            raise ValueError("the execution of the pipeline failed, see backend logs for traceback")
+            raise ValueError("the execution of the pipeline failed, see _backend logs for traceback")
         if code == 419:
             raise VersionError("the pipeline you requested cannot be loaded because of version incompatibility"
                                "HINT: retrain and save/reload in order to have a loadable version")
@@ -111,7 +111,7 @@ class AbstractClient(ABC):
 
 class Client(AbstractClient):
     """
-    The Chariot Client is the way to interface with the backend runing the pipelines in the background
+    The Chariot Client is the way to interface with the _backend runing the pipelines in the background
     """
 
     def __init__(self, backend_url: str = "http://127.0.0.1:5000"):

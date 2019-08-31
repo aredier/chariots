@@ -1,5 +1,5 @@
-from chariots.core import pipelines, nodes, saving
-from chariots.ml import ml_op
+from chariots._core import pipelines, nodes, saving
+from chariots._ml import ml_op
 
 from {{cookiecutter.project_name}}.ops.feature_ops.extract_x import ExtractX
 from {{cookiecutter.project_name}}.ops.feature_ops.extract_y import ExtractY

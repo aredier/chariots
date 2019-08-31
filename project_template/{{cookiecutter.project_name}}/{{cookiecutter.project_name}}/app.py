@@ -5,7 +5,7 @@ called using a chariots client
 import os
 from pathlib import Path
 
-from chariots.backend.app import Chariot
+from chariots._backend.app import Chariot
 
 from {{cookiecutter.project_name}}.pipelines.download_iris import download_iris
 from {{cookiecutter.project_name}}.pipelines.train_iris import train_iris

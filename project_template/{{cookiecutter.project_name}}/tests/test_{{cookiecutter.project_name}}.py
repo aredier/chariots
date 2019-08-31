@@ -1,5 +1,5 @@
 import pytest
-from chariots.backend.client import TestClient
+from chariots._backend.client import TestClient
 
 
 from {{cookiecutter.project_name}}.app import {{cookiecutter.project_name}}_app

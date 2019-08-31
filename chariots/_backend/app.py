@@ -3,17 +3,17 @@ from typing import Mapping, Any, List, Type, Optional
 
 from flask import Flask, request
 
-import chariots.core.op_store
-from chariots.core import pipelines
-from chariots.core.versioning import Version
-from chariots.core.nodes import AbstractNode
-from chariots.core.saving import Saver, FileSaver
-from chariots.helpers.errors import VersionError
+import chariots._core.op_store
+from chariots._core import pipelines
+from chariots._core.versioning import Version
+from chariots._core.nodes import AbstractNode
+from chariots._core.saving import Saver, FileSaver
+from chariots.errors import VersionError
 
 
 class PipelineResponse:
     """
-    A PipelineResponse represents all the information that is sent from the backend when a pipeline is executed.
+    A PipelineResponse represents all the information that is sent from the _backend when a pipeline is executed.
     """
 
     def __init__(self, value: Any, versions: Mapping[AbstractNode, Version]):
@@ -49,7 +49,7 @@ class PipelineResponse:
 
 class Chariot(Flask):
     """
-    the backend app used to run the pipelines
+    the _backend app used to run the pipelines
     for each pipeline, sevreal routes will be built:
 
     - /pipelines/<pipeline_name>/main
@@ -81,7 +81,7 @@ class Chariot(Flask):
 
         self.saver = saver_cls(path)
         self.runner = runner or pipelines.SequentialRunner()
-        self._op_store = chariots.core.op_store.OpStore(self.saver)
+        self._op_store = chariots._core.op_store.OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
         # adding the default pipeline callbacks to all the pipelines of the app

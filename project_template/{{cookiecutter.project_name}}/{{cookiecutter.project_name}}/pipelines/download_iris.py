@@ -1,4 +1,4 @@
-from chariots.core import pipelines, nodes, saving
+from chariots._core import pipelines, nodes, saving
 
 from {{cookiecutter.project_name}}.ops.data_ops.download_iris import DownloadIris
 

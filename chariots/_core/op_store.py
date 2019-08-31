@@ -1,9 +1,9 @@
 import json
 from typing import Union, List, Any, Optional, Dict, Text, Set
 
-from chariots.core.ops import AbstractOp
-from chariots.core.saving import Saver
-from chariots.core.versioning import Version
+from chariots._core.ops import AbstractOp
+from chariots._core.saving import Saver
+from chariots._core.versioning import Version
 
 
 _OpGraph = Dict[Text, Dict[Text, Set[Version]]]
