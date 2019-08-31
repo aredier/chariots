@@ -12,6 +12,14 @@ chariots.helpers.errors module
     :undoc-members:
     :show-inheritance:
 
+chariots.helpers.optional\_libraries module
+-------------------------------------------
+
+.. automodule:: chariots.helpers.optional_libraries
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 chariots.helpers.typing module
 ------------------------------
 

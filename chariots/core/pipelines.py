@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Mapping, Text, Set, Any, Dict, Optional
 
-from chariots.core import nodes, ops
+from chariots.core import nodes
 from chariots.core.op_store import OpStore
 from chariots.core.ops import AbstractOp
 from chariots.core.saving import Saver
