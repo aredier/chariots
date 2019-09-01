@@ -2,7 +2,8 @@ from typing import Any
 
 import dill
 
-from chariots.base._base_serializer import BaseSerializer
+# to avoid circular imports
+from ..base._base_serializer import BaseSerializer
 
 
 class DillSerializer(BaseSerializer):

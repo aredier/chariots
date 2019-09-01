@@ -1,7 +1,8 @@
 import json
 from typing import Any
 
-from chariots.base._base_serializer import BaseSerializer
+# to avoid circular imports
+from ..base._base_serializer import BaseSerializer
 
 
 class JSONSerializer(BaseSerializer):

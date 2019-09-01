@@ -1,8 +1,8 @@
 from hashlib import sha1
 from typing import Optional, List, Any
 
-from chariots.base._base_serializer import BaseSerializer
-from chariots.versioning._version import Version
+from chariots.base import BaseSerializer
+from chariots.versioning import Version
 from ._data_node import DataNode
 
 

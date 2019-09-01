@@ -1,13 +1,8 @@
 import json
 import os
 
-from chariots import Pipeline
-from chariots.nodes import Node
-from chariots._deployment.app import Chariot
-from chariots._deployment.client import TestClient
-from chariots.base._base_nodes import ReservedNodes
-from chariots.nodes import DataSavingNode
-from chariots.nodes import DataLoadingNode
+from chariots import Chariot, Pipeline, TestClient
+from chariots.nodes import Node, ReservedNodes, DataSavingNode, DataLoadingNode
 from chariots.serializers import JSONSerializer
 
 

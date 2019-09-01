@@ -1,8 +1,8 @@
 import pytest
 
-from chariots.base._base_op import BaseOp
-from chariots.base._base_nodes import ReservedNodes
-from chariots.runners._sequential_runner import SequentialRunner
+from chariots.base import BaseOp
+from chariots.nodes import ReservedNodes
+from chariots.runners import SequentialRunner
 from chariots import Pipeline
 from chariots.nodes import Node
 

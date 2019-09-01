@@ -6,7 +6,6 @@ from typing import Optional, Any
 import chariots._op_store
 from chariots._helpers.constants import DATA_PATH
 from chariots._helpers.typing import InputNodes
-from chariots.base import _op_store
 from chariots.base._base_nodes import BaseNode
 from chariots.base._base_saver import BaseSaver
 from chariots.base._base_serializer import BaseSerializer

@@ -1,14 +1,13 @@
 import json
 import os
 
-from chariots.runners import SequentialRunner
-from chariots._op_store import OpStore
-from chariots import Pipeline
+from chariots import OpStore, Pipeline
 from chariots.nodes import Node
-from chariots.nodes._data_saving_node import DataSavingNode
-from chariots.nodes._data_loading_node import DataLoadingNode
-from chariots.serializers._json_serializer import JSONSerializer
-from chariots.savers._file_saver import FileSaver
+from chariots.nodes import DataSavingNode
+from chariots.nodes import DataLoadingNode
+from chariots.runners import SequentialRunner
+from chariots.savers import FileSaver
+from chariots.serializers import JSONSerializer
 
 
 def test_savable_pipeline(pipe_generator, tmpdir):

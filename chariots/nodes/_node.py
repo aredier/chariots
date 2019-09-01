@@ -2,8 +2,8 @@ from typing import Optional, List, Union, Text, Any
 
 # use the main package to resolve circular imports with root objects (Pipleine, ...)
 import chariots
-from chariots.base._base_nodes import BaseNode
-from chariots.base._base_op import BaseOp
+from chariots.base import BaseNode
+from chariots.base import BaseOp
 from chariots.ops import LoadableOp
 from chariots.versioning import Version
 
