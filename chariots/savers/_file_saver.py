@@ -1,7 +1,7 @@
 import os
 from typing import Text
 
-from chariots.base._base_saver import BaseSaver
+from chariots.base import BaseSaver
 
 
 class FileSaver(BaseSaver):

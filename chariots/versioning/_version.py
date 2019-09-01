@@ -2,7 +2,7 @@ import hashlib
 import time
 from typing import Optional
 
-from chariots._helpers.typing import Hash
+from .._helpers.typing import Hash
 from ._version_type import VersionType
 
 

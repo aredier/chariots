@@ -1,4 +1,4 @@
-from chariots.base._base_op import BaseOp
+from chariots.base import BaseOp
 
 
 class LoadableOp(BaseOp):

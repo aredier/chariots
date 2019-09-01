@@ -1,7 +1,7 @@
 from typing import List, Any, Optional
 
-from chariots.versioning._version import Version
-from chariots.versioning._versionable_meta import VersionableMeta
+from chariots.versioning import Version
+from chariots.versioning import VersionableMeta
 
 
 class BaseOp(metaclass=VersionableMeta):

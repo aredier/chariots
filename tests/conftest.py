@@ -3,12 +3,11 @@ from typing import List, Optional
 import pytest
 import numpy as np
 
-from chariots.base._base_op import BaseOp
-from chariots.callbacks._op_callback import OpCallBack
-from chariots.ops._loadable_op import LoadableOp
-from chariots.serializers._dill_serializer import DillSerializer
-from chariots.versioning._version_type import VersionType
-from chariots.versioning._versioned_field import VersionedField
+from chariots.base import BaseOp
+from chariots.callbacks import OpCallBack
+from chariots.ops import LoadableOp
+from chariots.serializers import DillSerializer
+from chariots.versioning import VersionType, VersionedField
 
 
 @pytest.fixture
@@ -69,8 +68,8 @@ def NotOp():
 
     class NotOp(BaseOp):
 
-        def execute(self, input):
-            return [not i for i in input]
+        def execute(self, op_input):
+            return [not i for i in op_input]
 
     return NotOp
 

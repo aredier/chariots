@@ -1,9 +1,9 @@
 from typing import Optional, List, Any
 
-from chariots._helpers.typing import InputNodes
 from chariots.base._base_serializer import BaseSerializer
 from chariots.versioning._version import Version
 from ._data_node import DataNode
+from .._helpers.typing import InputNodes
 
 
 class DataSavingNode(DataNode):

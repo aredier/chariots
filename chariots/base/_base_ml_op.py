@@ -6,10 +6,10 @@ from typing import Optional, List, Any
 from zipfile import ZipFile
 
 import chariots.versioning
-from .._ml_mode import MLMode
 from chariots.callbacks import OpCallBack
 from chariots.ops import LoadableOp
 from chariots.serializers import DillSerializer
+from .._ml_mode import MLMode
 
 
 class BaseMLOp(LoadableOp):

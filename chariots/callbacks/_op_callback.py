@@ -1,6 +1,6 @@
 from typing import List, Any
 
-from chariots.base._base_op import BaseOp
+from chariots.base import BaseOp
 
 
 class OpCallBack:

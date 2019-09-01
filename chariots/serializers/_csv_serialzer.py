@@ -1,7 +1,8 @@
 import io
 
-from chariots._helpers.optional_libraries import load_pandas
-from chariots.base._base_serializer import BaseSerializer
+from .._helpers.optional_libraries import load_pandas
+# to avoid circular imports
+from ..base._base_serializer import BaseSerializer
 
 try:
     pd = load_pandas()
