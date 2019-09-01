@@ -1,7 +1,7 @@
 from sklearn.decomposition import PCA
 
 from chariots.versioning import VersionType, VersionedFieldDict
-from chariots.sklearn._sk_unsupervised_op import SKUnsupervisedOp
+from chariots.sklearn import SKUnsupervisedOp
 
 
 class IrisPCA(SKUnsupervisedOp):

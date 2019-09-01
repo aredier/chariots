@@ -1,19 +1,15 @@
-import chariots._ml_mode
-import chariots._pipeline
-import chariots.nodes._node
-from chariots.base import _pipelines, _base_nodes
-from chariots._ml import ml_op
+from chariots import MLMode, Pipeline
+from chariots.nodes import Node
 
 from {{cookiecutter.project_name}}.ops.model_ops.iris_pca import IrisPCA
 from {{cookiecutter.project_name}}.ops.model_ops.iris_rf import IrisRF
 
 
-pred_iris = chariots._pipeline.Pipeline(
+pred_iris = Pipeline(
     [
-        chariots.nodes._node.Node(IrisPCA(chariots._ml_mode.MLMode.PREDICT),
-                                  input_nodes=["__pipeline_input__"], output_nodes="x_pca"),
-        chariots.nodes._node.Node(IrisRF(chariots._ml_mode.MLMode.PREDICT), input_nodes=["x_pca"],
-                                  output_nodes="__pipeline_output__")
-
+        Node(IrisPCA(MLMode.PREDICT), input_nodes=["__pipeline_input__"],
+             output_nodes="x_pca"),
+        Node(IrisRF(MLMode.PREDICT), input_nodes=["x_pca"],
+             output_nodes="__pipeline_output__")
     ], "pred_iris"
 )
