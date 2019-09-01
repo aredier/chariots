@@ -1,45 +1,22 @@
-chariots package
-================
-
-Subpackages
------------
+Api Docs
+========
 
 .. toctree::
+   :maxdepth: 1
 
-    chariots.base
-    chariots.callbacks
-    chariots.nodes
-    chariots.ops
-    chariots.runners
-    chariots.savers
-    chariots.serializers
-    chariots.sklearn
-    chariots.versioning
-
-Submodules
-----------
-
-chariots.cli module
--------------------
-
-.. automodule:: chariots.cli
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-chariots.errors module
-----------------------
-
-.. automodule:: chariots.errors
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
+   chariots.base
+   chariots.callbacks
+   chariots.nodes
+   chariots.ops
+   chariots.runners
+   chariots.savers
+   chariots.serializers
+   chariots.sklearn
+   chariots.versioning
+   chariots.cli
+   chariots.errors
 
 .. automodule:: chariots
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
