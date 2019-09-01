@@ -10,6 +10,10 @@ Subpackages
     chariots.callbacks
     chariots.nodes
     chariots.ops
+    chariots.runners
+    chariots.savers
+    chariots.serializers
+    chariots.sklearn
     chariots.versioning
 
 Submodules

@@ -2,9 +2,11 @@ from typing import List, Optional, Set, Dict, Any, Mapping, Text
 
 from chariots import base
 from chariots import nodes
+from chariots import callbacks
 from chariots.versioning import Version
 from ._helpers.typing import SymbolicToRealMapping, ResultDict
 from ._op_store import OpStore
+from chariots.base._base_nodes import NodeReference
 
 
 class Pipeline(base.BaseOp):
@@ -12,14 +14,14 @@ class Pipeline(base.BaseOp):
     a pipeline is a collection of linked nodes to be executed together
     """
 
-    def __init__(self, pipeline_nodes: List["nodes.AbstractNode"], name: str,
-                 callbacks: Optional["PipelineCallback"] = None):
+    def __init__(self, pipeline_nodes: List["base.BaseNode"], name: str,
+                 pipeline_callbacks: Optional[List["callbacks.PipelineCallback"]] = None):
         """
         :param pipeline_nodes: the nodes of the pipeline
         :param name: the name of the pipeline
-        :param callbacks: the pipeline callbacks to use with this pipeline
+        :param pipeline_callbacks: the pipeline callbacks to use with this pipeline
         """
-        self.callbacks = callbacks or []
+        super().__init__(pipeline_callbacks)
         self._graph = self.resolve_graph(pipeline_nodes)
         self._name = name
 
@@ -42,7 +44,7 @@ class Pipeline(base.BaseOp):
         return self._graph
 
     @classmethod
-    def resolve_graph(cls, pipeline_nodes: List["nodes.AbstractNode"]) -> List["nodes.AbstractNode"]:
+    def resolve_graph(cls, pipeline_nodes: List["base.BaseNode"]) -> List["base.BaseNode"]:
         """
         transforms a user provided graph into a usable graph: checking linkage, replacing symbolic references by
         real ones, ...
@@ -56,7 +58,7 @@ class Pipeline(base.BaseOp):
         return real_nodes
 
     @staticmethod
-    def _build_symbolic_real_node_mapping(pipeline_nodes: List["nodes.AbstractNode"]) -> SymbolicToRealMapping:
+    def _build_symbolic_real_node_mapping(pipeline_nodes: List["base.BaseNode"]) -> SymbolicToRealMapping:
         """
         builds a mapping of nodes with their symbolic name in key and the object in value
 
@@ -71,7 +73,7 @@ class Pipeline(base.BaseOp):
         return symbolic_to_real_mapping
 
     @classmethod
-    def _check_graph(cls, pipeline_nodes: List["nodes.AbstractNode"]):
+    def _check_graph(cls, pipeline_nodes: List["base.BaseNode"]):
         """
         checks a graph for potential problems.
         raises if a node's input is not in the graph or if a node is used twice in the pipeline
@@ -83,8 +85,8 @@ class Pipeline(base.BaseOp):
             available_nodes = cls._update_ancestry(node, available_nodes)
 
     @classmethod
-    def _update_ancestry(cls, node: "nodes.AbstractNode",
-                         available_nodes: Set["nodes.NodeReference"]) -> Set["nodes.NodeReference"]:
+    def _update_ancestry(cls, node: "base.BaseNode",
+                         available_nodes: Set["NodeReference"]) -> Set["NodeReference"]:
         """
         updates the list of available nodes with a node of interest if possible
 
@@ -105,7 +107,7 @@ class Pipeline(base.BaseOp):
                          "`runner.run(this_pipeline)`")
 
     @staticmethod
-    def extract_results(results: Dict["nodes.NodeReference", Any]) -> Any:
+    def extract_results(results: Dict["NodeReference", Any]) -> Any:
         """
         extracts the output of a pipeline.
         raises ValueError if some output was unused once every node is computed and the remaining is not the output of
@@ -119,7 +121,7 @@ class Pipeline(base.BaseOp):
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    def execute_node(self, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: "base.BaseRunner"):
+    def execute_node(self, node: "base.BaseNode", intermediate_results: ResultDict, runner: "base.BaseRunner"):
         """
         executes a node for the pipeline, this method is called by the runners to make the pipeline execute one of it's
         node and all necessary callbacks
@@ -154,7 +156,7 @@ class Pipeline(base.BaseOp):
         intermediate_results.update(dict(zip(node.output_references, res)))
         return intermediate_results
 
-    def get_pipeline_versions(self) -> Mapping["nodes.AbstractNode", Version]:
+    def get_pipeline_versions(self) -> Mapping["base.BaseNode", Version]:
         """
         returns the versions of every op in the pipeline
 
@@ -178,8 +180,8 @@ class Pipeline(base.BaseOp):
         return self
 
     @staticmethod
-    def _check_and_load_single_node(op_store: OpStore, upstream_node: "nodes.AbstractNode",
-                                    downstream_node: Optional["nodes.AbstractNode"]) -> "nodes.AbstractNode":
+    def _check_and_load_single_node(op_store: OpStore, upstream_node: "base.BaseNode",
+                                    downstream_node: Optional["base.BaseNode"]) -> "base.BaseNode":
         latest_node = upstream_node.load_latest_version(op_store)
         if latest_node is None:
             upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
@@ -191,7 +193,7 @@ class Pipeline(base.BaseOp):
         return latest_node
 
     @property
-    def node_for_name(self) -> Mapping[Text, "nodes.AbstractNode"]:
+    def node_for_name(self) -> Mapping[Text, "base.BaseNode"]:
         """
         generates a mapping with each nodes's name in key and the object as value
 
@@ -210,7 +212,7 @@ class Pipeline(base.BaseOp):
             downstream_node = self._find_downstream(upstream_node)
             upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
 
-    def _find_downstream(self, upstream_node: "nodes.AbstractNode") -> Optional["nodes.AbstractNode"]:
+    def _find_downstream(self, upstream_node: "base.BaseNode") -> Optional["base.BaseNode"]:
         """
         finds the downstream node from an upstream if it exists
 

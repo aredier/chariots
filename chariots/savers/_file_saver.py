@@ -9,9 +9,6 @@ class FileSaver(BaseSaver):
     a saver that persists to the local file system
     """
 
-    def __init__(self, root_path: str):
-        self.root_path = root_path
-
     def _build_path(self, path: Text):
         """
         builds the path on the file system from the saving path

@@ -13,7 +13,7 @@ import chariots
 
 
 @click.group()
-def main(args=None):
+def main():
     """Console scripts for chariots."""
     pass
 

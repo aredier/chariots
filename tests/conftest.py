@@ -19,8 +19,8 @@ def savable_op_generator():
 
             step = VersionedField(counter_step, VersionType.MAJOR)
 
-            def __init__(self, callbacks: Optional[List[OpCallBack]] = None):
-                super().__init__(callbacks=callbacks)
+            def __init__(self, op_callbacks: Optional[List[OpCallBack]] = None):
+                super().__init__(op_callbacks=op_callbacks)
                 self.count = 0
 
             def execute(self, input_list):

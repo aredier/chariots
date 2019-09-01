@@ -13,8 +13,8 @@ from chariots.runners import SequentialRunner
 
 class TimerOp(BaseOp):
 
-    def __init__(self, stop_time: int, callbacks: Optional[OpCallBack] = None):
-        super().__init__(callbacks=callbacks)
+    def __init__(self, stop_time: float, op_callbacks: Optional[List[OpCallBack]] = None):
+        super().__init__(op_callbacks=op_callbacks)
         self.time = stop_time
 
     def execute(self, previous_time=0):
@@ -74,7 +74,7 @@ class OpTimerCallback(OpCallBack):
 
 def test_op_callback():
     cb = OpTimerCallback()
-    op = TimerOp(0.01, callbacks=[cb])
+    op = TimerOp(0.01, op_callbacks=[cb])
 
     for i in range(100):
         op.execute_with_all_callbacks([0])
@@ -103,7 +103,7 @@ class TestAfterPipeline(PipelineCallback):
 def test_before_pipeline():
 
     cb = TestBeforePipeline()
-    pipe = Pipeline([Node(TimerOp(0.01), output_nodes="__pipeline_output__")], name="a_pipe", callbacks=[cb])
+    pipe = Pipeline([Node(TimerOp(0.01), output_nodes="__pipeline_output__")], name="a_pipe", pipeline_callbacks=[cb])
     runner = SequentialRunner()
     for i in range(10):
         runner.run(pipe)
@@ -113,7 +113,7 @@ def test_before_pipeline():
 
 def test_after_pipeline():
     cb = TestAfterPipeline()
-    pipe = Pipeline([Node(TimerOp(0.01), output_nodes="__pipeline_output__")], name="a_pipe", callbacks=[cb])
+    pipe = Pipeline([Node(TimerOp(0.01), output_nodes="__pipeline_output__")], name="a_pipe", pipeline_callbacks=[cb])
     runner = SequentialRunner()
     for i in range(10):
         runner.run(pipe)
@@ -131,7 +131,7 @@ def test_multiple_callbacks():
     cb_before = TestBeforePipeline()
     cb_after = TestAfterPipeline()
     pipe = Pipeline([Node(RaiseOp(), output_nodes="__pipeline_output__")], name="a_pipe",
-                    callbacks=[cb_after, cb_before])
+                    pipeline_callbacks=[cb_after, cb_before])
     runner = SequentialRunner()
     with pytest.raises(ValueError):
         runner.run(pipe)
@@ -174,7 +174,7 @@ def test_full_pipeline_call_back():
     for i in range(50):
         runner.run(pipe)
 
-    len(cb.result_dict) == 2
+    assert len(cb.result_dict) == 2
     assert "my_pipe" in cb.result_dict
     assert my_op.name in cb.result_dict
     assert 0.005 <= cb.result_dict[my_op.name] <= 0.015

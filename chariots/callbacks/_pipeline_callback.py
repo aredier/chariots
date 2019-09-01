@@ -1,6 +1,7 @@
 from typing import List, Any
 
-from chariots import _pipeline
+import chariots
+from chariots.base import BaseNode
 
 
 class PipelineCallback:
@@ -14,16 +15,16 @@ class PipelineCallback:
     - after the pipeline is ran
     """
 
-    def before_execution(self, pipeline: "_pipeline.Pipeline", args: List[Any]):
+    def before_execution(self, pipeline: "chariots.Pipeline", args: List[Any]):
         """
         called before any node in the pipeline is ran. provides the pipeline that is being run and the pipeline input
 
-        :param pipeline: the piepline being ran
+        :param pipeline: the pipeline being ran
         :param args: the pipeline inputs
         """
         pass
 
-    def after_execution(self, pipeline: "_pipeline.Pipeline", args: List[Any], output: Any):
+    def after_execution(self, pipeline: "chariots.Pipeline", args: List[Any], output: Any):
         """
         called after all the nodes of the pipeline have been ran with the pipeline being run and the output of the run
 
@@ -33,10 +34,10 @@ class PipelineCallback:
         """
         pass
 
-    def before_node_execution(self, pipeline: "_pipeline.Pipeline", node: "nodes.AbstractNode", args: List[Any]):
+    def before_node_execution(self, pipeline: "chariots.Pipeline", node: "BaseNode", args: List[Any]):
         """
         called before each node is executed the pipeline the node is in as well as the node are provided alongside the
-        arguents the node is going to be given
+        arguments the node is going to be given
 
         :param pipeline: the pipeline being run
         :param node: the node that is about to run
@@ -44,7 +45,7 @@ class PipelineCallback:
         """
         pass
 
-    def after_node_execution(self, pipeline: "_pipeline.Pipeline", node: "nodes.AbstractNode", args: List[Any], output: Any):
+    def after_node_execution(self, pipeline: "chariots.Pipeline", node: "BaseNode", args: List[Any], output: Any):
         """
         called after each node is executed. The pipeline the node is in as well as the node are provided alongside the
         input/output of the node that ran

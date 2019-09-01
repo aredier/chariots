@@ -1,7 +1,7 @@
 from typing import List, Any, Optional
 
-from chariots.versioning import Version
-from chariots.versioning import VersionableMeta
+from chariots.callbacks import OpCallBack
+from chariots.versioning import Version, VersionableMeta
 
 
 class BaseOp(metaclass=VersionableMeta):
@@ -9,8 +9,8 @@ class BaseOp(metaclass=VersionableMeta):
     An op represent an atomic unit in a pipeline.
     """
 
-    def __init__(self, callbacks: Optional[List["OpCallBack"]] = None):
-        self.callbacks = callbacks or []
+    def __init__(self, op_callbacks: Optional[List[OpCallBack]] = None):
+        self.callbacks = op_callbacks or []
 
     def before_execution(self, args: List[Any]):
         """
@@ -69,5 +69,3 @@ class BaseOp(metaclass=VersionableMeta):
 
     def __str__(self):
         return "<OP {}>".format(self.name)
-
-

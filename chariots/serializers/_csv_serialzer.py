@@ -1,5 +1,6 @@
 import io
 
+from chariots.errors import BackendError
 from .._helpers.optional_libraries import load_pandas
 # to avoid circular imports
 from ..base._base_serializer import BaseSerializer
@@ -19,4 +20,3 @@ try:
             return pd.read_csv(io.BytesIO(serialized_object), encoding="utf8")
 except BackendError:
     pass
-

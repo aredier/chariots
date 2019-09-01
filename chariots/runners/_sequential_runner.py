@@ -1,5 +1,6 @@
 from typing import Optional, Any
 
+from chariots import Pipeline
 from chariots.base import BaseRunner
 from chariots.nodes import ReservedNodes
 

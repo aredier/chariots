@@ -2,8 +2,7 @@ from typing import Optional, List, Union, Text, Any
 
 # use the main package to resolve circular imports with root objects (Pipleine, ...)
 import chariots
-from chariots.base import BaseNode
-from chariots.base import BaseOp
+from chariots.base import BaseNode, BaseOp, BaseRunner
 from chariots.ops import LoadableOp
 from chariots.versioning import Version
 
@@ -14,8 +13,8 @@ class Node(BaseNode):
     It represents a slot in the pipeline.
     """
 
-    def __init__(self, op: BaseOp, input_nodes: Optional[List[Union[Text, "BaseNode"]]] = None,
-                 output_nodes: Union[List[Union[Text, "BaseNode"]], Text, "BaseNode"] = None):
+    def __init__(self, op: BaseOp, input_nodes: Optional[List[Union[Text, BaseNode]]] = None,
+                 output_nodes: Union[List[Union[Text, BaseNode]], Text, BaseNode] = None):
         """
         :param op: the op this Node wraps
         :param input_nodes: the input_nodes on which this node should be executed
@@ -40,7 +39,7 @@ class Node(BaseNode):
         """
         return any(isinstance(node, str) for node in self.input_nodes)
 
-    def execute(self, params: List[Any], runner: Optional["_pipelines.AbstractRunner"] = None) -> Any:
+    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
         """
         executes the underlying op on params
 
@@ -57,7 +56,7 @@ class Node(BaseNode):
             return runner.run(self._op, params)
         return self._op.execute_with_all_callbacks(params)
 
-    def load_latest_version(self, store_to_look_in: "chariots.OpStore") -> "BaseNode":
+    def load_latest_version(self, store_to_look_in: "chariots.OpStore") -> Optional[BaseNode]:
         """
         reloads the latest version of this op by looking into the available versions of the store
         :param store_to_look_in:  the store to look for new versions in
@@ -82,7 +81,7 @@ class Node(BaseNode):
         self._op.load(store_to_look_in.get_op_bytes_for_version(self._op, relevant_version))
         return self
 
-    def check_version_compatibility(self, upstream_node: "BaseNode", store_to_look_in: "_op_store.OpStore"):
+    def check_version_compatibility(self, upstream_node: "BaseNode", store_to_look_in: "chariots.OpStore"):
         if self._op.allow_version_change:
             return
         super().check_version_compatibility(upstream_node, store_to_look_in)
@@ -108,7 +107,7 @@ class Node(BaseNode):
         persists the inner op of the node in saver
 
         :param store: the store in which to store the node
-        :param downstream_nodes: the node(s) that are going to accept this node downstrem
+        :param downstream_nodes: the node(s) that are going to accept this node downstream
         """
 
         version = super().persist(store, downstream_nodes)

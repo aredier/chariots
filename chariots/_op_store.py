@@ -1,5 +1,5 @@
 import json
-from typing import Union, Dict, Text, Set, Any, Optional, List
+from typing import Union, Dict, Text, Set, Optional, List
 
 from chariots import base
 from chariots.versioning import Version
@@ -71,13 +71,12 @@ class OpStore:
         }
         self._saver.save(json.dumps(version_dict_with_str_versions).encode("utf-8"), path=self._location)
 
-    def get_all_verisons_of_op(self, op: "base.BaseOp", fallback: Any = None) -> Optional[List[Version]]:
+    def get_all_verisons_of_op(self, op: "base.BaseOp") -> Optional[List[Version]]:
         """
         gets all the versions of an op that were previously persisted (the op version and not the upstream one)
         regardless of which pipeline saved it
 
         :param op: the op to get the previous persisted versions
-        :param fallback: the fallback to give back if the op has never been persisted
         """
         all_versions = [
             versions
@@ -94,7 +93,7 @@ class OpStore:
         """
         loads the persisted bytes of an op given the version that needs loading
 
-        :param op: the op to laod
+        :param op: the op to load
         :param version: the version of the op to load
         :return: the bytes of the op
         """

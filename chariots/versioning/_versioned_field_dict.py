@@ -39,7 +39,7 @@ class VersionedFieldDict(collections.MutableMapping):
     @property
     def version_dict(self) -> Mapping[str, "Version"]:
         """
-        proprety to retrieve the name of the fields and the Versions associated to each of them
+        property to retrieve the name of the fields and the Versions associated to each of them
         :return: the mapping with the key and the version of the value
         """
         return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))

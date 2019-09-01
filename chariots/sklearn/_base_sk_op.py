@@ -1,10 +1,10 @@
 from typing import Any
 
-import chariots.base
-import chariots.versioning
+from chariots.base import BaseMLOp
+from chariots.versioning import VersionedFieldDict, VersionType
 
 
-class BaseSKOp(chariots.base._base_ml_op.BaseMLOp):
+class BaseSKOp(BaseMLOp):
     """
     base Op class for all the supervised and unsupervised scikit-learn ops
     """
@@ -12,8 +12,7 @@ class BaseSKOp(chariots.base._base_ml_op.BaseMLOp):
     # the class of the model to fit/predict
     model_class = None
     # the parameters to use to init the model
-    model_parameters = chariots.versioning._versioned_field_dict.VersionedFieldDict(
-        chariots.versioning._version_type.VersionType.MAJOR, {})
+    model_parameters = VersionedFieldDict(VersionType.MAJOR, {})
 
     def _init_model(self):
         """

@@ -77,7 +77,7 @@ class Chariot(Flask):
 
     def __init__(self, app_pipelines: List[Pipeline], path: str, saver_cls: Type[BaseSaver] = FileSaver,
                  runner: Optional[BaseRunner] = None,
-                 default_pipeline_callbacks: Optional[List[ PipelineCallback]] = None, *args, **kwargs):
+                 default_pipeline_callbacks: Optional[List[PipelineCallback]] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
