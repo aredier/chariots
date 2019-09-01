@@ -7,7 +7,7 @@ Welcome to chariots's documentation!
 
    installation
    usage
-   modules
+   chariots
    template
    contributing
    authors

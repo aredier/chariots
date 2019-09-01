@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-"""Top-level package for chariots."""
-
 from ._pipeline import Pipeline
 from ._deployment.client import Client
 from ._deployment.client import TestClient
