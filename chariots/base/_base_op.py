@@ -1,9 +1,10 @@
 from typing import List, Any, Optional
 
-from chariots._core.versioning import VersionableMeta, Version
+from chariots.versioning._version import Version
+from chariots.versioning._versionable_meta import VersionableMeta
 
 
-class AbstractOp(metaclass=VersionableMeta):
+class BaseOp(metaclass=VersionableMeta):
     """
     An op represent an atomic unit in a pipeline.
     """
@@ -70,49 +71,3 @@ class AbstractOp(metaclass=VersionableMeta):
         return "<OP {}>".format(self.name)
 
 
-class LoadableOp(AbstractOp):
-
-    def execute(self, *args, **kwargs):
-        raise NotImplementedError("you must define a call for the op to be valid")
-
-    def load(self, serialized_object: bytes):
-        """
-        loads the internals of the op with bytes that where saved
-
-        :param serialized_object: the serialized bytes
-        """
-        raise NotImplementedError()
-
-    def serialize(self) -> bytes:
-        """
-        serializes the object into bytes (to be persisted with a Saver) to be reloaded in the future
-
-        :return: the serialized bytes
-        """
-        raise NotImplementedError()
-
-
-class OpCallBack:
-    """
-    an op callback is used to perform specific nstructions at certain points (before and after) around the operation's
-    execution
-    """
-
-    def before_execution(self, op: AbstractOp, args: List[Any]):
-        """
-        called before the operation is executed (and before the operation's `before_execution`'s method
-
-        :param op: the operation that is being executed
-        :param args: the arguments that are going to be passed to the operation
-        """
-        pass
-
-    def after_execution(self, op: AbstractOp, args: List[Any], output: Any):
-        """
-        called after the operation has been executed (and after it's `after_execution`'s method.
-
-        :param op: the operation that was executed
-        :param args: the arguments that were passed to the op
-        :param output: the output the op produced
-        """
-        pass

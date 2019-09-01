@@ -5,11 +5,13 @@ import random
 
 import dill
 
-from chariots._core import saving
+import chariots.savers._file_saver
+import chariots.serializers._dill_serializer
+import chariots.serializers._json_serializer
 
 
 def test_file_saver(tmpdir):
-    saver = saving.FileSaver(str(tmpdir))
+    saver = chariots.savers._file_saver.FileSaver(str(tmpdir))
     fake_string = hashlib.sha1(str(random.randint(0, 1000)).encode("utf-8")).hexdigest()
     saver.save(fake_string.encode("utf-8"), "/foo/bar.bin")
 
@@ -23,7 +25,7 @@ def test_file_saver(tmpdir):
 
 
 def test_dill_serialisation():
-    dill_serializer = saving.DillSerializer()
+    dill_serializer = chariots.serializers._dill_serializer.DillSerializer()
 
     def fake_function():
         return 42
@@ -40,7 +42,7 @@ def test_dill_serialisation():
 
 
 def test_json_serialisation():
-    json_serializer = saving.JSONSerializer()
+    json_serializer = chariots.serializers._json_serializer.JSONSerializer()
 
     mapping = {"foo": 42}
     serialised_bytes = json_serializer.serialize_object(mapping)

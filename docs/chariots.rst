@@ -6,10 +6,11 @@ Subpackages
 
 .. toctree::
 
-    chariots.backend
-    chariots.core
-    chariots.helpers
-    chariots.ml
+    chariots.base
+    chariots.callbacks
+    chariots.nodes
+    chariots.ops
+    chariots.versioning
 
 Submodules
 ----------
@@ -22,10 +23,10 @@ chariots.cli module
     :undoc-members:
     :show-inheritance:
 
-chariots.constants module
--------------------------
+chariots.errors module
+----------------------
 
-.. automodule:: chariots.constants
+.. automodule:: chariots.errors
     :members:
     :undoc-members:
     :show-inheritance:

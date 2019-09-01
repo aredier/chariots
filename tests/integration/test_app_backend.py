@@ -1,11 +1,14 @@
 import json
 import os
 
-from chariots._backend.app import Chariot
-from chariots._backend.client import TestClient
-from chariots._core.pipelines import Pipeline, ReservedNodes, SequentialRunner
-from chariots._core.nodes import Node, DataLoadingNode, DataSavingNode
-from chariots._core.saving import JSONSerializer
+from chariots import Pipeline
+from chariots.nodes import Node
+from chariots._deployment.app import Chariot
+from chariots._deployment.client import TestClient
+from chariots.base._base_nodes import ReservedNodes
+from chariots.nodes import DataSavingNode
+from chariots.nodes import DataLoadingNode
+from chariots.serializers import JSONSerializer
 
 
 def test_app_response(Range10, IsPair, NotOp, tmpdir):

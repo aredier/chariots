@@ -1,14 +1,16 @@
 import pytest
 
-from chariots._core.ops import AbstractOp
-from chariots._core.pipelines import Pipeline, SequentialRunner, ReservedNodes
-from chariots._core.nodes import Node
+from chariots.base._base_op import BaseOp
+from chariots.base._base_nodes import ReservedNodes
+from chariots.runners._sequential_runner import SequentialRunner
+from chariots import Pipeline
+from chariots.nodes import Node
 
 
 @pytest.fixture
 def Sum():
 
-    class Inner(AbstractOp):
+    class Inner(BaseOp):
 
         def execute(self, left, right):
             return [l + r for l, r in zip(left, right)]
@@ -18,7 +20,7 @@ def Sum():
 @pytest.fixture
 def SplitOnes():
 
-    class SplitOnesInner(AbstractOp):
+    class SplitOnesInner(BaseOp):
 
         def execute(self):
             return [1], [1]

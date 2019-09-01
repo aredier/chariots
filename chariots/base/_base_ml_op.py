@@ -2,27 +2,19 @@ import io
 import json
 import time
 from abc import abstractmethod
-from enum import Enum
-from typing import Any, List, Optional
+from typing import Optional, List, Any
 from zipfile import ZipFile
 
-from chariots._core import versioning
-from chariots._core.ops import LoadableOp, OpCallBack
-from chariots._core.saving import DillSerializer
+import chariots.versioning
+from .._ml_mode import MLMode
+from chariots.callbacks import OpCallBack
+from chariots.ops import LoadableOp
+from chariots.serializers import DillSerializer
 
 
-class MLMode(Enum):
+class BaseMLOp(LoadableOp):
     """
-    mode in which to put the op (prediction of training) enum
-    """
-    FIT = "fit"
-    PREDICT = "predict"
-    FIT_PREDICT = "fit_predict"
-
-
-class MLOp(LoadableOp):
-    """
-    an MLOp is an op that has three distinctive modes:
+    an BaseMLOp is an op that has three distinctive modes:
 
     - fitting that trains the inner model
     - prediction where the op is used to make prediction
@@ -36,7 +28,7 @@ class MLOp(LoadableOp):
     - use the prediction pipeline
     """
 
-    training_update_version = versioning.VersionType.PATCH
+    training_update_version = chariots.versioning._version_type.VersionType.PATCH
     serializer_cls = DillSerializer
 
     def __init__(self, mode: MLMode, callbacks: Optional[List[OpCallBack]] = None):
@@ -104,8 +96,8 @@ class MLOp(LoadableOp):
 
     @property
     def op_version(self):
-        time_version = versioning.Version().update(self.training_update_version,
-                                                   str(self._last_training_time).encode("utf-8"))
+        time_version = chariots.versioning._version.Version().update(self.training_update_version,
+                                                                     str(self._last_training_time).encode("utf-8"))
         return super().op_version + time_version
 
     def load(self, serialized_object: bytes):

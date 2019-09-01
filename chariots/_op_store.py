@@ -1,10 +1,8 @@
 import json
-from typing import Union, List, Any, Optional, Dict, Text, Set
+from typing import Union, Dict, Text, Set, Any, Optional, List
 
-from chariots._core.ops import AbstractOp
-from chariots._core.saving import Saver
-from chariots._core.versioning import Version
-
+from chariots import base
+from chariots.versioning import Version
 
 _OpGraph = Dict[Text, Dict[Text, Set[Version]]]
 
@@ -27,7 +25,7 @@ class OpStore:
 
     _location = "/_meta.json"
 
-    def __init__(self, saver: Saver):
+    def __init__(self, saver: "base.BaseSaver"):
         """
         :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
         """
@@ -73,7 +71,7 @@ class OpStore:
         }
         self._saver.save(json.dumps(version_dict_with_str_versions).encode("utf-8"), path=self._location)
 
-    def get_all_verisons_of_op(self, op: AbstractOp, fallback: Any = None) -> Optional[List[Version]]:
+    def get_all_verisons_of_op(self, op: "base.BaseOp", fallback: Any = None) -> Optional[List[Version]]:
         """
         gets all the versions of an op that were previously persisted (the op version and not the upstream one)
         regardless of which pipeline saved it
@@ -92,7 +90,7 @@ class OpStore:
     def get_validated_links(self, downstream_op_name: Text, upstream_op_name: Text) -> Optional[Set[Version]]:
         return self._all_op_links.get(downstream_op_name, {}).get(upstream_op_name)
 
-    def get_op_bytes_for_version(self, op: AbstractOp, version: Version) -> bytes:
+    def get_op_bytes_for_version(self, op: "base.BaseOp", version: Version) -> bytes:
         """
         loads the persisted bytes of an op given the version that needs loading
 
@@ -115,7 +113,7 @@ class OpStore:
 
         return "/models/{}/{}".format(op_name, str(version))
 
-    def save_op_bytes(self, op_to_save: AbstractOp, version: Version, op_bytes: bytes):
+    def save_op_bytes(self, op_to_save: "base.BaseOp", version: Version, op_bytes: bytes):
         """
         saves an op bytes and registers the links that accept this op as upstream (all the ops that use this
         op and are valid to use with this specific op's version

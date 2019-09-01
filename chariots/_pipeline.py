@@ -1,81 +1,13 @@
-import os
-from abc import ABC, abstractmethod
-from enum import Enum
-from typing import List, Mapping, Text, Set, Any, Dict, Optional
+from typing import List, Optional, Set, Dict, Any, Mapping, Text
 
-from chariots._core import nodes
-from chariots._core.op_store import OpStore
-from chariots._core.ops import AbstractOp
-from chariots._core.saving import Saver
-from chariots._core.versioning import Version
-from chariots._helpers.typing import ResultDict, SymbolicToRealMapping
-
-PIPELINE_PATH = "/pipelines"
+from chariots import base
+from chariots import nodes
+from chariots.versioning import Version
+from ._helpers.typing import SymbolicToRealMapping, ResultDict
+from ._op_store import OpStore
 
 
-class ReservedNodes(Enum):
-    """
-    enum of reserved node names
-    """
-
-    pipeline_input = "__pipeline_input__"
-    pipeline_output = "__pipeline_output__"
-
-    @property
-    def reference(self):
-        return nodes.NodeReference(self, self.value)
-
-
-class AbstractRunner(ABC):
-    """
-    a runner handles executing a graph of nodes
-    """
-
-    @abstractmethod
-    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
-        """
-        runs a whole pipeline
-
-        :param pipeline_input: the input to be given to the pipeline
-        :param pipeline: the pipeline to run
-
-        :return: the output of the graph called on the input if applicable
-        """
-        pass
-
-
-class SequentialRunner(AbstractRunner):
-    """
-    runner that executes a node graph sequentially
-    """
-
-    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
-        """
-        runs a whole pipeline
-
-        :param pipeline_input: the input to be given to the pipeline
-        :param pipeline: the pipeline to run
-
-        :return: the output of the graph called on the input if applicable
-        """
-
-        for callback in pipeline.callbacks:
-            callback.before_execution(pipeline, [pipeline_input])
-        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
-        for node in pipeline.nodes:
-            temp_results = pipeline.execute_node(node, temp_results, self)
-
-        if len(temp_results) > 1:
-            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(temp_results))
-
-        if temp_results is not None:
-            temp_results = pipeline.extract_results(temp_results)
-        for callback in pipeline.callbacks:
-            callback.after_execution(pipeline, [pipeline_input], temp_results)
-        return temp_results
-
-
-class Pipeline(AbstractOp):
+class Pipeline(base.BaseOp):
     """
     a pipeline is a collection of linked nodes to be executed together
     """
@@ -91,7 +23,7 @@ class Pipeline(AbstractOp):
         self._graph = self.resolve_graph(pipeline_nodes)
         self._name = name
 
-    def prepare(self, saver: Saver):
+    def prepare(self, saver: "base.BaseSaver"):
         for node in self._graph:
             if node.require_saver:
                 node.attach_saver(saver)
@@ -135,7 +67,7 @@ class Pipeline(AbstractOp):
                                     for node in pipeline_nodes if node.output_nodes
                                     for output_ref in node.output_references
                                     }
-        symbolic_to_real_mapping.update({node.value: node.reference for node in ReservedNodes})
+        symbolic_to_real_mapping.update({node.value: node.reference for node in nodes.ReservedNodes})
         return symbolic_to_real_mapping
 
     @classmethod
@@ -146,7 +78,7 @@ class Pipeline(AbstractOp):
 
         :param pipeline_nodes: the nodes to check
         """
-        available_nodes = {ReservedNodes.pipeline_input.reference}
+        available_nodes = {nodes.ReservedNodes.pipeline_input.reference}
         for node in pipeline_nodes:
             available_nodes = cls._update_ancestry(node, available_nodes)
 
@@ -168,7 +100,7 @@ class Pipeline(AbstractOp):
         update_available_node = available_nodes | set(node.output_references)
         return set(node_ref for node_ref in update_available_node if node_ref not in node.input_nodes)
 
-    def execute(self, runner: AbstractRunner, pipeline_input=None):
+    def execute(self, runner: "base.BaseRunner", pipeline_input=None):
         raise ValueError("pipelines cannot be executed through the `execute`method. use a runner with "
                          "`runner.run(this_pipeline)`")
 
@@ -183,11 +115,11 @@ class Pipeline(AbstractOp):
         :return: the result
         """
         node_reference, output = next(iter(results.items()))
-        if output is not None and node_reference.reference != ReservedNodes.pipeline_output.value:
+        if output is not None and node_reference.reference != nodes.ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    def execute_node(self, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: AbstractRunner):
+    def execute_node(self, node: "nodes.AbstractNode", intermediate_results: ResultDict, runner: "base.BaseRunner"):
         """
         executes a node for the pipeline, this method is called by the runners to make the pipeline execute one of it's
         node and all necessary callbacks
@@ -259,15 +191,6 @@ class Pipeline(AbstractOp):
         return latest_node
 
     @property
-    def pipeline_meta_path(self) -> str:
-        """
-        generates the path of the meta of this op
-
-        :return: the string of the path
-        """
-        return os.path.join(PIPELINE_PATH, self.name, "_meta.json")
-
-    @property
     def node_for_name(self) -> Mapping[Text, "nodes.AbstractNode"]:
         """
         generates a mapping with each nodes's name in key and the object as value
@@ -294,57 +217,3 @@ class Pipeline(AbstractOp):
         :param upstream_node: the upstream node to find the downstream of
         """
         return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
-
-
-class PipelineCallback:
-    """
-    a pipeline callback is used to define instructions that need to be executed at certain points in the pipeline
-    execution:
-
-    - before the pipeline is ran
-    - before each node of the pipeline
-    - after each node of the pipeline
-    - after the pipeline is ran
-    """
-
-    def before_execution(self, pipeline: Pipeline, args: List[Any]):
-        """
-        called before any node in the pipeline is ran. provides the pipeline that is being run and the pipeline input
-
-        :param pipeline: the piepline being ran
-        :param args: the pipeline inputs
-        """
-        pass
-
-    def after_execution(self, pipeline: Pipeline, args: List[Any], output: Any):
-        """
-        called after all the nodes of the pipeline have been ran with the pipeline being run and the output of the run
-
-        :param pipeline: the pipeline being run
-        :param args: the pipeline input that as given at the beginning of the run
-        :param output: the output of the pipeline run
-        """
-        pass
-
-    def before_node_execution(self, pipeline: Pipeline, node: "nodes.AbstractNode", args: List[Any]):
-        """
-        called before each node is executed the pipeline the node is in as well as the node are provided alongside the
-        arguents the node is going to be given
-
-        :param pipeline: the pipeline being run
-        :param node: the node that is about to run
-        :param args: the arguments that are going to be given to the node
-        """
-        pass
-
-    def after_node_execution(self, pipeline: Pipeline, node: "nodes.AbstractNode", args: List[Any], output: Any):
-        """
-        called after each node is executed. The pipeline the node is in as well as the node are provided alongside the
-        input/output of the node that ran
-
-        :param pipeline: the pipeline being run
-        :param node: the node that is about to run
-        :param args: the arguments that was given to the node
-        :param output: the output the node produced
-        """
-        pass
