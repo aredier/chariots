@@ -3,9 +3,12 @@ from typing import List, Optional
 import pytest
 import numpy as np
 
-from chariots._core.ops import LoadableOp, AbstractOp, OpCallBack
-from chariots._core.saving import DillSerializer
-from chariots._core.versioning import VersionedField, VersionType
+from chariots.base._base_op import BaseOp
+from chariots.callbacks._op_callback import OpCallBack
+from chariots.ops._loadable_op import LoadableOp
+from chariots.serializers._dill_serializer import DillSerializer
+from chariots.versioning._version_type import VersionType
+from chariots.versioning._versioned_field import VersionedField
 
 
 @pytest.fixture
@@ -43,7 +46,7 @@ def savable_op_generator():
 @pytest.fixture
 def Range10():
 
-    class Range(AbstractOp):
+    class Range(BaseOp):
 
         def execute(self, *args, **kwargs):
             return list(range(10))
@@ -53,7 +56,7 @@ def Range10():
 @pytest.fixture
 def AddOne():
 
-    class AddOneInner(AbstractOp):
+    class AddOneInner(BaseOp):
 
         def execute(self, input_value):
             return [i + 1 for i in input_value]
@@ -64,7 +67,7 @@ def AddOne():
 @pytest.fixture
 def NotOp():
 
-    class NotOp(AbstractOp):
+    class NotOp(BaseOp):
 
         def execute(self, input):
             return [not i for i in input]
@@ -75,7 +78,7 @@ def NotOp():
 @pytest.fixture
 def IsPair():
 
-    class IsPairInner(AbstractOp):
+    class IsPairInner(BaseOp):
 
         def execute(self, data):
             return [not i % 2 for i in data]
@@ -84,7 +87,7 @@ def IsPair():
 
 @pytest.fixture
 def XTrainOp():
-    class XTrainOpInner(AbstractOp):
+    class XTrainOpInner(BaseOp):
 
         def execute(self):
             return np.array(range(10)).reshape(-1, 1)
@@ -93,7 +96,7 @@ def XTrainOp():
 
 @pytest.fixture
 def YOp():
-    class YOpInner(AbstractOp):
+    class YOpInner(BaseOp):
 
         def execute(self):
             return list(range(1, 11))

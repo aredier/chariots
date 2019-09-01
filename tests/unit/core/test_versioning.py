@@ -1,16 +1,22 @@
 import pytest
 
-from chariots._core import versioning
+import chariots.versioning
+import chariots.versioning._version
+import chariots.versioning._version_type
+import chariots.versioning._versionable_meta
+import chariots.versioning._versioned_field
+import chariots.versioning._versioned_field_dict
+from chariots import versioning
 
 
 @pytest.fixture()
 def versioned_class_builder():
     def builder(major=0, minor=0, patch=0):
 
-        class Versioned(metaclass=versioning.VersionableMeta):
-            my_major = versioning.VersionedField(major, versioning.VersionType.MAJOR)
-            my_minor = versioning.VersionedField(minor, versioning.VersionType.MINOR)
-            my_patch = versioning.VersionedField(patch, versioning.VersionType.PATCH)
+        class Versioned(metaclass=chariots.versioning._versionable_meta.VersionableMeta):
+            my_major = chariots.versioning._versioned_field.VersionedField(major, chariots.versioning._version_type.VersionType.MAJOR)
+            my_minor = chariots.versioning._versioned_field.VersionedField(minor, chariots.versioning._version_type.VersionType.MINOR)
+            my_patch = chariots.versioning._versioned_field.VersionedField(patch, chariots.versioning._version_type.VersionType.PATCH)
 
         return Versioned
     return builder
@@ -21,9 +27,9 @@ def versioned_subclass(versioned_class_builder):
         ParentClass = versioned_class_builder(parent_major, parent_minor, parent_patch)
 
         class Versioned(ParentClass):
-            my_other_major = versioning.VersionedField(child_major, versioning.VersionType.MAJOR)
-            my_other_minor = versioning.VersionedField(child_minor, versioning.VersionType.MINOR)
-            my_other_patch = versioning.VersionedField(child_patch, versioning.VersionType.PATCH)
+            my_other_major = chariots.versioning._versioned_field.VersionedField(child_major, chariots.versioning._version_type.VersionType.MAJOR)
+            my_other_minor = chariots.versioning._versioned_field.VersionedField(child_minor, chariots.versioning._version_type.VersionType.MINOR)
+            my_other_patch = chariots.versioning._versioned_field.VersionedField(child_patch, chariots.versioning._version_type.VersionType.PATCH)
 
         return Versioned
     return builder
@@ -69,8 +75,9 @@ def test_inheritance(versioned_subclass):
 
 
 def test_versioned_field_dict_only_defaults():
-    empty_version = versioning.Version()
-    versioned_dict = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+    empty_version = chariots.versioning._version.Version()
+    versioned_dict = chariots.versioning._versioned_field_dict.VersionedFieldDict(
+        chariots.versioning._version_type.VersionType.MAJOR, {
         "foo": 3,
         "bar": 5
     })
@@ -92,10 +99,11 @@ def test_versioned_field_dict_only_defaults():
 
 
 def test_versioned_field_dict_only_defaults():
-    empty_version = versioning.Version()
-    versioned_dict = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+    empty_version = chariots.versioning._version.Version()
+    versioned_dict = chariots.versioning._versioned_field_dict.VersionedFieldDict(
+        chariots.versioning._version_type.VersionType.MAJOR, {
         "foo": 3,
-        "bar": versioning.VersionedField(5, versioning.VersionType.PATCH)
+        "bar": chariots.versioning._versioned_field.VersionedField(5, chariots.versioning._version_type.VersionType.PATCH)
     })
     assert set(versioned_dict.version_dict) == {"foo", "bar"}
     assert versioned_dict["foo"] == 3

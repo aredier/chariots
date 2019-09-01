@@ -6,4 +6,4 @@ def load_pandas():
         import pandas as pd
         return pd
     except ModuleNotFoundError:
-        raise BackendError("pandas _backend is not installed")
+        raise BackendError("pandas _deployment is not installed")

@@ -3,16 +3,27 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
-from chariots._backend import app
-from chariots._backend.client import TestClient
-from chariots._core import pipelines, nodes, versioning
-from chariots._core.ops import AbstractOp
+import chariots._ml_mode
+import chariots._pipeline
+import chariots.base._base_ml_op
+import chariots.nodes._node
+import chariots.sklearn._sk_supervised_op
+import chariots.sklearn._sk_unsupervised_op
+import chariots.versioning
+import chariots.versioning._version_type
+import chariots.versioning._versioned_field
+import chariots.versioning._versioned_field_dict
+from chariots._deployment import app
+from chariots._deployment.client import TestClient
+from chariots.base._base_op import BaseOp
 from chariots.errors import VersionError
-from chariots._ml import ml_op, sklearn_op
+from chariots import MLMode, Pipeline
+from chariots.base import BaseMLOp
+from chariots.sklearn import SKSupervisedOp,SKUnsupervisedOp
 
 @pytest.fixture
 def LROp():
-    class LROpInner(ml_op.MLOp):
+    class LROpInner(BaseMLOp):
 
         def fit(self, x_train, y_train):
             self._model.fit(np.array(x_train).reshape(-1, 1), y_train)
@@ -28,14 +39,14 @@ def LROp():
 
 
 def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
-    train_pipe = pipelines.Pipeline([
-        nodes.Node(XTrainOp(), output_nodes="x_train"),
-        nodes.Node(YOp(), output_nodes="y_train"),
-        nodes.Node(LROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    train_pipe = Pipeline([
+        chariots.nodes._node.Node(XTrainOp(), output_nodes="x_train"),
+        chariots.nodes._node.Node(YOp(), output_nodes="y_train"),
+        chariots.nodes._node.Node(LROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train")
-    pred_pipe = pipelines.Pipeline([
-        nodes.Node(LROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
-                   output_nodes="__pipeline_output__")
+    pred_pipe = Pipeline([
+        chariots.nodes._node.Node(LROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"],
+                                  output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
 
@@ -61,21 +72,21 @@ def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
 
 @pytest.fixture
 def SKLROp():
-    class SKLROpInner(sklearn_op.SKSupervisedModel):
-        model_class = versioning.VersionedField(LinearRegression, versioning.VersionType.MINOR)
+    class SKLROpInner(SKSupervisedOp):
+        model_class = chariots.versioning._versioned_field.VersionedField(LinearRegression, chariots.versioning._version_type.VersionType.MINOR)
 
     return SKLROpInner
 
 
 def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
-    train_pipe = pipelines.Pipeline([
-        nodes.Node(XTrainOp(), output_nodes="x_train"),
-        nodes.Node(YOp(), output_nodes="y_train"),
-        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    train_pipe = Pipeline([
+        chariots.nodes._node.Node(XTrainOp(), output_nodes="x_train"),
+        chariots.nodes._node.Node(YOp(), output_nodes="y_train"),
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train")
-    pred_pipe = pipelines.Pipeline([
-        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"],
-                   output_nodes="__pipeline_output__")
+    pred_pipe = Pipeline([
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"],
+                                  output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
 
@@ -103,19 +114,20 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
 
 @pytest.fixture
 def PCAOp():
-    class PCAInner(sklearn_op.SKUnsupervisedModel):
-        training_update_version = versioning.VersionType.MAJOR
-        model_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {
+    class PCAInner(SKUnsupervisedOp):
+        training_update_version = chariots.versioning._version_type.VersionType.MAJOR
+        model_parameters = chariots.versioning._versioned_field_dict.VersionedFieldDict(
+            chariots.versioning._version_type.VersionType.MAJOR, {
             "n_components": 2,
         })
-        model_class = versioning.VersionedField(PCA, versioning.VersionType.MAJOR)
+        model_class = chariots.versioning._versioned_field.VersionedField(PCA, chariots.versioning._version_type.VersionType.MAJOR)
 
     return PCAInner
 
 
 @pytest.fixture
 def XTrainOpL():
-    class XTrainOpInner(AbstractOp):
+    class XTrainOpInner(BaseOp):
 
         def execute(self):
             return np.array([range(10), range(1, 11), range(2, 12)]).T
@@ -124,19 +136,19 @@ def XTrainOpL():
 
 def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
 
-    train_transform = pipelines.Pipeline([
-        nodes.Node(XTrainOpL(), output_nodes="x_raw"),
-        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT), input_nodes=["x_raw"], output_nodes="x_train"),
+    train_transform = Pipeline([
+        chariots.nodes._node.Node(XTrainOpL(), output_nodes="x_raw"),
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.FIT), input_nodes=["x_raw"], output_nodes="x_train"),
     ], "train_pca")
-    train_pipe = pipelines.Pipeline([
-        nodes.Node(XTrainOpL(), output_nodes="x_raw"),
-        nodes.Node(YOp(), output_nodes="y_train"),
-        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
-        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    train_pipe = Pipeline([
+        chariots.nodes._node.Node(XTrainOpL(), output_nodes="x_raw"),
+        chariots.nodes._node.Node(YOp(), output_nodes="y_train"),
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train")
-    pred_pipe = pipelines.Pipeline([
-        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
-        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
+    pred_pipe = Pipeline([
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_transform, train_pipe, pred_pipe],
                          path=str(tmpdir), import_name="my_app")
@@ -162,19 +174,19 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
 
 def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
 
-    train_pca = pipelines.Pipeline([
-        nodes.Node(XTrainOpL(), output_nodes="x_raw"),
-        nodes.Node(PCAOp(mode=ml_op.MLMode.FIT), input_nodes=["x_raw"]),
+    train_pca = Pipeline([
+        chariots.nodes._node.Node(XTrainOpL(), output_nodes="x_raw"),
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.FIT), input_nodes=["x_raw"]),
         ], "train_pca")
-    train_rf = pipelines.Pipeline([
-        nodes.Node(XTrainOpL(), output_nodes="x_raw"),
-        nodes.Node(YOp(), output_nodes="y_train"),
-        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
-        nodes.Node(SKLROp(mode=ml_op.MLMode.FIT), input_nodes=["x_train", "y_train"])
+    train_rf = Pipeline([
+        chariots.nodes._node.Node(XTrainOpL(), output_nodes="x_raw"),
+        chariots.nodes._node.Node(YOp(), output_nodes="y_train"),
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
     ], "train_rf")
-    pred_pipe = pipelines.Pipeline([
-        nodes.Node(PCAOp(mode=ml_op.MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
-        nodes.Node(SKLROp(mode=ml_op.MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
+    pred_pipe = Pipeline([
+        chariots.nodes._node.Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
+        chariots.nodes._node.Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
     ], "pred")
     my_app = app.Chariot(app_pipelines=[train_pca, train_rf, pred_pipe],
                          path=str(tmpdir), import_name="my_app")

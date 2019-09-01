@@ -1,10 +1,10 @@
 
-from chariots._core import ops
+from chariots.base import BaseOp
 import pandas as pd
 from sklearn import datasets
 
 
-class DownloadIris(ops.AbstractOp):
+class DownloadIris(BaseOp):
     """
     op that downloads the iris dataset from sci-kit and outputs it as pandas
     dataframe

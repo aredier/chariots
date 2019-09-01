@@ -4,12 +4,16 @@ from typing import Optional, Any, List
 import pytest
 import numpy as np
 
-from chariots._core.nodes import Node, AbstractNode
-from chariots._core.ops import AbstractOp, OpCallBack
-from chariots._core.pipelines import PipelineCallback, Pipeline, SequentialRunner
+from chariots.base._base_nodes import BaseNode
+from chariots import Pipeline
+from chariots.nodes import Node
+from chariots.base._base_op import BaseOp
+from chariots.callbacks._op_callback import OpCallBack
+from chariots.runners._sequential_runner import SequentialRunner
+from chariots.callbacks._pipeline_callback import PipelineCallback
 
 
-class TimerOp(AbstractOp):
+class TimerOp(BaseOp):
 
     def __init__(self, stop_time: int, callbacks: Optional[OpCallBack] = None):
         super().__init__(callbacks=callbacks)
@@ -121,7 +125,7 @@ def test_after_pipeline():
 
 def test_multiple_callbacks():
 
-    class RaiseOp(AbstractOp):
+    class RaiseOp(BaseOp):
 
         def execute(self, *args, **kwargs):
             raise ValueError
@@ -153,10 +157,10 @@ def test_full_pipeline_call_back():
             self._result_dict.setdefault(pipeline.name, []).append(time.time() - self.pipe_timer)
             self.pipe_timer = None
 
-        def before_node_execution(self, pipeline: Pipeline, node: "AbstractNode", args: List[Any]):
+        def before_node_execution(self, pipeline: Pipeline, node: "BaseNode", args: List[Any]):
             self.op_timer = time.time()
 
-        def after_node_execution(self, pipeline: Pipeline, node: "AbstractNode", args: List[Any], output):
+        def after_node_execution(self, pipeline: Pipeline, node: "BaseNode", args: List[Any], output):
             self._result_dict.setdefault(node.name, []).append(time.time() - self.op_timer)
             self.op_timer = None
 
