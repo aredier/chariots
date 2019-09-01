@@ -1,7 +1,7 @@
 from hashlib import sha1
 from typing import Optional, List, Any
 
-from chariots.base import BaseSerializer
+from chariots.base import BaseSerializer, BaseRunner
 from chariots.versioning import Version
 from ._data_node import DataNode
 
@@ -32,7 +32,7 @@ class DataLoadingNode(DataNode):
         version.update_major(file_hash.encode("utf-8"))
         return version
 
-    def execute(self, params: List[Any], runner: Optional["pipelines.AbstractRunner"] = None) -> Any:
+    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
         """
         executes the underlying op on params
 

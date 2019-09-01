@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 
+import chariots
+
 
 class BaseRunner(ABC):
     """
@@ -8,7 +10,7 @@ class BaseRunner(ABC):
     """
 
     @abstractmethod
-    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
+    def run(self, pipeline: "chariots.Pipeline", pipeline_input: Optional[Any] = None):
         """
         runs a whole pipeline
 

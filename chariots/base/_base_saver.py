@@ -5,7 +5,13 @@ from typing import Text
 class BaseSaver(ABC):
     """
     abstraction of a file system used to persist/load assets and ops
+
+    :param base_path: the base path to use when mounting the saver (for instance the base path to use in the
+                      the file system when using the `FileSaver`
     """
+
+    def __init__(self, root_path: Text):
+        self.root_path = root_path
 
     def save(self, serialized_object: bytes, path: Text) -> bool:
         """
@@ -25,5 +31,3 @@ class BaseSaver(ABC):
         :return: said bytes
         """
         pass
-
-

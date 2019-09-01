@@ -5,10 +5,10 @@ from abc import abstractmethod
 from typing import Optional, List, Any
 from zipfile import ZipFile
 
-import chariots.versioning
 from chariots.callbacks import OpCallBack
 from chariots.ops import LoadableOp
 from chariots.serializers import DillSerializer
+from chariots.versioning import Version, VersionType
 from .._ml_mode import MLMode
 
 
@@ -28,14 +28,14 @@ class BaseMLOp(LoadableOp):
     - use the prediction pipeline
     """
 
-    training_update_version = chariots.versioning._version_type.VersionType.PATCH
+    training_update_version = VersionType.PATCH
     serializer_cls = DillSerializer
 
-    def __init__(self, mode: MLMode, callbacks: Optional[List[OpCallBack]] = None):
+    def __init__(self, mode: MLMode, op_callbacks: Optional[List[OpCallBack]] = None):
         """
         :param mode: the mode to use when instantiating the op
         """
-        super().__init__(callbacks)
+        super().__init__(op_callbacks)
         self._call_mode = mode
         self.serializer = self.serializer_cls()
         self._model = self._init_model()
@@ -96,8 +96,8 @@ class BaseMLOp(LoadableOp):
 
     @property
     def op_version(self):
-        time_version = chariots.versioning._version.Version().update(self.training_update_version,
-                                                                     str(self._last_training_time).encode("utf-8"))
+        time_version = Version().update(self.training_update_version,
+                                        str(self._last_training_time).encode("utf-8"))
         return super().op_version + time_version
 
     def load(self, serialized_object: bytes):

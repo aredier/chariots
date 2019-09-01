@@ -7,10 +7,10 @@ from ._base_serializer import BaseSerializer
 
 
 __all__ = [
-    "BaseNode",
     "BaseOp",
     "BaseMLOp",
     "BaseRunner",
     "BaseSaver",
-    "BaseSerializer"
+    "BaseSerializer",
+    "BaseNode",
 ]

@@ -4,18 +4,16 @@ from hashlib import sha1
 from typing import Optional, Any
 
 import chariots._op_store
-from chariots._helpers.constants import DATA_PATH
-from chariots._helpers.typing import InputNodes
-from chariots.base._base_nodes import BaseNode
-from chariots.base._base_saver import BaseSaver
-from chariots.base._base_serializer import BaseSerializer
+from chariots.base import BaseNode, BaseSaver, BaseSerializer
 from chariots.versioning import Version
+from .._helpers.constants import DATA_PATH
+from .._helpers.typing import InputNodes
 
 
 class DataNode(BaseNode, metaclass=ABCMeta):
 
-    def __init__(self, serializer: BaseSerializer, path: str, input_nodes: Optional[InputNodes] = None, output_nodes=None,
-                 name: Optional[str] = None):
+    def __init__(self, serializer: BaseSerializer, path: str, input_nodes: Optional[InputNodes] = None,
+                 output_nodes=None, name: Optional[str] = None):
         """
         :param serializer: the serializer to use to load the dat
         :param path: the path to load the data from
@@ -31,7 +29,7 @@ class DataNode(BaseNode, metaclass=ABCMeta):
         self._name = name
         self._saver = None
 
-    def load_latest_version(self, store_to_look_in: chariots._op_store.OpStore) -> "BaseNode":
+    def load_latest_version(self, store_to_look_in: chariots._op_store.OpStore) -> BaseNode:
         """
         reloads the latest version of this op by looking into the available versions of the store
         :param store_to_look_in:  the store to look for new versions in

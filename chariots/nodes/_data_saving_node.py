@@ -1,7 +1,7 @@
 from typing import Optional, List, Any
 
-from chariots.base._base_serializer import BaseSerializer
-from chariots.versioning._version import Version
+from chariots.base import BaseSerializer, BaseRunner
+from chariots.versioning import Version
 from ._data_node import DataNode
 from .._helpers.typing import InputNodes
 
@@ -27,7 +27,7 @@ class DataSavingNode(DataNode):
         """
         return Version()
 
-    def execute(self, params: List[Any], runner: Optional["pipelines.AbstractRunner"] = None) -> Any:
+    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
         """
         executes the underlying op on params
 

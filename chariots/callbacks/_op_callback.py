@@ -1,15 +1,15 @@
 from typing import List, Any
 
-from chariots.base import BaseOp
+from chariots import base
 
 
 class OpCallBack:
     """
-    an op callback is used to perform specific nstructions at certain points (before and after) around the operation's
+    an op callback is used to perform specific instructions at certain points (before and after) around the operation's
     execution
     """
 
-    def before_execution(self, op: BaseOp, args: List[Any]):
+    def before_execution(self, op: "base.BaseOp", args: List[Any]):
         """
         called before the operation is executed (and before the operation's `before_execution`'s method
 
@@ -18,7 +18,7 @@ class OpCallBack:
         """
         pass
 
-    def after_execution(self, op: BaseOp, args: List[Any], output: Any):
+    def after_execution(self, op: "base.BaseOp", args: List[Any], output: Any):
         """
         called after the operation has been executed (and after it's `after_execution`'s method.
 
