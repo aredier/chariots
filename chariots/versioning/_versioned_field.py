@@ -9,10 +9,17 @@ class VersionedField:
     a versioned field is used as a normal class attribute (when gotten it returns the inner value) but is used to
     generate the version of the class it is used on
 
-    >>> class MyVersionedClass(metaclass=VersionableMeta):
-    ...     foo = VersionedField(3, VersionType.MINOR)
-    >>> MyVersionedClass.foo
-    3
+    .. testsetup::
+
+        >>> from chariots.versioning import VersionableMeta, VersionType, VersionedField
+
+    .. doctest::
+
+        >>> class MyVersionedClass(metaclass=VersionableMeta):
+        ...     foo = VersionedField(3, VersionType.MINOR)
+        >>> MyVersionedClass.foo
+        3
+
     """
 
     def __init__(self, value: Any, affected_version: VersionType, ):
