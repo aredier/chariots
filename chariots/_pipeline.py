@@ -11,31 +11,92 @@ from chariots.base._base_nodes import NodeReference
 
 class Pipeline(base.BaseOp):
     """
-    a pipeline is a collection of linked nodes to be executed together
+    a pipeline is a collection of linked nodes that have to be executed one on top of each other. pipelines are the main
+    way to use Chariots.
+
+    to build a simple pipeline you can do as such:
+
+    .. testsetup::
+
+        >>> import tempfile
+        >>> import shutil
+
+        >>> from chariots import Pipeline
+        >>> from chariots.nodes import Node
+        >>> from chariots._helpers.doc_utils import AddOneOp, IsOddOp
+        >>> app_path = tempfile.mkdtemp()
+
+    .. doctest::
+
+        >>> pipeline = Pipeline([
+        ...     Node(AddOneOp(), input_nodes=["__pipeline_input__"], output_nodes=["added_number"]),
+        ...     Node(IsOddOp(), input_nodes=["added_number"], output_nodes=["__pipeline_output__"])
+        ... ], "simple_pipeline")
+
+    here we have just created a very simple pipeline with two nodes, one that adds one to the provided number and one
+    that returns whether or not the resulting number is odd
+
+    to use our pipeline, we can either do it manually with a runner:
+
+    .. doctest::
+
+        >>> from chariots.runners import SequentialRunner
+        >>> runner = SequentialRunner()
+        >>> runner.run(pipeline=pipeline, pipeline_input=4)
+        True
+
+    you can also as easily deploy your pipeline to a Chariots app (small micro-service to run your pipeline)
+
+    .. doctest::
+
+        >>> from chariots import Chariots
+        >>> app = Chariots([pipeline], path=app_path, import_name="simple_app")
+
+    Once this is done you can deploy your app as a flask app and get the result of the pipeline using a client:
+
+    .. testsetup::
+
+        >>> from chariots import TestClient
+        >>> client = TestClient(app)
+
+    .. doctest::
+
+        >>> client.call_pipeline(pipeline, 4)
+        True
+
+    .. testsetup::
+        >>> shutil.rmtree(app_path)
+
+    :param pipeline_nodes: the nodes of the pipeline. each node has to be linked to previous node
+                           (or `__pipeline_input__`). nodes can create branches but the only output remaining has to be
+                           `__pipeline_output__` (or no ouptut)
+    :param name: the name of the pipeline. this will be used to create the route at which to query the pipeline in the
+                 Chariots app
+    :param pipeline_callbacks: callbacks to be used with this pipeline (monitoring and logging for instance)
     """
 
     def __init__(self, pipeline_nodes: List["base.BaseNode"], name: str,
                  pipeline_callbacks: Optional[List["callbacks.PipelineCallback"]] = None):
         """
-        :param pipeline_nodes: the nodes of the pipeline
-        :param name: the name of the pipeline
-        :param pipeline_callbacks: the pipeline callbacks to use with this pipeline
         """
         super().__init__(pipeline_callbacks)
-        self._graph = self.resolve_graph(pipeline_nodes)
+        self._graph = self._resolve_graph(pipeline_nodes)
         self._name = name
 
     def prepare(self, saver: "base.BaseSaver"):
+        """
+        prepares the pipeline to be served. This is manly used to attach the correct saver to the nodes that need one
+        (data saving and loading nodes for instance).
+
+        :param saver: the saver to attach to all the nodes that need one
+        """
         for node in self._graph:
             if node.require_saver:
                 node.attach_saver(saver)
 
     @property
     def name(self) -> str:
-        """
-        the name of the pipeline
-        :return: string of the name
-        """
+        """the name of the pipeline"""
         return self._name
 
     @property
@@ -44,7 +105,7 @@ class Pipeline(base.BaseOp):
         return self._graph
 
     @classmethod
-    def resolve_graph(cls, pipeline_nodes: List["base.BaseNode"]) -> List["base.BaseNode"]:
+    def _resolve_graph(cls, pipeline_nodes: List["base.BaseNode"]) -> List["base.BaseNode"]:
         """
         transforms a user provided graph into a usable graph: checking linkage, replacing symbolic references by
         real ones, ...
@@ -58,7 +119,7 @@ class Pipeline(base.BaseOp):
         return real_nodes
 
     @staticmethod
-    def _build_symbolic_real_node_mapping(pipeline_nodes: List["base.BaseNode"]) -> SymbolicToRealMapping:
+    def _build_symbolic_real_node_mapping(pipeline_nodes: List[base.BaseNode]) -> SymbolicToRealMapping:
         """
         builds a mapping of nodes with their symbolic name in key and the object in value
 
@@ -103,34 +164,38 @@ class Pipeline(base.BaseOp):
         return set(node_ref for node_ref in update_available_node if node_ref not in node.input_nodes)
 
     def execute(self, runner: "base.BaseRunner", pipeline_input=None):
+        """present for inheritance purposes from the Op Class, this will automatically raise"""
         raise ValueError("pipelines cannot be executed through the `execute`method. use a runner with "
                          "`runner.run(this_pipeline)`")
 
     @staticmethod
     def extract_results(results: Dict["NodeReference", Any]) -> Any:
         """
-        extracts the output of a pipeline.
-        raises ValueError if some output was unused once every node is computed and the remaining is not the output of
-        the pipeline
+        extracts the output of a pipeline once all the nodes have been computed.
+        This method is used by runners when once all the nodes are computed in order to check and get the final result
+        to return
 
-        :param results: the outputs left unused once the graph has ran
-        :return: the result
+        :param results: the outputs left unused once the graph has been ran.
+
+        :raises ValueError: if some output was unused once every node is computed and the remaining is not the output of
+                            the pipeline
+        :return: the final result of the pipeline as needs to be returned to the use
         """
         node_reference, output = next(iter(results.items()))
         if output is not None and node_reference.reference != nodes.ReservedNodes.pipeline_output.value:
             raise ValueError("received an output that is not a pipeline output")
         return output
 
-    def execute_node(self, node: "base.BaseNode", intermediate_results: ResultDict, runner: "base.BaseRunner"):
+    def execute_node(self, node: base.BaseNode, intermediate_results: ResultDict, runner: "base.BaseRunner"):
         """
-        executes a node for the pipeline, this method is called by the runners to make the pipeline execute one of it's
+        executes a node from the pipeline, this method is called by the runners to make the pipeline execute one of it's
         node and all necessary callbacks
 
-        :param node: the node to execute
+        :param node: the node to be executed
         :param intermediate_results: the intermediate result to look in in order to fin the node's inputs
         :param runner: a runner to be used in case the node needs a runner to be executed (internal pipeline)
 
-        :raises ValueError: if the output of the node does not correspond to the length of it's output reference
+        :raises ValueError: if the output of the node does not correspond to the length of it's output references
 
         :return: the final result of the node after the execution
         """
@@ -151,7 +216,7 @@ class Pipeline(base.BaseOp):
 
         if len(res) != len(node.output_references):
             raise ValueError("found output with inconsistent size for {} got {} and "
-                             "expected".format(node.name, len(res), len(node.output_references)))
+                             "expected {}".format(node.name, len(res), len(node.output_references)))
 
         intermediate_results.update(dict(zip(node.output_references, res)))
         return intermediate_results
@@ -166,10 +231,16 @@ class Pipeline(base.BaseOp):
 
     def load(self, op_store: OpStore):
         """
-        loads this pipeline as last saved in saver
+        loads all the latest versions of the nodes in the pipeline if they are compatible from an `OpStore`. if the
+        latest version is not compatible, it will raise a `VersionError`
 
-        :type op_store: the op store to collect the ops and versions from
-        :return: this pipeline loaded
+        :param op_store: the op store to look for existing versions if any and to load the bytes of said version if
+                         possible
+
+        :raises VersionError: if a node is incompatible with one of it's input. For instance if a node has not been
+                              trained on the latest version of it's input in an inference pipeline
+
+        :return: this pipeline once it has been fully loaded
         """
         for i in range(len(self._graph)):
             # we are checking the nodes (from upstream down) and provide the node we are checking
@@ -194,18 +265,16 @@ class Pipeline(base.BaseOp):
 
     @property
     def node_for_name(self) -> Mapping[Text, "base.BaseNode"]:
-        """
-        generates a mapping with each nodes's name in key and the object as value
-
-        :return: the mapping
-        """
+        """utils mapping that has node names in input and the nodes objects in values"""
         return {node.name: node for node in self._graph}
 
     def save(self, op_store: OpStore):
         """
-        saves this pipeline in saver
+        persists all the nodes (that need saving) in an `OpStore`. this is used for instance when a training pipeline
+        has been executed and needs to save it's trained node(s) for the inference pipeline to load them. This method
+        also updates the versions available for the store to serve in the future
 
-        :param op_store: the store to persist ops in
+        :param op_store: the store to persist the nodes and their versions in
         """
         for i in range(len(self._graph)):
             upstream_node = self._graph[i]

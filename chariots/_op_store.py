@@ -9,8 +9,30 @@ _OpGraph = Dict[Text, Dict[Text, Set[Version]]]
 
 class OpStore:
     """
-    The op store abstracts the saving of ops and their relevant versions.
-    it stores the valid edges of the op graph (links between two ops that work together)
+    A Chariots OpStore handles the persisting of Ops and their versions as well as the accepted versions of each op's
+    inputs.
+
+   the OpStore persists all this metadata about persisted ops in the `/_meta.json` file using the saver provided at init
+
+   all the serialized ops are saved at /models/<op name>/<version>
+
+    The OpStore is mostly used by the Pipelines and the nodes at saving time to:
+
+    - persist the ops that they have updated
+    - register new versions
+    - register links between different ops and different versions that are valid (for instance this versions of the PCA
+      is valid for this new version of the RandomForest
+
+    and at loading time to:
+
+    - check latest available version of an op
+    - check if this version is valid with the rest of the pipeline
+    - recover the bytes of the latest version if it is valid
+
+    the OpStore identifies op's by there name (usually a snake case of the Class of your op) so changing this name
+    (or changing the class name) might make it hard to recover the metadata and serialized bytes of the Ops
+
+    :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
     """
 
     # the format of the app's op's graoh:
@@ -26,9 +48,6 @@ class OpStore:
     _location = "/_meta.json"
 
     def __init__(self, saver: "base.BaseSaver"):
-        """
-        :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
-        """
         self._saver = saver
         self._all_op_links = self._load_from_saver()  # type: _OpGraph
 
@@ -60,7 +79,9 @@ class OpStore:
 
     def save(self):
         """
-        persists the the op version metadata.
+        persists all the metadata about ops and versions available in the store using the store's saver.
+
+        The saved metadata can be found at `/_meta.json` from the saver's route.
         """
         version_dict_with_str_versions = {
             downstream_op_name: {
@@ -71,10 +92,10 @@ class OpStore:
         }
         self._saver.save(json.dumps(version_dict_with_str_versions).encode("utf-8"), path=self._location)
 
-    def get_all_verisons_of_op(self, op: "base.BaseOp") -> Optional[List[Version]]:
+    def get_all_versions_of_op(self, op: "base.BaseOp") -> Optional[List[Version]]:
         """
-        gets all the versions of an op that were previously persisted (the op version and not the upstream one)
-        regardless of which pipeline saved it
+        returns all the available versions of an op ever persisted in the OpGraph (or any Opgraph using the same
+        _meta.json)
 
         :param op: the op to get the previous persisted versions
         """
@@ -91,9 +112,9 @@ class OpStore:
 
     def get_op_bytes_for_version(self, op: "base.BaseOp", version: Version) -> bytes:
         """
-        loads the persisted bytes of an op given the version that needs loading
+        loads the persisted bytes of op for a specific version
 
-        :param op: the op to load
+        :param op: the op that needs to be loaded
         :param version: the version of the op to load
         :return: the bytes of the op
         """
@@ -114,17 +135,32 @@ class OpStore:
 
     def save_op_bytes(self, op_to_save: "base.BaseOp", version: Version, op_bytes: bytes):
         """
-        saves an op bytes and registers the links that accept this op as upstream (all the ops that use this
-        op and are valid to use with this specific op's version
+        saves op_bytes of a specific op to the path /models/<op name>/<version>.
 
+        the version that is used here is the node version (and not the op_version) as nodes might be able to modify
+        some behaviors of the versioning of their underlying op
+
+        :param op_to_save: the op that needs to be saved (this will not be saved as is - only the bytes)
         :param version: the exact version to be used when persisting
-        :param op_to_save: the op that needs saving
-        :param op_bytes: the bytes of the op to save
+        :param op_bytes: the bytes of the op to save that will be persisted
         """
+
+        # TODO use the op name rather than the op
+
         path = self._build_op_path(op_to_save.name, version=version)
         self._saver.save(serialized_object=op_bytes, path=path)
 
-    def register_valid_link(self, downstream_op, upstream_op, upstream_op_version):
+    def register_valid_link(self, downstream_op: Optional[str], upstream_op: "str",
+                            upstream_op_version: Version):
+        """
+        registers a link between an upstream and a downstream op. This means that in future relaods the downstream op
+        will whitelist this version for this upstream op
+
+        :param downstream_op: the op that needs to whitelist one of it's inputs' new version
+        :param upstream_op: the op that is getting whitelisted as one of the inputs of the downstream op
+        :param upstream_op_version: the valid version of the op that is getting whitelisted
+        :return:
+        """
         self._all_op_links.setdefault(
             downstream_op if downstream_op is not None else "__end_of_pipe__", {}
         ).setdefault(upstream_op, set()).add(upstream_op_version)

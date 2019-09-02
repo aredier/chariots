@@ -33,18 +33,51 @@ class NodeReference:
 
 class BaseNode(ABC):
     """
-    a Node handles the interaction of an op with other ops/nodes.
-    It represents a slot in the pipeline.
+    A node represents a step in a Pipeline. It is linked to one or several inputs and can produce one or several
+    ouptuts:
+
+    .. testsetup::
+
+        >>> from chariots import Pipeline
+        >>> from chariots.nodes import Node
+        >>> from chariots._helpers.doc_utils import IrisFullDataSet, PCAOp, MLMode, LogisticOp
+
+    .. doctest::
+
+        >>> train_logistics = Pipeline([
+        ...     Node(IrisFullDataSet(), output_nodes=["x", "y"]),
+        ...     Node(PCAOp(MLMode.FIT_PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
+        ...     Node(LogisticOp(MLMode.FIT), input_nodes=["x_transformed", "y"])
+        ... ], 'train_logistics')
+
+    you can also link the first and/or the last node of your pipeline  to the pipeline input and output:
+
+    .. doctest::
+
+        >>> pred = Pipeline([
+        ...     Node(IrisFullDataSet(),input_nodes=['__pipeline_input__'], output_nodes=["x"]),
+        ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
+        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
+        ... ], 'pred')
+
+    Here we are showing the behavior of nodes using the :doc:`Node subclass <./chariots.nodes>` (used with ops).
+
+    If you want to create your own Node you will need to define the
+
+    - `node_version` property that gives the version of the node
+    - `name` property
+    - `execute` method that defines the execution behavior of your custom Node
+    - `load_latest_version` that defines how to load the latest version of this node
+
+    :param input_nodes: the input_nodes on which this node should be executed
+    :param output_nodes: an optional symbolic name for the outputs of this node (to be used by downstream nodes in the
+                         pipeline. If this node is the output of the pipeline use `__pipeline_output__` or
+                         `ReservedNodes.pipeline_output`. If the output of the node should be split (for different
+                         downstream nodes to consume) use a list
     """
 
     def __init__(self, input_nodes: Optional[List[Union[Text, "BaseNode"]]] = None,
                  output_nodes: Union[List[Text], Text] = None):
-        """
-        :param input_nodes: the input_nodes on which this node should be executed
-        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use `__pipeline_output__` or `ReservedNodes.pipeline_output`. If the output of the node
-        should be split (for different downstream ops to consume) use a list
-        """
         self.input_nodes = input_nodes or []
         if not isinstance(output_nodes, list):
             output_nodes = [output_nodes]
@@ -56,6 +89,7 @@ class BaseNode(ABC):
 
     @property
     def output_references(self) -> List[NodeReference]:
+        """the different outputs of this nodes"""
         if self.output_nodes[0] is None:
             return [NodeReference(self, self.name)]
         return [NodeReference(self, reference) for reference in self.output_nodes]
@@ -63,27 +97,30 @@ class BaseNode(ABC):
     @property
     @abstractmethod
     def node_version(self) -> Version:
-        """
-        the version of the op this node represents
-        """
+        """the version of this node"""
         pass
 
     @abstractmethod
     def execute(self, *params) -> Any:
         """
-        executes the underlying op on params
+        executes the computation represented byt this node (loads/saves dataset for dataset nodes, executes underlyin op
+        for `Node`
 
-        :param params: the inputs of the underlying op
-        :return: the output of the op
+        :param params: the inputs provided by the `input_nodes`
+        :return: the output(s) of the node
         """
         pass
 
     def replace_symbolic_references(self, symbolic_to_real_node: SymbolicToRealMapping) -> "BaseNode":
         """
-        replaces symbolic references (input_nodes specified as strings) by the objects they reference
+        replaces all the symbolic references of this node: if an input_node or output_node was defined with a string by
+        the user, it will try to find the node represented by this string.
 
-        :param symbolic_to_real_node: the mapping of nodes for their symbolic name
-        :return: this node with it's symbolic inputs replaced
+        :param symbolic_to_real_node: the mapping of all `NodeReference` found so far in the pipeline
+
+        :raises ValueError: if a node with multiple outputs was used directly (object used rather than strings)
+
+        :return: this node with all it's inputs and outputs as `NodeReferences` rather than strings
         """
         self.input_nodes = [self._ensure_node_is_real(node, symbolic_to_real_node) for node in self.input_nodes]
         return self
@@ -102,19 +139,21 @@ class BaseNode(ABC):
     @abstractmethod
     def load_latest_version(self, store_to_look_in: _op_store.OpStore) -> "BaseNode":
         """
-        reloads the latest version of this op by looking into the available versions of the store
-        :param store_to_look_in:  the store to look for new versions in
-        :return:
+        reloads the latest available version of thid node by looking for all available versions in the OpStore
+
+        :param store_to_look_in:  the store to look for new versions and eventually for bytes of serialized ops
+
+        :return: this node once it has been loaded
         """
 
     def check_version_compatibility(self, upstream_node: "BaseNode", store_to_look_in: _op_store.OpStore):
         """
-        checks that this node is compatible with a potentially new upstream
+        checks that this node is compatible with a potentially new version of an upstream node`
 
-        :raises VersionError: When the nodes are not compatible
+        :param upstream_node: the upstream node to check for version compatibality with
+        :param store_to_look_in: the op_store to look for valid relationships between this node and upstream versions
 
-        :param upstream_node: the node to check the version for
-        :param store_to_look_in: the op_store to look for previous relationships between the nodes in
+        :raises VersionError: when the two nodes are not compatible
         """
         validated_links = store_to_look_in.get_validated_links(self.name, upstream_node.name)
         if validated_links is None:
@@ -124,26 +163,21 @@ class BaseNode(ABC):
 
     @property
     def is_loadable(self) -> bool:
-        """
-        :return: whether or not this node and its inner op can be loaded
-        """
+        """whether or not this node can be loaded (this is used by pipelined to know which nodes to load"""
         return False
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """
-        the name of the node
-
-        :return: the string of the name
-        """
+        """the name of the node"""
 
     def persist(self, store: _op_store.OpStore, downstream_nodes: Optional[List["BaseNode"]]) -> Version:
         """
-        persists the inner op of the node in saver
+        persists this nodes's data (usually this means saving the serialized bytes of the inner op of this node (for the
+        `Node` class
 
         :param store: the store in which to store the node
-        :param downstream_nodes: the node(s) that are going to accept this node downstrem
+        :param downstream_nodes: the node(s) that are going to accept the current version of this node as upstream
         """
         version = self.node_version
         if downstream_nodes is None:
@@ -157,20 +191,12 @@ class BaseNode(ABC):
 
     @property
     def requires_runner(self) -> bool:
-        """
-        whether or not this node requires q runner to be executed
-        (typically if the inner op is a pipelines)
-
-        :return: bool
-        """
+        """whether or not this node requires a runner to be executed (typically if the inner op is a pipelines)"""
         return False
 
     @property
     def require_saver(self) -> bool:
-        """
-        whether or not this node requires a saver to be executed
-        :return: bool
-        """
+        """whether or not this node requires a saver to be executed this is usualy `True` by data nodes"""
         return False
 
     @abstractmethod
@@ -188,4 +214,5 @@ class ReservedNodes(Enum):
 
     @property
     def reference(self):
+        """the output references of the reserved nodes"""
         return NodeReference(self, self.value)

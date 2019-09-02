@@ -6,8 +6,9 @@ from ._version_type import VersionType
 
 class VersionedField:
     """
+    a descriptor to mark that a certain class attribute has to be incorporated in a subversion
     a versioned field is used as a normal class attribute (when gotten it returns the inner value) but is used to
-    generate the version of the class it is used on
+    generate the version of the class it is used on when said class is created (at import time)
 
     .. testsetup::
 
@@ -20,13 +21,11 @@ class VersionedField:
         >>> MyVersionedClass.foo
         3
 
+    :param value: the inner value to be given the field whcih will be returned when you try to get the class attribute
+    :param affected_version: the subversion this class attribute has to affect
     """
 
     def __init__(self, value: Any, affected_version: VersionType, ):
-        """
-        :param value: the inner value to be given the field
-        :param affected_version: the verssion affected nby this field
-        """
         self.value = value
         self.affected_version = affected_version
 

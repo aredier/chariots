@@ -17,6 +17,21 @@ Api Docs
    chariots.errors
 
 .. automodule:: chariots
-   :members:
    :undoc-members:
    :show-inheritance:
+   :members:
+   :exclude-members: Client, Pipeline, TestClient, Chariots
+
+   .. autoclass::  Pipeline
+      :members:
+
+   .. autoclass::  Chariots
+      :members:
+
+   .. autoclass::  Client
+      :members:
+      :inherited-members:
+
+   .. autoclass::  TestClient
+      :members:
+

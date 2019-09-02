@@ -49,33 +49,80 @@ class PipelineResponse:
         )
 
 
-class Chariot(Flask):
+class Chariots(Flask):
     """
-    the _deployment app used to run the pipelines
-    for each pipeline, sevreal routes will be built:
+    small `Flask` application used to rapidly deploy pipelines:
 
-    - /pipelines/<pipeline_name>/main
-    - /pipelines/<pipeline_name>/versions
-    - /pipelines/<pipeline_name>/load
-    - /pipelines/<pipeline_name>/save
-    - /piepleines/<pipeline_name>/health_check
+    .. testsetup::
 
-    as well as some common routes
+        >>> import tempfile
+        >>> import shutil
 
-    - /health_check
-    - /available_pipelines
+        >>> from chariots import Pipeline, Chariots
+        >>> from chariots._helpers.doc_utils import is_odd_pipeline
+        >>> app_path = tempfile.mkdtemp()
+
+    .. doctest::
+
+        >>> my_app = Chariots(app_pipelines=[is_odd_pipeline], path=app_path, import_name="my_app")
+
+    .. testsetup::
+        >>> shutil.rmtree(app_path)
+
+    you can then deploy the app as you would with the flask comand:
+
+    .. code-block:: console
+
+        $ flask
+
+    or if you have used :doc:`the chariots' template <../template>`, you can use the predefined cli once the project is
+    installed:
+
+    .. code-block:: console
+
+        $ my_great_project start
+
+    once the app is started you can use it with the client (that handles creating the requests and serializing to the
+    right format) to query your pipelines:
+
+    .. testsetup::
+
+        >>> from chariots import TestClient
+        >>> client = TestClient(my_app)
+
+    .. doctest::
+
+        >>> client.call_pipeline(is_odd_pipeline, 4)
+        False
+
+    alternatively, you can query the `Chariots` server directly as you would for any normal micro-service. The server
+    has the following routes:
+
+    - `/pipelines/<pipeline_name>/main`
+    - `/pipelines/<pipeline_name>/versions`
+    - `/pipelines/<pipeline_name>/load`
+    - `/pipelines/<pipeline_name>/save`
+    - `/pipelines/<pipeline_name>/health_check`
+
+    for each pipeline that was registered to the `Chariots` app. It also creates some common routes for all pipelines:
+
+    - `/health_check`
+    - `/available_pipelines`
 
     :param app_pipelines: the pipelines this app will serve
-    :param path: the path to mount the app on (whether on local or remote saver)
+    :param path: the path to mount the app on (whether on local or remote saver). for isntance using a `LocalFileSaver`
+                 and '/chariots' will mean all the information persisted by the `Chariots` server (past versions,
+                 trained models, datasets) will be persisted there
     :param saver_cls: the saver class to use. if None the `FileSaver` class will be used as default
-    :param runner: the runner to use to perform pipelines when saving. If None the `SequentialRunner` will be used
+    :param runner: the runner to use to run the pipelines. If None the `SequentialRunner` will be used
                   as default
-    :param default_pipeline_callbacks: pipeline callbacks to be added to every pipeline this app will serve
+    :param default_pipeline_callbacks: pipeline callbacks to be added to every pipeline this app will serve.
     :param args: additional positional arguments to be passed to the Flask app
     :param kwargs: additional keywords arguments to be added to the Flask app
+
     """
 
-    def __init__(self, app_pipelines: List[Pipeline], path: str, saver_cls: Type[BaseSaver] = FileSaver,
+    def __init__(self, app_pipelines: List[Pipeline], path, saver_cls: Type[BaseSaver] = FileSaver,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -6,7 +6,7 @@ from chariots.base import BaseSaver
 
 class FileSaver(BaseSaver):
     """
-    a saver that persists to the local file system
+    a saver that persists to the local file system of the machine the `Chariots` saver is running on.
     """
 
     def _build_path(self, path: Text):

@@ -6,8 +6,8 @@ Welcome to chariots's documentation!
    :caption: Contents:
 
    installation
-   usage
-   chariots
+   principles/general_principles
+   api_docs/chariots
    template
    contributing
    authors

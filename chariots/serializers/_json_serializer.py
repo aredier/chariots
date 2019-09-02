@@ -7,7 +7,7 @@ from ..base._base_serializer import BaseSerializer
 
 class JSONSerializer(BaseSerializer):
     """
-    serializes the object into JSON format
+    serializes objects into JSON format
     """
 
     def serialize_object(self, target: Any) -> bytes:

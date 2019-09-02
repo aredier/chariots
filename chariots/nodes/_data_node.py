@@ -11,55 +11,48 @@ from .._helpers.typing import InputNodes
 
 
 class DataNode(BaseNode, metaclass=ABCMeta):
+    """
+    DataNodes are used to serialize/deserialize the datasets/outputs that you need to use in your pipelines
+
+    To use a `DataNode`, you need to have a :doc:`saver<./chariots.savers>` attached to the data nodes. you can either
+    do it at init or using the `attach_saver` method
+
+    :param saver: the saver to use for loading or saving data (if not specified at init, you can use the
+                  `attach_saver` method
+    :param serializer: the serializer to use to load the dat
+    :param path: the path to load the data from
+    :param input_nodes: the input_nodes on which this node should be executed
+    :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
+                         output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
+    :param name: the name of the op
+    """
 
     def __init__(self, serializer: BaseSerializer, path: str, input_nodes: Optional[InputNodes] = None,
-                 output_nodes=None, name: Optional[str] = None):
-        """
-        :param serializer: the serializer to use to load the dat
-        :param path: the path to load the data from
-        :param input_nodes: the input_nodes on which this node should be executed
-        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use "pipeline_output" or `ReservedNodes.pipeline_output`
-        :param name: the name of the op
-        """
+                 output_nodes=None, name: Optional[str] = None, saver: Optional[BaseSaver] = None):
 
         super().__init__(input_nodes=input_nodes, output_nodes=output_nodes)
         self.path = os.path.join(DATA_PATH, path)
         self.serializer = serializer
         self._name = name
-        self._saver = None
+        self._saver = saver
 
     def load_latest_version(self, store_to_look_in: chariots._op_store.OpStore) -> BaseNode:
-        """
-        reloads the latest version of this op by looking into the available versions of the store
-        :param store_to_look_in:  the store to look for new versions in
-        :return:
-        """
         return self
 
     def attach_saver(self, saver: BaseSaver):
         """
-        attach a saver to the op, this is the entry point for the Chariot App to inject it's saver to the Dat Op
-
-        :param saver: the saver to use
+        method used to attach a saver to this op. This needs to be done before the op is executed in order for it to
+        know where to save/load the serialized/deserialized data
         """
         self._saver = saver
 
     @property
     def name(self) -> str:
-        """
-        the name of the node
-
-        :return: the string of the name
-        """
         return self._name or self.path.split("/")[-1].split(".")[0]
 
     @property
     @abstractmethod
     def node_version(self) -> Version:
-        """
-        the version of the op this node represents
-        """
         if self._saver is None:
             raise ValueError("cannot get the version of a data op without a saver")
         version = Version()
@@ -69,12 +62,6 @@ class DataNode(BaseNode, metaclass=ABCMeta):
 
     @abstractmethod
     def execute(self, *params) -> Any:
-        """
-        executes the underlying op on params
-
-        :param params: the inputs of the underlying op
-        :return: the output of the op
-        """
 
         if self._saver is None:
             raise ValueError("cannot load data without a saver")
@@ -82,6 +69,7 @@ class DataNode(BaseNode, metaclass=ABCMeta):
 
     @property
     def require_saver(self) -> bool:
+        """set to True has this op cannot be executed by a pipeline before a saver has been attached to it."""
         return True
 
     @abstractmethod
