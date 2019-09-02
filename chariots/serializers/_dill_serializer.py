@@ -8,7 +8,7 @@ from ..base._base_serializer import BaseSerializer
 
 class DillSerializer(BaseSerializer):
     """
-    serializes the object into dill readable byte
+    serializes objects using the dill library (similar to pickle but optimized for numpy arrays.
     """
 
     def serialize_object(self, target: Any) -> bytes:

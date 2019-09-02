@@ -8,15 +8,24 @@ from ._version_type import VersionType
 
 class Version:
     """
-    a chariot version with three subversions (major, minor, patch)
-    each version is a hash of the versioned fields that it is using
-    the order of versions is determined by the timestamp of the version creation
+    Type of all the different versions used throughout the Chariots framework.
+
+    A Chariots version has three subversions (major, minor, patch) each subversion is the hexadecimal representation of
+    the VersionedFields of this version.
+
+    two versions are considered equal if all their subversions are the same.
+    A version is considered greater than the other of the other if one or more of it's subversions is different and it
+    has been created later.
+
+    you can use the `+` operation between two version to create a new version. this new version will NOT be the same as
+    creating the new version from the same VersionedFields as the two versions:
+    `version(foo) + version(bar) != version(foo, bar)`
     """
 
     def __init__(self, major: Optional[Hash] = None, minor: Optional[Hash] = None,
                  patch: Optional[Hash] = None, creation_time: Optional[float] = None):
         """
-        ONLY PROVIDE ARGUMENTS IF YOU ARE LOADING A VALID VERSION
+        ONLY PROVIDE ARGUMENTS IF YOU ARE PARSING A VALID VERSION
 
         :param major: the starting hash of the major version
         :param minor: the starting hash of the minor version
@@ -45,10 +54,7 @@ class Version:
 
     @property
     def creation_time(self) -> float:
-        """
-        the creation time of the op
-        :return: the timestamp of the creation time
-        """
+        """the time stamp of the creation time of the version"""
         return self._creation_time
 
     def __gt__(self, other: "Version") -> bool:
@@ -62,39 +68,30 @@ class Version:
 
     @property
     def major(self) -> str:
-        """
-        the hash of the major subversion
-        :return: the hash string
-        """
+        """the hash of the major subversion"""
         if isinstance(self._major, str):
             return self._major
         return self._major.hexdigest()
 
     @property
     def minor(self) -> str:
-        """
-        the hash of the minor subversion
-        :return: the hash string
-        """
+        """the hash of the minor subversion"""
         if isinstance(self._minor, str):
             return self._minor
         return self._minor.hexdigest()
 
     @property
     def patch(self) -> str:
-        """
-        the hash of the patch subversion
-        :return: the hash string
-        """
+        """the hash of the patch subversion"""
         if isinstance(self._patch, str):
             return self._patch
         return self._patch.hexdigest()
 
     def update_major(self, input_bytes: bytes) -> "Version":
         """
-        updates the major version with some bytes
+        updates the major subversion with some bytes
 
-        :param input_bytes: bytes to update with
+        :param input_bytes: bytes to update the major subversion with
         :return: the updated version
         """
         self._major.update(input_bytes)
@@ -102,9 +99,9 @@ class Version:
 
     def update_minor(self, input_bytes: bytes) -> "Version":
         """
-        updates the minor version with some bytes
+        updates the minor subversion with some bytes
 
-        :param input_bytes: bytes to update with
+        :param input_bytes: bytes to update the minor subversion with
         :return: the updated version
         """
         self._minor.update(input_bytes)
@@ -112,9 +109,9 @@ class Version:
 
     def update_patch(self, input_bytes: bytes) -> "Version":
         """
-        updates the patch version with some bytes
+        updates the patch subversion with some bytes
 
-        :param input_bytes: bytes to update with
+        :param input_bytes: bytes to update the patch subversion with
         :return: the updated version
         """
         self._patch.update(input_bytes)
@@ -122,10 +119,10 @@ class Version:
 
     def update(self, version_type: VersionType, input_bytes: bytes) -> "Version":
         """
-        updates the corresponding version of this version with some bytes
+        updates the corresponding subversion of this version with some bytes
 
-        :param version_type: the version to update
-        :param input_bytes: the bytes to update with
+        :param version_type: the subversion to update
+        :param input_bytes: the bytes to update the subversion with
         :return: the updated version
         """
         if version_type is VersionType.MAJOR:
@@ -146,9 +143,10 @@ class Version:
     @classmethod
     def parse(cls, version_string: str) -> "Version":
         """
-        parses a string representation of a saved version and returns a valid Version object
+        parses a string representation of a saved version and returns a valid `Version` object
 
-        :param version_string:
+        :param version_string: the version string to parse (this must come from `str(my_version)` and not
+                               `repr(my_version)`
         :return: the version represented by the version string
         """
         hash_str, creation_time = version_string.split("_")

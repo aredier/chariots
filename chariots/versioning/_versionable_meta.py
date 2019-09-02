@@ -8,7 +8,9 @@ from ._versioned_field import VersionedField
 
 class VersionableMeta(type):
     """
-    meta class for all versioned objects in the library. It works buy
+    metaclass for all versioned objects in the library.
+    When a new class using this metaclas is created, it will have a `__version__` class attribute that sets all the
+    subversions of the class depending on the VersionedFields the class was created with
     """
 
     def __init__(cls, clsname, superclasses, attributedict):

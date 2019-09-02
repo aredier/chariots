@@ -9,41 +9,55 @@ from chariots.versioning import Version
 
 class Node(BaseNode):
     """
-    a Node handles the interaction of an op with other ops/nodes.
-    It represents a slot in the pipeline.
+    Class that handles the interaction between a pipeline and an Op. it handles defining the nodes that are going to be
+    used as the inputs of the op and how the output of the op should be reppresented for the rest of the pipeline.
+
+
+    .. testsetup::
+
+        >>> from chariots import Pipeline
+        >>> from chariots.nodes import Node
+        >>> from chariots._helpers.doc_utils import IrisFullDataSet, PCAOp, MLMode, LogisticOp
+
+    .. doctest::
+
+        >>> train_logistics = Pipeline([
+        ...     Node(IrisFullDataSet(), output_nodes=["x", "y"]),
+        ...     Node(PCAOp(MLMode.FIT_PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
+        ...     Node(LogisticOp(MLMode.FIT), input_nodes=["x_transformed", "y"])
+        ... ], 'train_logistics')
+
+    you can also link the first and/or the last node of your pipeline  to the pipeline input and output:
+
+    .. doctest::
+
+        >>> pred = Pipeline([
+        ...     Node(IrisFullDataSet(),input_nodes=['__pipeline_input__'], output_nodes=["x"]),
+        ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
+        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
+        ... ], 'pred')
+
+    :param op: the op this Node represents
+    :param input_nodes: the input_nodes that are going to be used as inputs of the inner op the node, the inputs will
+                        be given to the op in the order they are defined in this argument.
+    :param output_nodes: a symbolic name for the the output(s) of the op, if the op returns a tuple `output_noes`
+                         should be the same length as said tuple
     """
 
     def __init__(self, op: BaseOp, input_nodes: Optional[List[Union[Text, BaseNode]]] = None,
                  output_nodes: Union[List[Union[Text, BaseNode]], Text, BaseNode] = None):
-        """
-        :param op: the op this Node wraps
-        :param input_nodes: the input_nodes on which this node should be executed
-        :param output_nodes: an optional symbolic name for the node to be called by other node. If this node is the
-        output of the pipeline use `__pipeline_output__` or `ReservedNodes.pipeline_output`. If the output of the node
-        should be split (for different downstream ops to consume) use a list
-        """
         self._op = op
         super().__init__(input_nodes=input_nodes, output_nodes=output_nodes)
 
     @property
     def node_version(self) -> Version:
-        """
-        the version of the op this node represents
-        """
         return self._op.op_version
-
-    @property
-    def has_symbolic_references(self) -> bool:
-        """
-        whether or not this node has symbolic references in its input
-        """
-        return any(isinstance(node, str) for node in self.input_nodes)
 
     def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
         """
         executes the underlying op on params
 
-        :param runner: runner that can be provided if the node needs one
+        :param runner: runner that can be provided if the node needs one (mostly if node is a pipeline)
         :param params: the inputs of the underlying op
 
         :raises ValueError: if the runner is not provided but needed
@@ -58,16 +72,18 @@ class Node(BaseNode):
 
     def load_latest_version(self, store_to_look_in: "chariots.OpStore") -> Optional[BaseNode]:
         """
-        reloads the latest version of this op by looking into the available versions of the store
+        reloads the latest version of the op this node represents by looking for available versions in the store
+
         :param store_to_look_in:  the store to look for new versions in
-        :return:
+
+        :return: the reloaded node if any older versions where found in the store otherwise `None`
         """
         if not self.is_loadable:
             return self
         if isinstance(self._op, chariots.Pipeline):
             self._op.load(store_to_look_in)
             return self
-        all_versions = store_to_look_in.get_all_verisons_of_op(self._op)
+        all_versions = store_to_look_in.get_all_versions_of_op(self._op)
         # if no node has been saved we return None as the pipeline will need to register this Op
         # we also save this version as is (untrained for instance) so that it is not registered as new later
         if all_versions is None:
@@ -95,20 +111,10 @@ class Node(BaseNode):
 
     @property
     def name(self) -> str:
-        """
-        the name of the node
-
-        :return: the string of the name
-        """
+        """the name of the node. by default this will be the name of the underlying op."""
         return self._op.name
 
     def persist(self, store: "chariots.OpStore", downstream_nodes: Optional[List["BaseNode"]]) -> Optional[Version]:
-        """
-        persists the inner op of the node in saver
-
-        :param store: the store in which to store the node
-        :param downstream_nodes: the node(s) that are going to accept this node downstream
-        """
 
         version = super().persist(store, downstream_nodes)
         if not self.is_loadable:
@@ -120,12 +126,6 @@ class Node(BaseNode):
 
     @property
     def requires_runner(self) -> bool:
-        """
-        whether or not this node requires q runner to be executed
-        (typically if the inner op is a pipelines)
-
-        :return: bool
-        """
         return isinstance(self._op, chariots._pipeline.Pipeline)
 
     def __repr__(self):

@@ -1,7 +1,7 @@
 import json
 import os
 
-from chariots import Chariot, Pipeline, TestClient
+from chariots import Chariots, Pipeline, TestClient
 from chariots.nodes import Node, ReservedNodes, DataSavingNode, DataLoadingNode
 from chariots.serializers import JSONSerializer
 
@@ -17,13 +17,13 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
         Node(NotOp(), input_nodes=["og_pipe"], output_nodes=ReservedNodes.pipeline_output)
     ], name="outer_pipe")
 
-    app = Chariot([pipe1, pipe], path=str(tmpdir), import_name="some_app")
+    app = Chariots([pipe1, pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
-    response = test_client.request(pipe)
+    response = test_client._request(pipe)
     assert response.value == [i % 2 for i in range(10)]
 
-    response = test_client.request(pipe1)
+    response = test_client._request(pipe1)
     assert response.value == [not i % 2 for i in range(10)]
 
 
@@ -32,10 +32,10 @@ def test_app_response_with_input(Range10, IsPair, NotOp, tmpdir):
         Node(IsPair(), input_nodes=["__pipeline_input__"], output_nodes="__pipeline_output__")
     ], name="inner_pipe")
 
-    app = Chariot([pipe1], path=str(tmpdir), import_name="some_app")
+    app = Chariots([pipe1], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
-    response = test_client.request(pipe1, pipeline_input=list(range(20)))
+    response = test_client._request(pipe1, pipeline_input=list(range(20)))
     assert response.value == [not i % 2 for i in range(20)]
 
 
@@ -56,9 +56,9 @@ def test_app_with_data_nodes(NotOp, tmpdir):
         out_node
     ], name="my_pipe")
 
-    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
+    app = Chariots([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
-    test_client.request(pipe)
+    test_client._request(pipe)
 
     with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)
@@ -70,20 +70,20 @@ def test_app_with_data_nodes(NotOp, tmpdir):
 def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
     pipe = enchrined_pipelines_generator(counter_step=1)
 
-    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
+    app = Chariots([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
-    res = test_client.request(pipe)
+    res = test_client._request(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 1) for i in range(10)]
 
-    res = test_client.request(pipe)
+    res = test_client._request(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 2) for i in range(10)]
 
     test_client.save_pipeline(pipe)
     test_client.load_pipeline(pipe)
 
-    res = test_client.request(pipe)
+    res = test_client._request(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 3) for i in range(10)]
 
@@ -93,10 +93,10 @@ def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
     del pipe
 
     pipe = enchrined_pipelines_generator(counter_step=1)
-    app = Chariot([pipe], path=str(tmpdir), import_name="some_app")
+    app = Chariots([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
     test_client.load_pipeline(pipe)
-    res = test_client.request(pipe)
+    res = test_client._request(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 4) for i in range(10)]
