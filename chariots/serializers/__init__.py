@@ -4,6 +4,8 @@ there are for instance used to serialize the inner models of the machine learnin
 
 .. testsetup
 
+    >>> from typing import Any
+
     >>> from sklearn.decomposition import PCA
 
     >>> from chariots.sklearn import SKSupervisedOp
@@ -37,8 +39,6 @@ there are also usually used in the saving nodes to choose the serialization meth
 
     >>> saving_node = DataSavingNode(serializer=CSVSerializer(), path='my_path.csv', input_nodes=["my_dataset"])
 """
-from typing import Any
-
 from ._csv_serialzer import CSVSerializer
 from ._dill_serializer import DillSerializer
 from ._json_serializer import JSONSerializer

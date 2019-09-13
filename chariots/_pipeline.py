@@ -76,7 +76,7 @@ class Pipeline(base.BaseOp):
     """
 
     def __init__(self, pipeline_nodes: List["base.BaseNode"], name: str,
-                 pipeline_callbacks: Optional[List["callbacks.PipelineCallback"]] = None):
+                 pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None):
         """
         """
         super().__init__(pipeline_callbacks)
@@ -147,7 +147,7 @@ class Pipeline(base.BaseOp):
 
     @classmethod
     def _update_ancestry(cls, node: "base.BaseNode",
-                         available_nodes: Set["NodeReference"]) -> Set["NodeReference"]:
+                         available_nodes: Set[NodeReference]) -> Set[NodeReference]:
         """
         updates the list of available nodes with a node of interest if possible
 
@@ -169,7 +169,7 @@ class Pipeline(base.BaseOp):
                          "`runner.run(this_pipeline)`")
 
     @staticmethod
-    def extract_results(results: Dict["NodeReference", Any]) -> Any:
+    def extract_results(results: Dict[NodeReference, Any]) -> Any:
         """
         extracts the output of a pipeline once all the nodes have been computed.
         This method is used by runners when once all the nodes are computed in order to check and get the final result

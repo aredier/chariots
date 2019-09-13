@@ -6,7 +6,6 @@ import requests
 
 from chariots._deployment.app import PipelineResponse, Chariots
 from chariots import Pipeline
-from chariots.nodes import Node
 from chariots.versioning import Version
 from chariots.errors import VersionError
 
