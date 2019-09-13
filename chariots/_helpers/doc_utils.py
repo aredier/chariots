@@ -84,17 +84,17 @@ load_and_analyse_iris = Pipeline([
 
 class IrisXDataSet(BaseOp):
 
-        def execute(self, *args, **kwargs):
-            iris = datasets.load_iris()
+    def execute(self, *args, **kwargs):
+        iris = datasets.load_iris()
 
-            df = pd.DataFrame(data=iris['data'],
-                              columns=iris['feature_names'])
-            return df.loc[:, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)']]
+        df = pd.DataFrame(data=iris['data'],
+                          columns=iris['feature_names'])
+        return df.loc[:, ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)']]
 
 
 class PCAOp(SKUnsupervisedOp):
     training_update_version = VersionType.MAJOR
-    model_parameters = VersionedFieldDict(VersionType.MAJOR, {"n_components": 2,})
+    model_parameters = VersionedFieldDict(VersionType.MAJOR, {"n_components": 2})
     model_class = VersionedField(PCA, VersionType.MAJOR)
 
 
@@ -112,7 +112,7 @@ train_logistics = Pipeline([
 ], 'train_logistics')
 
 pred = Pipeline([
-    Node(IrisFullDataSet(),input_nodes=['__pipeline_input__'], output_nodes=["x"]),
+    Node(IrisFullDataSet(), input_nodes=['__pipeline_input__'], output_nodes=["x"]),
     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
 ], 'pred')

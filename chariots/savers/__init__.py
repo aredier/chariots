@@ -1,8 +1,8 @@
 """
-savers are used to persist and retrieve informations about ops, ndoes and pipeline (such as versions, persisted versions,
-datasets, and so on).
+savers are used to persist and retrieve information about ops, nodes and pipeline (such as versions, persisted
+versions, datasets, and so on).
 
-A saver can be viewed as the basic abatraction of a file system (interprets path) and always has a root path (that
+A saver can be viewed as the basic abstraction of a file system (interprets path) and always has a root path (that
 represents the path after which the saver will start persisting data).
 
 For now chariots only provides a basic `FileSaver` saver but there are plans to add more in future releases (in

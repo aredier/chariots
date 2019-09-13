@@ -87,7 +87,7 @@ class BaseOp(metaclass=VersionableMeta):
     """
 
     def __init__(self, op_callbacks: Optional[List[OpCallBack]] = None):
-       self.callbacks = op_callbacks or []
+        self.callbacks = op_callbacks or []
 
     def before_execution(self, args: List[Any]):
         """
