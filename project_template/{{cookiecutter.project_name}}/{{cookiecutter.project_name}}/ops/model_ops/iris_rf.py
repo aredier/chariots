@@ -1,5 +1,5 @@
 from chariots.versioning import VersionType, VersionedFieldDict
-from chariots.sklearn._sk_supervised_op import SKSupervisedOp
+from chariots.sklearn import SKSupervisedOp
 from sklearn.ensemble import RandomForestClassifier
 
 
