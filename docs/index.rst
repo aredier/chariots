@@ -7,6 +7,7 @@ Welcome to chariots's documentation!
 
    installation
    principles/general_principles
+   tutorials/tutorials
    api_docs/chariots
    template
    contributing

@@ -7,7 +7,7 @@ from sklearn import datasets
 class DownloadIris(BaseOp):
     """
     op that downloads the iris dataset from sci-kit and outputs it as pandas
-    dataframe
+    data-frame
     """
     
     def execute(self):

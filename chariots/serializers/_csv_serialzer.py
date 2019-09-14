@@ -18,7 +18,7 @@ try:
         def serialize_object(self, target: pd.DataFrame) -> bytes:
             if not isinstance(target, pd.DataFrame):
                 raise TypeError('can only serialize pandas data frames to csv')
-            return target.to_csv().encode("utf-8")
+            return target.to_csv(index=None).encode("utf-8")
 
         def deserialize_object(self, serialized_object: bytes) -> pd.DataFrame:
             return pd.read_csv(io.BytesIO(serialized_object), encoding="utf8")
