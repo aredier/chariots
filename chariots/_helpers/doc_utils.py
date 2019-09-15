@@ -99,6 +99,7 @@ class PCAOp(SKUnsupervisedOp):
 
 
 class LogisticOp(SKSupervisedOp):
+    training_update_version = VersionType.PATCH
     model_class = LogisticRegression
 
 

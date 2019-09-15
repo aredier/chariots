@@ -5,6 +5,13 @@ In this beginners tutorial we will build a small `Chariots` server to serve pred
 If you want to see the final result, you can produce it directly using the `chariots new` command (see the
 :doc:`chariots template <../template>` for more info).
 
+before starting, we will create a new project by calling the `new` command in the parent directory of where we want our
+project to be and leave all the default options
+
+.. code-block:: console
+
+    chariots new
+
 Ops
 ---
 
@@ -13,7 +20,7 @@ we first need to design the individual ops we will build our pipelines from.
 Data Ops
 ^^^^^^^^
 
-First we will need an op that downloads the dataset:
+First we will need an op that downloads the dataset, so in `iris/ops/data_ops/download_iris.py`
 
 .. doctest::
 
@@ -33,24 +40,7 @@ First we will need an op that downloads the dataset:
 Machine Learning Ops
 ^^^^^^^^^^^^^^^^^^^^
 we will than need to build our various machine learning ops. For this example we will be using a PCA and than a
-Random Forest in our pipeline.
-
-.. doctest::
-
-    >>> from chariots.versioning import VersionType, VersionedFieldDict
-    >>> from chariots.sklearn import SKUnsupervisedOp
-    >>> from sklearn.decomposition import PCA
-    ...
-    ...
-    >>> class IrisPCA(SKUnsupervisedOp):
-    ...
-    ...     model_class = PCA
-    ...     model_parameters = VersionedFieldDict(
-    ...         VersionType.MAJOR,
-    ...         {
-    ...             "n_components": 2,
-    ...         }
-    ...     )
+Random Forest in our pipeline. We will place those ops in the `iris.ops.model_ops` subpackage
 
 .. doctest::
 
