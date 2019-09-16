@@ -16,3 +16,5 @@ pytest-runner==4.2
 numpy==1.16.4
 scikit-learn==0.21.2
 pandas==0.24.2
+Keras>=2.0.0
+tensorflow>1.12.0
