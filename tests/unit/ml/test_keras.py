@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from flaky import flaky
 from keras import models, layers, optimizers, callbacks
 
 from chariots import Pipeline, MLMode, Chariots, TestClient
@@ -31,6 +32,7 @@ def KerasLogistic():
     return KerasLogisticOp
 
 
+@flaky(5, 2)
 def test_train_keras_pipeline(KerasLogistic, LinearDataSet, tmpdir, ToArray, FromArray):
 
     train = Pipeline([
@@ -112,6 +114,7 @@ def CreateInputs():
     return CreateInputs
 
 
+@flaky(5, 2)
 def test_keras_multiple_datasets(MultiDataSet, FromArray, tmpdir, MultiInputKeras, CreateInputs):
     train = Pipeline([
         Node(MultiDataSet(), output_nodes=['X', 'y']),
