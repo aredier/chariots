@@ -100,3 +100,43 @@ def YOp():
         def execute(self):
             return list(range(1, 11))
     return YOpInner
+
+@pytest.fixture
+def LinearDataSet():
+
+    class LinearDataSetOp(BaseOp):
+
+        def __init__(self, rows=10, op_callbacks=None):
+            super().__init__(op_callbacks=op_callbacks)
+            self.rows = rows
+
+        def execute(self):
+            return (np.array([[i] for i in range(self.rows) for _ in range(10)]),
+                    np.array([i + 1 for i in range(self.rows) for _ in range(10)]))
+
+    return LinearDataSetOp
+
+@pytest.fixture
+def ToArray():
+
+    class ToArrayOp(BaseOp):
+
+        def __init__(self, output_shape=(-1, 1), op_callbacks=None):
+            super().__init__(op_callbacks=op_callbacks)
+            self.output_shape = output_shape
+
+        def execute(self, input_data):
+            return np.array(input_data).reshape(self.output_shape)
+
+    return ToArrayOp
+
+
+@pytest.fixture
+def FromArray():
+
+    class FromArrayOp(BaseOp):
+
+        def execute(self, input_data):
+            return input_data.tolist()
+
+    return FromArrayOp
