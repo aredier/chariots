@@ -57,7 +57,7 @@ class Chariots(Flask):
 
         >>> import tempfile
         >>> import shutil
-
+        ...
         >>> from chariots import Pipeline, Chariots
         >>> from chariots._helpers.doc_utils import is_odd_pipeline
         >>> app_path = tempfile.mkdtemp()

@@ -14,13 +14,13 @@ class SequentialRunner(BaseRunner):
 
         for callback in pipeline.callbacks:
             callback.before_execution(pipeline, [pipeline_input])
-        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input else {}
+        temp_results = {ReservedNodes.pipeline_input.reference: pipeline_input} if pipeline_input is not None else {}
         for node in pipeline.nodes:
             temp_results = pipeline.execute_node(node, temp_results, self)
 
         results = {key: value for key, value in temp_results.items() if value is not None}
         if len(results) > 1:
-            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(temp_results))
+            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(results))
 
         temp_results = pipeline.extract_results(temp_results)
         for callback in pipeline.callbacks:

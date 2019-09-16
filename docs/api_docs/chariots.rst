@@ -12,6 +12,7 @@ Api Docs
    chariots.savers
    chariots.serializers
    chariots.sklearn
+   chariots.keras
    chariots.versioning
    chariots.cli
    chariots.errors

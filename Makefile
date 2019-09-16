@@ -56,6 +56,9 @@ lint: ## check style with flake8
 test: ## run tests quickly with the default Python
 	py.test chariots tests docs --doctest-modules --doctest-glob='*.rst'
 
+doctest: ## runs the tests only on the documentation
+	py.test chariots docs --doctest-modules --doctest-glob='*.rst'
+
 test-all: ## run tests on every Python version with tox
 	tox
 

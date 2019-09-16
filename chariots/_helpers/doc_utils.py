@@ -3,6 +3,7 @@ module with some example nodes, operations ... to produce beautifull doctests :)
 """
 from collections import Counter
 
+from keras.utils import to_categorical
 from sklearn import datasets
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
@@ -117,3 +118,9 @@ pred = Pipeline([
     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
 ], 'pred')
+
+
+class Categorize(BaseOp):
+
+    def execute(self, dataset):
+        return to_categorical(dataset)
