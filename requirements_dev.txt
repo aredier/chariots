@@ -11,6 +11,7 @@ twine==1.12.1
 
 pytest==3.8.2
 pytest-runner==4.2
+flaky==3.6.1
 
 # ml stuff
 numpy==1.16.4
