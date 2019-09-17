@@ -16,7 +16,7 @@ def KerasLogistic():
     class KerasLogisticOp(KerasOp):
 
         input_params = VersionedFieldDict(VersionType.MINOR, {
-            'epochs': 100,
+            'epochs': 200,
             'batch_size': 100,
             'callbacks': [callbacks.EarlyStopping(monitor='mean_absolute_error'),]
         })
@@ -55,7 +55,7 @@ def test_train_keras_pipeline(KerasLogistic, LinearDataSet, tmpdir, ToArray, Fro
     pred = client.call_pipeline(pred, [[10]])
     assert len(pred) == 1
     assert len(pred[0]) == 1
-    assert 10.5 < pred[0][0] < 11.5
+    assert 10 < pred[0][0] < 12
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def MultiInputKeras():
 
     class MultiInputKerasOp(KerasOp):
         input_params = VersionedFieldDict(VersionType.MINOR, {
-            'epochs': 100,
+            'epochs': 200,
             'batch_size': 100,
             'callbacks': [callbacks.EarlyStopping(monitor='mean_absolute_error'), ]
         })
@@ -136,4 +136,4 @@ def test_keras_multiple_datasets(MultiDataSet, FromArray, tmpdir, MultiInputKera
     pred = client.call_pipeline(pred, [[[5]], [[-5]]])
     assert len(pred) == 1
     assert len(pred[0]) == 1
-    assert 5.5 < pred[0][0] < 6.5
+    assert 5 < pred[0][0] < 7
