@@ -32,7 +32,7 @@ def KerasLogistic():
     return KerasLogisticOp
 
 
-@flaky(5, 2)
+@flaky(5, 1)
 def test_train_keras_pipeline(KerasLogistic, LinearDataSet, tmpdir, ToArray, FromArray):
 
     train = Pipeline([
@@ -45,17 +45,17 @@ def test_train_keras_pipeline(KerasLogistic, LinearDataSet, tmpdir, ToArray, Fro
         Node(KerasLogistic(MLMode.PREDICT), input_nodes=['X'], output_nodes='pred'),
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
-    my_app = Chariots(app_pipelines=[train, pred,],
+    my_app = Chariots(app_pipelines=[train, pred],
                       path=str(tmpdir), import_name="my_app")
     client = TestClient(my_app)
     client.call_pipeline(train)
     client.save_pipeline(train)
     client.load_pipeline(pred)
 
-    pred = client.call_pipeline(pred, [[10]])
+    pred = client.call_pipeline(pred, [[5]])
     assert len(pred) == 1
     assert len(pred[0]) == 1
-    assert 10 < pred[0][0] < 12
+    assert 5 < pred[0][0] < 7
 
 
 @pytest.fixture
@@ -114,7 +114,7 @@ def CreateInputs():
     return CreateInputs
 
 
-@flaky(5, 2)
+@flaky(5, 1)
 def test_keras_multiple_datasets(MultiDataSet, FromArray, tmpdir, MultiInputKeras, CreateInputs):
     train = Pipeline([
         Node(MultiDataSet(), output_nodes=['X', 'y']),
