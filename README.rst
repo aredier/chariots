@@ -25,12 +25,10 @@ chariots aims to be a complete framework to build and deploy versioned machine l
 
 Getting Started: 30 seconds to Chariots:
 ----------------------------------------
-You can check the :doc:`documentation<https://chariots.readthedocs.io>` for a complete tutorial on getting started with
+You can check the `chariots docutemtation`_ for a complete tutorial on getting started with
 chariots, but here are the essentials:
 
 you can create operations to execute steps in your pipeline:
-
-.. doctest::
 
     >>> from chariots.sklearn import SKUnsupervisedOp, SKSupervisedOp
     >>> from chariots.versioning import VersionType, VersionedFieldDict, VersionedField
@@ -49,11 +47,6 @@ you can create operations to execute steps in your pipeline:
 
 Once your ops are created, you can create your various training and prediction pipelines:
 
-.. testsetup::
-
-    >>> from chariots._helpers.doc_utils import IrisFullDataSet
-
-.. doctest::
 
     >>> from chariots import Pipeline, MLMode
     >>> from chariots.nodes import Node
@@ -72,14 +65,6 @@ Once your ops are created, you can create your various training and prediction p
 
 Once all your pipelines have been created, deploying them is as easy as creating a creating a `Chariots` object:
 
-.. testsetup::
-    >>> import tempfile
-    >>> import shutil
-
-    >>> app_path = tempfile.mkdtemp()
-
-.. doctest::
-
     >>> from chariots import Chariots
     ...
     ...
@@ -87,24 +72,16 @@ Once all your pipelines have been created, deploying them is as easy as creating
 
 
 The `Chariots` class inherits from the `Flask` class so you can deploy this the same way you would any
-:doc:`flask application<https://github.com/pallets/flask>`.
+`flask application`_
+
 
 Once this the server is started, you can use the chariots client to query your machine learning micro-service from
 python:
-
-.. doctest::
 
     >>> from chariots import Client
     ...
     ...
     >>> client = Client()
-
-.. testsetup::
-
-    >>> from chariots import TestClient
-    ...
-    ...
-    >>> client = TestClient(app)
 
 with this client we will be
 
@@ -112,17 +89,11 @@ with this client we will be
 - saving them and reloading the prediction pipeline (so that it uses the latest/trained version of our models)
 - query some prediction
 
-.. doctest::
-
     >>> client.call_pipeline(train)
     >>> client.save_pipeline(train)
     >>> client.load_pipeline(pred)
     >>> client.call_pipeline(pred, [[1, 2, 3, 4]])
     [1]
-
-.. testsetup::
-
-    >>> shutil.rmtree(app_path)
 
 Features
 --------
@@ -150,3 +121,5 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypac
+.. _chariots docutemtation: https://chariots.readthedocs.io
+.. _flask application: https://github.com/pallets/flask
