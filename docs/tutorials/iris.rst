@@ -211,12 +211,13 @@ we will need to execute several steps before getting to a prediction:
 
 .. doctest::
 
-    >>> client.call_pipeline(download_iris)
-    >>> client.call_pipeline(train_iris)
+    >>> res = client.call_pipeline(download_iris)
+    >>> res = client.call_pipeline(train_iris)
     >>> client.save_pipeline(train_iris)
     >>> client.load_pipeline(pred_iris)
     ...
-    >>> client.call_pipeline(pred_iris, [[1, 2, 3, 4]])
+    >>> res = client.call_pipeline(pred_iris, [[1, 2, 3, 4]])
+    >>> res.value
     [1]
 
 

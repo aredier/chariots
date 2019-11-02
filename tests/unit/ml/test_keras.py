@@ -52,7 +52,7 @@ def test_train_keras_pipeline(KerasLogistic, LinearDataSet, tmpdir, ToArray, Fro
     client.save_pipeline(train)
     client.load_pipeline(pred)
 
-    pred = client.call_pipeline(pred, [[5]])
+    pred = client.call_pipeline(pred, [[5]]).value
     assert len(pred) == 1
     assert len(pred[0]) == 1
     assert 5 < pred[0][0] < 7
@@ -108,7 +108,6 @@ def CreateInputs():
     class CreateInputs(BaseOp):
 
         def execute(self, input_data):
-            print('foo ')
             return [np.array(input_data[0]), np.array(input_data[1])]
 
     return CreateInputs
@@ -133,7 +132,7 @@ def test_keras_multiple_datasets(MultiDataSet, FromArray, tmpdir, MultiInputKera
     client.save_pipeline(train)
     client.load_pipeline(pred)
 
-    pred = client.call_pipeline(pred, [[[5]], [[-5]]])
+    pred = client.call_pipeline(pred, [[[5]], [[-5]]]).value
     assert len(pred) == 1
     assert len(pred[0]) == 1
     assert 5 < pred[0][0] < 7

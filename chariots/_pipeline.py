@@ -61,7 +61,7 @@ class Pipeline(base.BaseOp):
 
     .. doctest::
 
-        >>> client.call_pipeline(pipeline, 4)
+        >>> client.call_pipeline(pipeline, 4).value
         True
 
     .. testsetup::
@@ -73,15 +73,20 @@ class Pipeline(base.BaseOp):
     :param name: the name of the pipeline. this will be used to create the route at which to query the pipeline in the
                  Chariots app
     :param pipeline_callbacks: callbacks to be used with this pipeline (monitoring and logging for instance)
+    :param use_worker: whether or not to execute this pipeline in a separate worker (rather than in the main server) by
+                       default. If set to `False`, the setting can still be overridden on an execution per execution
+                       basis using the client.
     """
 
     def __init__(self, pipeline_nodes: List["base.BaseNode"], name: str,
-                 pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None):
+                 pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None,
+                 use_worker: bool = False):
         """
         """
         super().__init__(pipeline_callbacks)
         self._graph = self._resolve_graph(pipeline_nodes)
         self._name = name
+        self.use_worker = use_worker
 
     def prepare(self, saver: "base.BaseSaver"):
         """

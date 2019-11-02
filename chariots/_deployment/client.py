@@ -46,19 +46,7 @@ class AbstractClient(ABC):
             raise VersionError("the pipeline you requested cannot be loaded because of version incompatibility"
                                "HINT: retrain and save/reload in order to have a loadable version")
 
-    def _request(self, pipeline: Pipeline, pipeline_input: Optional[Any] = None) -> PipelineResponse:
-        """
-        sends a request to execute a pipeline on an input and returns the response
-
-        :param pipeline: the pipeline to execute
-        :param pipeline_input: the input to execute the pipeline on
-        :return: a response contaning the versions of the nodes in the pipeline and the value of the executed pipeline
-        """
-        pipe_route = "/pipelines/{}/main".format(pipeline.name)
-        response_json = self._send_request_to_backend(route=pipe_route, data={"pipeline_input": pipeline_input})
-        return PipelineResponse.from_request(response_json, pipeline)
-
-    def call_pipeline(self, pipeline: Pipeline, pipeline_input: Optional[Any] = None) -> Any:
+    def call_pipeline(self, pipeline: Pipeline, pipeline_input: Optional[Any] = None, use_worker: bool = False) -> Any:
         """
         sends a request to the `Chariots` server in order to get this pipeline executed remotely on the server.
 
@@ -66,19 +54,38 @@ class AbstractClient(ABC):
 
             >>> import tempfile
             >>> import shutil
+            >>> import time
 
+            >>> from redis import Redis
             >>> from chariots import Pipeline, Chariots, TestClient
+            >>> from chariots._deployment.workers._rq_worker_pool import RQWorkerPool
             >>> from chariots._helpers.doc_utils import is_odd_pipeline
+            >>> from chariots._helpers.test_helpers import RQWorkerContext
             >>> app_path = tempfile.mkdtemp()
-            >>> app = Chariots([is_odd_pipeline], app_path, import_name='simple_app')
+            >>> app = Chariots([is_odd_pipeline], app_path, import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
             >>> client = TestClient(app)
 
         .. doctest::
 
-            >>> client.call_pipeline(is_odd_pipeline, 4)
+            >>> client.call_pipeline(is_odd_pipeline, 4).value
             False
-            >>> client.call_pipeline(is_odd_pipeline, 5)
+            >>> client.call_pipeline(is_odd_pipeline, 5).value
             True
+
+        If you have a long lasting pipeline (training for instance) that you don't want executed n the http request but
+        asynchronously in a separate worker, you can use the `use_worker` argument:
+
+        .. testsetup::
+            >>> with RQWorkerContext():
+            ...     response = client.call_pipeline(is_odd_pipeline, 4, use_worker=True)
+            ...     print(response.job_status)
+            ...     time.sleep(3)
+            ...     response = client.fetch_job(response.job_id, is_odd_pipeline)
+            ...     print(response.job_status)
+            ...     print(response.value)
+            JobStatus.queued
+            JobStatus.done
+            False
 
         .. testsetup::
             >>> shutil.rmtree(app_path)
@@ -90,14 +97,22 @@ class AbstractClient(ABC):
                                it's `input_nodes`). If none of the nodes accept a __pipeline_input__ and this is
                                provided the execution of the pipeline will fail. pipeline_input needs to be JSON
                                serializable
+        :param use_worker: whether or not to execute this request in a separate worker.
 
         :raises ValueError: if the pipeline requested is not present in the `Chariots` app.
         :raises ValueError: if the execution of the pipeline fails
 
-        :return: the result of the pipeline. it needs to be JSON serializable for chariots to be able to pass it
-                 through http
+        :return: a PiplineResponse object
         """
-        return self._request(pipeline, pipeline_input).value
+        pipe_route = "/pipelines/{}/main".format(pipeline.name)
+        response_json = self._send_request_to_backend(route=pipe_route, data={"pipeline_input": pipeline_input,
+                                                                              'use_worker': use_worker})
+        return PipelineResponse.from_request(response_json, pipeline)
+
+    def fetch_job(self, job_id, pipeline):
+        fetch_route = '/jobs/fetch/'
+        response_json = self._send_request_to_backend(fetch_route, data={'job_id': job_id})
+        return PipelineResponse.from_request(response_json, pipeline)
 
     def save_pipeline(self, pipeline: Pipeline):
         """
@@ -193,20 +208,21 @@ class Client(AbstractClient):
 
     .. doctest::
 
-        >>> client.call_pipeline(train_pca)
+        >>> response = client.call_pipeline(train_pca)
         >>> client.save_pipeline(train_pca)
         >>> client.load_pipeline(train_logistic)
-        >>> client.call_pipeline(train_logistic)
+        >>> response = client.call_pipeline(train_logistic)
         >>> client.save_pipeline(train_logistic)
         >>> client.load_pipeline(pred)
-        >>> client.call_pipeline(pred, [[1, 2, 3, 4]])
+        >>> response = client.call_pipeline(pred, [[1, 2, 3, 4]])
+        >>> response.value
         [1]
 
     but if you execute them in the wrong order the client will propagate the errors that occur on the `Chariots` server
 
     .. doctest::
 
-        >>> client.call_pipeline(train_pca)
+        >>> response = client.call_pipeline(train_pca)
         >>> client.save_pipeline(train_pca)
         >>> client.load_pipeline(pred)
         Traceback (most recent call last):

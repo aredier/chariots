@@ -51,7 +51,7 @@ def test_server():
         assert client.call_pipeline(
             pred_iris,
             pipeline_input=[[1, 2, 3, 4]]
-        ) == [1]
+        ).value == [1]
     finally:
         process.terminate()
         process.join()

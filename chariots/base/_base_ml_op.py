@@ -66,10 +66,11 @@ class BaseMLOp(LoadableOp):
 
     .. doctest::
 
-        >>> client.call_pipeline(train)
+        >>> response = client.call_pipeline(train)
         >>> client.save_pipeline(train)
         >>> client.load_pipeline(pred)
-        >>> client.call_pipeline(pred, [[1, 2, 3, 4]])
+        >>> response = client.call_pipeline(pred, [[1, 2, 3, 4]])
+        >>> response.value
         [1]
 
     If you want to create a new MLOp class (to accommodate an unsupported framework for instance), you need to define:
