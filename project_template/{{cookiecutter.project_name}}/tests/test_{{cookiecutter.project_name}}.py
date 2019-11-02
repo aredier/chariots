@@ -18,4 +18,4 @@ def test_iris_app({{cookiecutter.project_name}}_test_client):
     {{cookiecutter.project_name}}_test_client.call_pipeline(train_iris)
     {{cookiecutter.project_name}}_test_client.save_pipeline(train_iris)
     {{cookiecutter.project_name}}_test_client.load_pipeline(pred_iris)
-    assert {{cookiecutter.project_name}}_test_client.call_pipeline(pred_iris, pipeline_input=[[1, 2, 3, 4]]) == [1]
+    assert {{cookiecutter.project_name}}_test_client.call_pipeline(pred_iris, pipeline_input=[[1, 2, 3, 4]]).value == [1]

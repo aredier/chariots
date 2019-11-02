@@ -16,6 +16,8 @@ __pycache__/
 .DS_Store
 node_modules
 /dist
+build/
+*.rdb
 
 # local env files
 .env.local

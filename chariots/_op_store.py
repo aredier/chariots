@@ -61,6 +61,9 @@ class OpStore:
         except FileNotFoundError:
             return {}
 
+    def reload(self):
+        self._all_op_links = self._load_from_saver()
+
     def _parse_mapping(
             self, op_version_json: Union[Dict[Text, Dict[Text, Set[Text]]], Dict[Text, Set[Text]]]
     ) -> Union[Dict[Text, Dict[Text, Set[Version]]], Dict[Text, Set[Version]]]:

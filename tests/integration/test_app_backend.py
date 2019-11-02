@@ -20,10 +20,10 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):
     app = Chariots([pipe1, pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
-    response = test_client._request(pipe)
+    response = test_client.call_pipeline(pipe)
     assert response.value == [i % 2 for i in range(10)]
 
-    response = test_client._request(pipe1)
+    response = test_client.call_pipeline(pipe1)
     assert response.value == [not i % 2 for i in range(10)]
 
 
@@ -35,7 +35,7 @@ def test_app_response_with_input(Range10, IsPair, NotOp, tmpdir):
     app = Chariots([pipe1], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
 
-    response = test_client._request(pipe1, pipeline_input=list(range(20)))
+    response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)))
     assert response.value == [not i % 2 for i in range(20)]
 
 
@@ -58,7 +58,7 @@ def test_app_with_data_nodes(NotOp, tmpdir):
 
     app = Chariots([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
-    test_client._request(pipe)
+    test_client.call_pipeline(pipe)
 
     with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
         res = json.load(file)
@@ -72,18 +72,18 @@ def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
 
     app = Chariots([pipe], path=str(tmpdir), import_name="some_app")
     test_client = TestClient(app)
-    res = test_client._request(pipe)
+    res = test_client.call_pipeline(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 1) for i in range(10)]
 
-    res = test_client._request(pipe)
+    res = test_client.call_pipeline(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 2) for i in range(10)]
 
     test_client.save_pipeline(pipe)
     test_client.load_pipeline(pipe)
 
-    res = test_client._request(pipe)
+    res = test_client.call_pipeline(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 3) for i in range(10)]
 
@@ -97,6 +97,6 @@ def test_app_persistance(enchrined_pipelines_generator, NotOp, tmpdir):
     test_client = TestClient(app)
 
     test_client.load_pipeline(pipe)
-    res = test_client._request(pipe)
+    res = test_client.call_pipeline(pipe)
     assert len(res.value) == 10
     assert res.value == [bool(i % 4) for i in range(10)]

@@ -140,6 +140,12 @@ class Version:
         hash_str = ".".join((self.major, self.minor, self.patch))
         return "_".join((hash_str, str(self._creation_time)))
 
+    def __getstate__(self):
+        self._major = self.major
+        self._minor = self.minor
+        self._patch = self.patch
+        return self.__dict__
+
     @classmethod
     def parse(cls, version_string: str) -> "Version":
         """

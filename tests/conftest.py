@@ -1,3 +1,4 @@
+import time
 from typing import List, Optional
 
 import pytest

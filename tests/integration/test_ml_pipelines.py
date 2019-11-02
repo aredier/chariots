@@ -43,12 +43,12 @@ def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
     prior_versions_pred = test_client.pipeline_versions(pred_pipe)
-    test_client._request(train_pipe)
+    test_client.call_pipeline(train_pipe)
     test_client.save_pipeline(train_pipe)
     test_client.load_pipeline(pred_pipe)
     posterior_versions_train = test_client.pipeline_versions(train_pipe)
     posterior_versions_pred = test_client.pipeline_versions(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=3)
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=3)
 
     assert response.value == 4
 
@@ -83,12 +83,12 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
     prior_versions_pred = test_client.pipeline_versions(pred_pipe)
-    test_client._request(train_pipe)
+    test_client.call_pipeline(train_pipe)
     test_client.save_pipeline(train_pipe)
     test_client.load_pipeline(pred_pipe)
     posterior_versions_train = test_client.pipeline_versions(train_pipe)
     posterior_versions_pred = test_client.pipeline_versions(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=[[100], [101], [102]])
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=[[100], [101], [102]])
 
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
@@ -144,19 +144,19 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
                       path=str(tmpdir), import_name="my_app")
 
     test_client = TestClient(my_app)
-    test_client._request(train_transform)
+    test_client.call_pipeline(train_transform)
     test_client.save_pipeline(train_transform)
     test_client.load_pipeline(train_pipe)
-    test_client._request(train_pipe)
+    test_client.call_pipeline(train_pipe)
     test_client.save_pipeline(train_pipe)
     test_client.load_pipeline(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
 
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
 
-    test_client._request(train_transform)
+    test_client.call_pipeline(train_transform)
     test_client.save_pipeline(train_transform)
     with pytest.raises(VersionError):
         test_client.load_pipeline(pred_pipe)
@@ -184,37 +184,37 @@ def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
     test_client = TestClient(my_app)
 
     # test that the train save load is working
-    test_client._request(train_pca)
+    test_client.call_pipeline(train_pca)
     test_client.save_pipeline(train_pca)
     test_client.load_pipeline(train_rf)
-    test_client._request(train_rf)
+    test_client.call_pipeline(train_rf)
     test_client.save_pipeline(train_rf)
     test_client.load_pipeline(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
 
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
 
     # test that that retrain is possible
-    test_client._request(train_pca)
+    test_client.call_pipeline(train_pca)
     test_client.save_pipeline(train_pca)
     test_client.load_pipeline(train_rf)
-    test_client._request(train_rf)
+    test_client.call_pipeline(train_rf)
     test_client.save_pipeline(train_rf)
     test_client.load_pipeline(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
 
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
 
     # test that that wrong loading is raising
-    test_client._request(train_pca)
+    test_client.call_pipeline(train_pca)
     test_client.save_pipeline(train_pca)
     with pytest.raises(VersionError):
         test_client.load_pipeline(pred_pipe)
-    response = test_client._request(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+    response = test_client.call_pipeline(pred_pipe, pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
 
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
