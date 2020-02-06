@@ -6,6 +6,7 @@ Api Docs
 
    chariots.base
    chariots.callbacks
+   chariots.workers
    chariots.nodes
    chariots.ops
    chariots.runners

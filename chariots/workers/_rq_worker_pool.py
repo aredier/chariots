@@ -1,6 +1,4 @@
 import json
-import shutil
-import tempfile
 from _sha1 import sha1
 from typing import Any, Dict, Optional
 
@@ -9,15 +7,14 @@ from redis import Redis
 from rq import Queue, Connection, Worker, get_current_job
 from rq.job import Job
 
-from chariots import OpStore
 import chariots
-from ..app import Chariots, PipelineResponse
-from chariots._deployment.workers._base_worker_pool import BaseWorkerPool, JobResponse, JobStatus
+from chariots._deployment.app import Chariots, PipelineResponse
+from chariots.workers import BaseWorkerPool, JobResponse, JobStatus
 from chariots.base import BaseRunner, BaseSaver
 
 
 def _inner_pipe_execution(pipeline: chariots.Pipeline, pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
-                          op_store: OpStore):
+                          op_store: 'chariots.OpStore'):
     op_store.reload()
     pipeline.load(op_store)
     pipeline.prepare(saver)

@@ -58,7 +58,7 @@ class AbstractClient(ABC):
 
             >>> from redis import Redis
             >>> from chariots import Pipeline, Chariots, TestClient
-            >>> from chariots._deployment.workers._rq_worker_pool import RQWorkerPool
+            >>> from chariots.workers import RQWorkerPool
             >>> from chariots._helpers.doc_utils import is_odd_pipeline
             >>> from chariots._helpers.test_helpers import RQWorkerContext
             >>> app_path = tempfile.mkdtemp()
@@ -75,7 +75,7 @@ class AbstractClient(ABC):
         If you have a long lasting pipeline (training for instance) that you don't want executed n the http request but
         asynchronously in a separate worker, you can use the `use_worker` argument:
 
-        .. testsetup::
+        .. doctest::
             >>> with RQWorkerContext():
             ...     response = client.call_pipeline(is_odd_pipeline, 4, use_worker=True)
             ...     print(response.job_status)
