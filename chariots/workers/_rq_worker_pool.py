@@ -18,8 +18,7 @@ def _inner_pipe_execution(pipeline: chariots.Pipeline, pipeline_input: Any, save
     op_store.reload()
     pipeline.load(op_store)
     pipeline.prepare(saver)
-    res = json.dumps(PipelineResponse(runner.run(pipeline, pipeline_input), pipeline.get_pipeline_versions(),
-                                      job_id=get_current_job().id, job_status=JobStatus.done).json())
+    res = json.dumps(runner.run(pipeline, pipeline_input))
     pipeline.save(op_store)
     op_store.save()
     return res
@@ -81,14 +80,13 @@ class RQWorkerPool(BaseWorkerPool):
         self._jobs[chariots_job_id] = rq_job
         return chariots_job_id
 
-    def get_pipeline_response_json_for_id(self, job_id: str):
+    def get_pipeline_response_json_for_id(self, job_id: str) -> str:
         rq_job = self._jobs.get(job_id)
         if rq_job is None:
             raise ValueError('job {} was not found, are you sure you submited it using workers'.format(job_id))
         job_status = JobStatus.from_rq(rq_job.get_status())
-        if job_status is not JobStatus.done:
-            return json.dumps(PipelineResponse(None, {}, job_id=job_id, job_status=job_status).json())
-        return rq_job.result
+        return json.dumps(PipelineResponse(json.loads(rq_job.result) if job_status is JobStatus.done else None,
+                                           {}, job_id=job_id, job_status=job_status).json())
 
     @property
     def n_workers(self):
