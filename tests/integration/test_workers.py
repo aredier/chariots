@@ -6,8 +6,8 @@ from flaky import flaky
 from redis import Redis
 
 from chariots import Chariots, Pipeline, TestClient, MLMode
-from chariots._deployment.workers._base_worker_pool import JobStatus
-from chariots._deployment.workers._rq_worker_pool import RQWorkerPool
+from chariots.workers import JobStatus
+from chariots.workers import RQWorkerPool
 from chariots.errors import VersionError
 from chariots.nodes import Node
 from chariots._helpers.test_helpers import IsPair, WaitOp, XTrainOpL, PCAOp, YOp, SKLROp, LinearDataSet, KerasLogistic, \
@@ -116,7 +116,7 @@ def test_complex_sk_training_pipeline_async(tmpdir):
         with pytest.raises(VersionError):
             test_client.load_pipeline(pred_pipe)
 
-# @flaky(3, 1)
+@flaky(5, 1)
 def test_train_keras_pipeline_async(tmpdir):
 
     with RQWorkerContext():

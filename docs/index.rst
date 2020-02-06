@@ -6,9 +6,11 @@ Welcome to chariots's documentation!
    :caption: Contents:
 
    installation
-   principles/general_principles
-   tutorials/tutorials
    api_docs/chariots
+   principles/general_principles
+   how_to_guides/how_to_guides
+   api_docs/chariots
+   tutorials/tutorials
    template
    contributing
    authors

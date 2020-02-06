@@ -3,6 +3,7 @@ from typing import Mapping, Any, List, Type, Optional
 
 from flask import Flask, request
 
+import chariots
 from chariots import Pipeline
 from chariots.base import BaseRunner, BaseSaver, BaseNode
 from chariots.callbacks import PipelineCallback
@@ -10,9 +11,7 @@ from chariots.errors import VersionError
 from chariots.runners import SequentialRunner
 from chariots.savers import FileSaver
 from chariots.versioning import Version
-from .workers._base_worker_pool import BaseWorkerPool
 from .._op_store import OpStore
-from .workers import _base_worker_pool
 
 
 class PipelineResponse:
@@ -54,7 +53,7 @@ class PipelineResponse:
             versions={query_pipeline.node_for_name[node_name]: Version.parse(version_string)
                       for node_name, version_string in response_json['versions'].items()},
             job_id=response_json['job_id'],
-            job_status=_base_worker_pool.JobStatus[response_json['job_status']],
+            job_status=chariots.workers.JobStatus[response_json['job_status']],
         )
 
 
@@ -138,7 +137,7 @@ class Chariots(Flask):
     def __init__(self, app_pipelines: List[Pipeline], path, saver_cls: Type[BaseSaver] = FileSaver,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
-                 worker_pool: Optional[BaseWorkerPool] = None, use_workers: bool = False, *args, **kwargs):
+             worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
@@ -187,7 +186,7 @@ class Chariots(Flask):
                 return self._worker_pool.get_pipeline_response_json_for_id(job_id)
             response = PipelineResponse(self.runner.run(pipeline, pipeline_input),
                                         pipeline.get_pipeline_versions(), job_id=None,
-                                        job_status=_base_worker_pool.JobStatus.done)
+                                        job_status=chariots.workers.JobStatus.done)
             return json.dumps(response.json())
 
         @self.route('/pipelines/<pipeline_name>/load', methods=['POST'])
