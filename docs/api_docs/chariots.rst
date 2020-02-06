@@ -22,7 +22,7 @@ Api Docs
    :undoc-members:
    :show-inheritance:
    :members:
-   :exclude-members: Client, Pipeline, TestClient, Chariots
+   :exclude-members: Client, Pipeline, TestClient, Chariots, OpStore
 
    .. autoclass::  Pipeline
       :members:
@@ -31,6 +31,10 @@ Api Docs
       :members:
 
    .. autoclass::  Client
+      :members:
+      :inherited-members:
+
+   .. autoclass::  OpStore
       :members:
       :inherited-members:
 

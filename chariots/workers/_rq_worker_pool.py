@@ -9,7 +9,7 @@ from rq.job import Job
 
 import chariots
 from chariots._deployment.app import Chariots, PipelineResponse
-from chariots.workers import BaseWorkerPool, JobResponse, JobStatus
+from chariots.workers import BaseWorkerPool, JobStatus
 from chariots.base import BaseRunner, BaseSaver
 
 
@@ -24,32 +24,40 @@ def _inner_pipe_execution(pipeline: chariots.Pipeline, pipeline_input: Any, save
     return res
 
 
-class RQJobResponse(JobResponse):
-
-    def __init__(self, rq_job: Job):
-        self.rq_job =rq_job
-
-    @property
-    def status(self) -> JobStatus:
-        status = self.rq_job.get_status()
-        if status == rq.job.JobStatus.QUEUED:
-            return JobStatus.queued
-        if status == rq.job.JobStatus.FINISHED:
-            return JobStatus.done
-        if status == rq.job.JobStatus.FAILED:
-            return JobStatus.failed
-        if status == rq.job.JobStatus.STARTED:
-            return JobStatus.running
-        if status == rq.job.JobStatus.DEFFERED:
-            return JobStatus.deferred
-        raise ValueError('unknown job status: {}'.format(status))
-
-    @property
-    def result(self) -> Any:
-        return self.rq_job.result
-
-
 class RQWorkerPool(BaseWorkerPool):
+    """
+    a worker pool based on the RQ queue job queues. You will need a functionning redis to use this. This
+    worker pool will allow you to easily paralellize you Chariots app. You can check
+    :doc:`the how to guide on workers<../how_to_guides/workers>` to have more info.
+
+    To use an `RQWorkerPool` with your Chariots app, you can do as such.
+
+    .. testsetup::
+
+        >>> import tempfile
+        >>> import shutil
+        >>> app_path = tempfile.mkdtemp()
+        >>> my_pipelines = []
+
+    .. doctest::
+
+        >>> from redis import Redis
+        >>> from chariots import Chariots, workers
+        ...
+        ...
+        >>> app = Chariots(
+        ...     my_pipelines,
+        ...     path=app_path,
+        ...     import_name="my_app",
+        ...     worker_pool=workers.RQWorkerPool(redis=Redis()),
+        ...     use_workers=True
+        ... )
+
+
+    :param redis: the redis connection that will be used by RQ
+    :param queue_kwargs: additional keyword arguments that will get passed to the `rq.Queue` object at init
+                         be aware that the `connection` and `name` arguments will be overridden.
+    """
 
     def __init__(self, redis: Redis, queue_kwargs: Optional[Dict[str, Any]] = None):
         self._queue_name = 'chariots_workers'
