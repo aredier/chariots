@@ -9,7 +9,6 @@ Welcome to chariots's documentation!
    api_docs/chariots
    principles/general_principles
    how_to_guides/how_to_guides
-   api_docs/chariots
    tutorials/tutorials
    template
    contributing
