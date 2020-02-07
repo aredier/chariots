@@ -1,5 +1,5 @@
 import json
-from typing import Mapping, Any, List, Type, Optional
+from typing import Mapping, Any, List, Type, Optional, Union
 
 from flask import Flask, request
 
@@ -125,7 +125,7 @@ class Chariots(Flask):
     :param runner: the runner to use to run the pipelines. If None the `SequentialRunner` will be used
                   as default
     :param default_pipeline_callbacks: pipeline callbacks to be added to every pipeline this app will serve.
-    :para, worker_pool: worker pool to be used if some jobs are to be executed asynchronously (using a worker master
+    :param worker_pool: worker pool to be used if some jobs are to be executed asynchronously (using a worker master
                         config)
     :param use_workers: whether or not to use workers to execute all pipeline execution requests (if set to false, you
                         can still choose to use workers on pipeline to pipeline basis)
@@ -137,7 +137,8 @@ class Chariots(Flask):
     def __init__(self, app_pipelines: List[Pipeline], path, saver_cls: Type[BaseSaver] = FileSaver,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
-             worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: bool = False, *args, **kwargs):
+                 worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: Optional[bool] = None,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
@@ -171,6 +172,23 @@ class Chariots(Flask):
             pipe.prepare(self.saver)
         return app_pipeline
 
+    def _should_execute_pipeline_async(self, app_worker_config: Union[bool, None],
+                                       pipeline_worker_config: Union[bool, None],
+                                       request_worker_config: Union[bool, None]) -> bool:
+        """
+        whether or not an specific pipeline call should be executed async. If either one of the config is False,
+        the output will be False. If there are `None` and at least one True the ou tput is True. If all `None` the
+        output is False
+        """
+        should_execute_pipeline_async = False
+        for param in [app_worker_config, pipeline_worker_config, request_worker_config]:
+            if param is None:
+                continue
+            if not param:
+                return False
+            should_execute_pipeline_async = True
+        return should_execute_pipeline_async
+
     def _build_route(self):
 
         @self.route('/pipelines/<pipeline_name>/main', methods=['POST'])
@@ -179,7 +197,9 @@ class Chariots(Flask):
                 raise ValueError('pipeline not loaded, load before execution')
             pipeline = self._pipelines[pipeline_name]
             pipeline_input = request.json.get('pipeline_input') if request.json else None
-            if self.use_workers or pipeline.use_worker or request.json.get('use_worker'):
+            if self._should_execute_pipeline_async(app_worker_config=self.use_workers,
+                                                   pipeline_worker_config=pipeline.use_worker,
+                                                   request_worker_config=request.json.get('use_worker')):
                 if self._worker_pool is None:
                     raise ValueError('execution requested using workers, however no WorkerPool was provided at init')
                 job_id = self._worker_pool.execute_pipeline_async(pipeline, pipeline_input, self)

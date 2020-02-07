@@ -40,8 +40,7 @@ def test_app_async_pipeline(tmpdir):
         ], name="inner_pipe", use_worker=True)
 
         app = Chariots([pipe1], path=str(tmpdir), import_name="some_app",
-                       worker_pool=RQWorkerPool(redis=Redis()),
-                       use_workers=False)
+                       worker_pool=RQWorkerPool(redis=Redis()))
         test_client = TestClient(app)
 
         response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)))
@@ -59,8 +58,7 @@ def test_app_async_request(tmpdir):
         ], name="inner_pipe")
 
         app = Chariots([pipe1], path=str(tmpdir), import_name="some_app",
-                       worker_pool=RQWorkerPool(redis=Redis()),
-                       use_workers=False)
+                       worker_pool=RQWorkerPool(redis=Redis()))
         test_client = TestClient(app)
 
         response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)), use_worker=True)
@@ -71,6 +69,23 @@ def test_app_async_request(tmpdir):
         assert response.value == [not i % 2 for i in range(20)]
 
 
+def test_app_async_conflicting_config(tmpdir):
+    with RQWorkerContext():
+        pipe1 = Pipeline([
+            Node(IsPair(), input_nodes=["__pipeline_input__"], output_nodes="__pipeline_output__")
+        ], name="inner_pipe", use_worker=True)
+
+        app = Chariots([pipe1], path=str(tmpdir), import_name="some_app",
+                       worker_pool=RQWorkerPool(redis=Redis()), use_workers=False)
+        test_client = TestClient(app)
+
+        response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)), use_worker=True)
+        assert response.job_status == JobStatus.done
+        assert response.value == [not i % 2 for i in range(20)]
+
+
+# this needs to be flaky because it might take a little bit longer
+@flaky(3, 1)
 def test_complex_sk_training_pipeline_async(tmpdir):
     with RQWorkerContext():
         train_transform = Pipeline([

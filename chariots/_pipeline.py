@@ -80,7 +80,7 @@ class Pipeline(base.BaseOp):
 
     def __init__(self, pipeline_nodes: List["base.BaseNode"], name: str,
                  pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None,
-                 use_worker: bool = False):
+                 use_worker: Optional[bool] = None):
         """
         """
         super().__init__(pipeline_callbacks)

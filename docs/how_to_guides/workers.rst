@@ -122,3 +122,17 @@ Creating your Own worker class
 
 If RQ does not suit your needs, you can use another one. To integrate it with Cahriots you will need to subclass
 the `BaseWorkerPool` class. you can find more information on BaseWorkerPool in the  :doc:`api docs <../api_docs/chariots.workers>`
+
+
+When Will a pipeline be executed in a worker?
+_____________________________________________
+
+As you can see in the Rq code examples, there are three ways to ask for pipelines to be executed in the worker pool:
+
+* at the app level (for all calls to this app)
+* at teh pipeline level (for all calls to this pipeline)
+* at the request level (for this specific call)
+
+Then if any of these are set to `True` for a call and the others are not specified (left unfilled). The call will
+be executed in a worker. But if any of those is explicitly set to `False` the call will **not** be executed in a
+pipeline (regardless of whether the others are set to true or not)
