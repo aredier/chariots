@@ -46,7 +46,8 @@ class AbstractClient(ABC):
             raise VersionError("the pipeline you requested cannot be loaded because of version incompatibility"
                                "HINT: retrain and save/reload in order to have a loadable version")
 
-    def call_pipeline(self, pipeline: Pipeline, pipeline_input: Optional[Any] = None, use_worker: bool = False) -> Any:
+    def call_pipeline(self, pipeline: Pipeline, pipeline_input: Optional[Any] = None,
+                      use_worker: Optional[bool] = None) -> Any:
         """
         sends a request to the `Chariots` server in order to get this pipeline executed remotely on the server.
 
