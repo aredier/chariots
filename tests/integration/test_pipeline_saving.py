@@ -1,16 +1,14 @@
+"""module to test the saving and loading behavior"""
 import json
 import os
 
-from chariots import OpStore, Pipeline
-from chariots.nodes import Node
-from chariots.nodes import DataSavingNode
-from chariots.nodes import DataLoadingNode
+from chariots import OpStore
 from chariots.runners import SequentialRunner
 from chariots.savers import FileSaver
-from chariots.serializers import JSONSerializer
 
 
 def test_savable_pipeline(pipe_generator, tmpdir):
+    """test basic save and load"""
 
     op_store = OpStore(FileSaver(str(tmpdir)))
     pipe = pipe_generator(counter_step=1)
@@ -72,7 +70,8 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir):
     assert res == [not i % 4 for i in range(10)]
 
 
-def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
+def test_saving_with_pipe_as_op(enchrined_pipelines_generator, tmpdir):
+    """test saving when one of the ops of the saved pipeline is a pipeline itself"""
     pipe = enchrined_pipelines_generator(counter_step=1)
     runner = SequentialRunner()
     res = runner.run(pipe)
@@ -97,31 +96,21 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, NotOp, tmpdir):
     assert res == [bool(i % 3) for i in range(10)]
 
 
-def test_data_ops(tmpdir, NotOp):
+def test_data_ops(tmpdir, data_nodes_paths, data_nodes_pipeline):  # pylint: disable=invalid-name
+    """test the saving behavior of data ops"""
 
-    input_path = "in.json"
-    output_path = "out.json"
-
-    os.makedirs(os.path.join(str(tmpdir), "data"), exist_ok=True)
-    with open(os.path.join(str(tmpdir), "data", input_path), "w") as file:
-        json.dump(list(range(10)), file)
+    _, output_path = data_nodes_paths
+    pipe, in_node, out_node = data_nodes_pipeline
 
     saver = FileSaver(str(tmpdir))
-    in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes="data_in")
-    out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=["data_trans"])
     in_node.attach_saver(saver)
     out_node.attach_saver(saver)
 
-    pipe = Pipeline([
-        in_node,
-        Node(NotOp(), input_nodes=["data_in"], output_nodes="data_trans"),
-        out_node
-    ], name="my_pipe")
     runner = SequentialRunner()
 
     runner.run(pipe)
 
-    with open(os.path.join(str(tmpdir), "data", output_path), "r") as file:
+    with open(os.path.join(str(tmpdir), 'data', output_path), 'r') as file:
         res = json.load(file)
 
     assert len(res) == 10

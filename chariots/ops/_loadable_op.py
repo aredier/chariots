@@ -1,3 +1,4 @@
+"""loadable op class"""
 from chariots.base import BaseOp
 
 
@@ -16,7 +17,7 @@ class LoadableOp(BaseOp):
     """
 
     def execute(self, *args, **kwargs):
-        raise NotImplementedError("you must define a call for the op to be valid")
+        raise NotImplementedError('you must define a call for the op to be valid')
 
     def load(self, serialized_object: bytes):
         """

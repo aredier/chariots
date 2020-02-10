@@ -1,3 +1,4 @@
+"""base class for all the data nodes"""
 import os
 from abc import ABCMeta, abstractmethod
 from hashlib import sha1
@@ -27,7 +28,8 @@ class DataNode(BaseNode, metaclass=ABCMeta):
     :param name: the name of the op
     """
 
-    def __init__(self, serializer: BaseSerializer, path: str, input_nodes: Optional[InputNodes] = None,
+    def __init__(self, serializer: BaseSerializer, path: str,  # pylint: disable=too-many-arguments
+                 input_nodes: Optional[InputNodes] = None,
                  output_nodes=None, name: Optional[str] = None, saver: Optional[BaseSaver] = None):
 
         super().__init__(input_nodes=input_nodes, output_nodes=output_nodes)
@@ -36,7 +38,8 @@ class DataNode(BaseNode, metaclass=ABCMeta):
         self._name = name
         self._saver = saver
 
-    def load_latest_version(self, store_to_look_in: chariots._op_store.OpStore) -> BaseNode:
+    def load_latest_version(
+            self, store_to_look_in: chariots._op_store.OpStore) -> BaseNode:  # pylint: disable=protected-access
         return self
 
     def attach_saver(self, saver: BaseSaver):
@@ -48,23 +51,22 @@ class DataNode(BaseNode, metaclass=ABCMeta):
 
     @property
     def name(self) -> str:
-        return self._name or self.path.split("/")[-1].split(".")[0]
+        return self._name or self.path.split('/')[-1].split('.')[0]
 
     @property
-    @abstractmethod
     def node_version(self) -> Version:
         if self._saver is None:
-            raise ValueError("cannot get the version of a data op without a saver")
+            raise ValueError('cannot get the version of a data op without a saver')
         version = Version()
         file_hash = sha1(self._saver.load(self.path)).hexdigest()
-        version.update_major(file_hash)
+        version.update_major(file_hash.encode('utf-8'))
         return version
 
     @abstractmethod
     def execute(self, *params) -> Any:
 
         if self._saver is None:
-            raise ValueError("cannot load data without a saver")
+            raise ValueError('cannot load data without a saver')
         return self.serializer.deserialize_object(self._saver.load(self.path))
 
     @property
@@ -74,4 +76,4 @@ class DataNode(BaseNode, metaclass=ABCMeta):
 
     @abstractmethod
     def __repr__(self):
-        return "<DataLoadingNode of {}>".format(self.path)
+        return '<DataLoadingNode of {}>'.format(self.path)

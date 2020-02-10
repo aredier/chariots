@@ -1,8 +1,7 @@
-from hashlib import sha1
+"""data loading node class"""
 from typing import Optional, List, Any
 
 from chariots.base import BaseSerializer, BaseRunner, BaseSaver
-from chariots.versioning import Version
 from ._data_node import DataNode
 
 
@@ -62,24 +61,16 @@ class DataLoadingNode(DataNode):
     :param name: the name of the op
     """
 
-    def __init__(self, serializer: BaseSerializer, path: str, output_nodes=None, name: Optional[str] = None,
-                 saver: Optional[BaseSaver] = None):
+    def __init__(self, serializer: BaseSerializer, path: str, output_nodes=None,  # pylint: disable=too-many-arguments
+                 name: Optional[str] = None, saver: Optional[BaseSaver] = None):
         super().__init__(serializer=serializer, path=path, output_nodes=output_nodes, name=name, saver=saver)
 
-    @property
-    def node_version(self) -> Version:
-        if self._saver is None:
-            raise ValueError("cannot get the version of a data op without a saver")
-        version = Version()
-        file_hash = sha1(self._saver.load(self.path)).hexdigest()
-        version.update_major(file_hash.encode("utf-8"))
-        return version
-
-    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
+    def execute(self, params: List[Any],  # pylint: disable=arguments-differ
+                runner: Optional[BaseRunner] = None) -> Any:  # pylint: disable= unused-argument
 
         if self._saver is None:
-            raise ValueError("cannot load data without a saver")
+            raise ValueError('cannot load data without a saver')
         return self.serializer.deserialize_object(self._saver.load(self.path))
 
     def __repr__(self):
-        return "<DataLoadingNode of {}>".format(self.path)
+        return '<DataLoadingNode of {}>'.format(self.path)

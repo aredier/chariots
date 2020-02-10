@@ -1,3 +1,4 @@
+"""versioned field dict module"""
 import collections
 from typing import Any, Iterator, Mapping
 
@@ -12,7 +13,7 @@ class VersionedFieldDict(collections.MutableMapping):
     a VersionedClass class attribute
     """
 
-    def __init__(self, default_version=VersionType.MAJOR, *args, **kwargs):
+    def __init__(self, default_version=VersionType.MAJOR, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         self.default_version = default_version
         self.store = dict()
         self.update(dict(*args, **kwargs))
@@ -33,14 +34,14 @@ class VersionedFieldDict(collections.MutableMapping):
         if not isinstance(value, VersionedField):
             value = VersionedField(value, self.default_version)
         if not isinstance(key, str):
-            raise TypeError("`VersionedFieldDict` keys must be strings")
+            raise TypeError('`VersionedFieldDict` keys must be strings')
         self.store[key] = value
 
     @property
-    def version_dict(self) -> Mapping[str, "Version"]:
+    def version_dict(self) -> Mapping[str, 'Version']:
         """
         property to retrieve the name of the fields and the Versions associated to each of them
         :return: the mapping with the key and the version of the value
         """
-        return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode("utf-8"))
+        return {attr_name: Version().update(attr_value.affected_version, attr_value.__chariots_hash__.encode('utf-8'))
                 for attr_name, attr_value in self.store.items() if isinstance(attr_value, VersionedField)}

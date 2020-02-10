@@ -10,8 +10,14 @@ matrix:
       sudo: true
 services:
   - redis-server
-install: pip install -U tox-travis
-script: tox
+install:
+  - pip install -U tox-travis
+  - pip install pylint
+  - pip install flake8
+script:
+  - tox
+  - pylint chariots tests
+  - flake8 chariots tests
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
@@ -22,4 +28,3 @@ deploy:
     tags: true
     repo: aredier/chariots
     python: 3.5
-

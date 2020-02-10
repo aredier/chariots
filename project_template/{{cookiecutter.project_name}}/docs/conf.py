@@ -48,8 +48,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'{{cookiecutter.project_name}}'
-copyright = u"2019, {{cookiecutter.author}}"
-author = u"{{cookiecutter.author}}"
+copyright = u'2019, {{cookiecutter.author}}'
+author = u'{{cookiecutter.author}}'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -158,6 +158,3 @@ texinfo_documents = [
      '{{cookiecutter.project_short_description}}',
      'Miscellaneous'),
 ]
-
-
-

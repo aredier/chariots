@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-with open("requirements.txt", "r") as requirements_file:
+with open('requirements.txt', 'r') as requirements_file:
     requirements = list(requirements_file.readlines())
 
 setup_requirements = ['pytest-runner', ]
@@ -11,7 +11,7 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest']
 
 setup(
-    author="{{cookiecutter.author}}",
+    author='{{cookiecutter.author}}',
     author_email='{{cookiecutter.author_email}}',
     # description="machine learning pipelines",
     install_requires=requirements,

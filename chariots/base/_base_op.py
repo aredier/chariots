@@ -1,10 +1,11 @@
+"""module for hte base op class """
 from typing import List, Any, Optional
 
 from chariots.callbacks import OpCallBack
 from chariots.versioning import Version, VersionableMeta
 
 
-class BaseOp(metaclass=VersionableMeta):
+class BaseOp(metaclass=VersionableMeta):  # pylint: disable=no-member
     """
     The ops are the atomic computation units of the Chariots framework. Whereas a `Node` represents a slot in a
     pipeline and the interactions between that spot and the rest of the pipeline, the op will actually be doing the
@@ -96,7 +97,6 @@ class BaseOp(metaclass=VersionableMeta):
 
         :param args: the arguments that are going to be passed to the operation
         """
-        pass
 
     def execute(self, *args, **kwargs):
         """
@@ -104,7 +104,7 @@ class BaseOp(metaclass=VersionableMeta):
         it defines the behavior of the op. In the pipeline the argument of the pipeline will be passed from the node
         with one argument per input (in the order of the input nodes)
         """
-        raise NotImplementedError("you must define a call for the op to be valid")
+        raise NotImplementedError('you must define a call for the op to be valid')
 
     def after_execution(self, args: List[Any], output: Any) -> Any:
         """
@@ -114,7 +114,6 @@ class BaseOp(metaclass=VersionableMeta):
         :param args: the arguments that were passed to the op
         :param output: the output of the op
         """
-        pass
 
     def execute_with_all_callbacks(self, args):
         """
@@ -158,4 +157,4 @@ class BaseOp(metaclass=VersionableMeta):
         return self.__version__
 
     def __str__(self):
-        return "<OP {}>".format(self.name)
+        return '<OP {}>'.format(self.name)

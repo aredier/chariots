@@ -1,44 +1,50 @@
+"""module that tests ml pipelines and the different setups possible"""
 import pytest
 import numpy as np
-from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
 from chariots import MLMode, Pipeline, Chariots, TestClient
-from chariots.base import BaseMLOp, BaseOp
+from chariots.base import BaseMLOp
 from chariots.errors import VersionError
 from chariots.nodes import Node
-from chariots.sklearn import SKUnsupervisedOp, SKSupervisedOp
-from chariots.versioning import VersionType, VersionedField, VersionedFieldDict
+from chariots._helpers.test_helpers import XTrainOpL, PCAOp, YOp, SKLROp
 
 
 @pytest.fixture
-def LROp():
-    class LROpInner(BaseMLOp):
+def LROp():  # pylint: disable=invalid-name
+    """fixture of a linear regression model by reimplementing it (subclassing `MLOp` rather than `SKSupervisedOp`)"""
+    class LROpInner(BaseMLOp):  # pylint: disable=arguments-differ
+        """inner op of the fixture"""
 
-        def fit(self, x_train, y_train):
+        def fit(self, x_train, y_train):  # pylint: disable=arguments-differ
             self._model.fit(np.array(x_train).reshape(-1, 1), y_train)
 
-        def predict(self, x_pred):
+        def predict(self, x_pred):  # pylint: disable=arguments-differ
             if not isinstance(x_pred, list):
                 x_pred = [x_pred]
             return int(self._model.predict(np.array(x_pred).reshape(-1, 1))[0])
 
         def _init_model(self):
             return LinearRegression()
+
     return LROpInner
 
 
-def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
+def test_raw_training_pipeline(  # pylint: disable=invalid-name, invalid-name
+        XTrainOp,
+        LROp,  # pylint: disable=redefined-outer-name
+        tmpdir):
+    """test basic training and prediction pipeline"""
     train_pipe = Pipeline([
-        Node(XTrainOp(), output_nodes="x_train"),
-        Node(YOp(), output_nodes="y_train"),
-        Node(LROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train")
+        Node(XTrainOp(), output_nodes='x_train'),
+        Node(YOp(), output_nodes='y_train'),
+        Node(LROp(mode=MLMode.FIT), input_nodes=['x_train', 'y_train'])
+    ], 'train')
     pred_pipe = Pipeline([
-        Node(LROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"],
-                                  output_nodes="__pipeline_output__")
-    ], "pred")
-    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
+        Node(LROp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'],
+             output_nodes='__pipeline_output__')
+    ], 'pred')
+    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -53,32 +59,17 @@ def test_raw_training_pipeline(LROp, YOp, XTrainOp, tmpdir):
     assert response.value == 4
 
     # testing verison uodate
-    lrop_train = train_pipe.node_for_name["lropinner"]
-    lrop_pred = pred_pipe.node_for_name["lropinner"]
+    lrop_train = train_pipe.node_for_name['lropinner']
+    lrop_pred = pred_pipe.node_for_name['lropinner']
     assert prior_versions_train[lrop_train.name] == prior_versions_pred[lrop_pred.name]
     assert posterior_versions_train[lrop_train.name] == posterior_versions_pred[lrop_pred.name]
     assert prior_versions_pred[lrop_pred.name] < posterior_versions_pred[lrop_pred.name]
 
 
-@pytest.fixture
-def SKLROp():
-    class SKLROpInner(SKSupervisedOp):
-        model_class = VersionedField(LinearRegression, VersionType.MINOR)
-
-    return SKLROpInner
-
-
-def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
-    train_pipe = Pipeline([
-        Node(XTrainOp(), output_nodes="x_train"),
-        Node(YOp(), output_nodes="y_train"),
-        Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train")
-    pred_pipe = Pipeline([
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"],
-                                  output_nodes="__pipeline_output__")
-    ], "pred")
-    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name="my_app")
+def test_sk_training_pipeline(tmpdir, basic_sk_pipelines):
+    """test a train/predict pipelines using sci-kit learn ops"""
+    train_pipe, pred_pipe = basic_sk_pipelines
+    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -95,53 +86,19 @@ def test_sk_training_pipeline(SKLROp, YOp, XTrainOp, tmpdir):
         assert abs(101 + i - individual_value) < 1e-5
 
     # testing version update
-    lrop_train = train_pipe.node_for_name["sklropinner"]
-    lrop_pred = pred_pipe.node_for_name["sklropinner"]
-    assert prior_versions_train[lrop_train.name]== prior_versions_pred[lrop_pred.name]
+    lrop_train = train_pipe.node_for_name['sklrop']
+    lrop_pred = pred_pipe.node_for_name['sklrop']
+    assert prior_versions_train[lrop_train.name] == prior_versions_pred[lrop_pred.name]
     assert posterior_versions_train[lrop_train.name] == posterior_versions_pred[lrop_pred.name]
     assert prior_versions_pred[lrop_pred.name] < posterior_versions_pred[lrop_pred.name]
 
 
-@pytest.fixture
-def PCAOp():
-    class PCAInner(SKUnsupervisedOp):
-        training_update_version = VersionType.MAJOR
-        model_parameters =VersionedFieldDict(
-            VersionType.MAJOR, {
-            "n_components": 2,
-        })
-        model_class = VersionedField(PCA, VersionType.MAJOR)
+def test_complex_sk_training_pipeline(complex_sk_pipelines, tmpdir):
+    """tests complex ml pipelines (with a pca pipelines, a model training pipeline and a prediction pipeline)"""
 
-    return PCAInner
-
-
-@pytest.fixture
-def XTrainOpL():
-    class XTrainOpInner(BaseOp):
-
-        def execute(self):
-            return np.array([range(10), range(1, 11), range(2, 12)]).T
-    return XTrainOpInner
-
-
-def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
-
-    train_transform = Pipeline([
-        Node(XTrainOpL(), output_nodes="x_raw"),
-        Node(PCAOp(mode=MLMode.FIT), input_nodes=["x_raw"], output_nodes="x_train"),
-    ], "train_pca")
-    train_pipe = Pipeline([
-        Node(XTrainOpL(), output_nodes="x_raw"),
-        Node(YOp(), output_nodes="y_train"),
-        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
-        Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train")
-    pred_pipe = Pipeline([
-        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
-    ], "pred")
+    train_transform, train_pipe, pred_pipe = complex_sk_pipelines
     my_app = Chariots(app_pipelines=[train_transform, train_pipe, pred_pipe],
-                      path=str(tmpdir), import_name="my_app")
+                      path=str(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     test_client.call_pipeline(train_transform)
@@ -162,24 +119,28 @@ def test_complex_sk_training_pipeline(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
         test_client.load_pipeline(pred_pipe)
 
 
-def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
+def test_fit_predict_pipeline_reload(tmpdir):
+    """
+    tests a complex pipeline system with a pca-train, model-train and prediction pipeline. The aim of this test is
+    to check that the version check and reload behavior works
+    """
 
     train_pca = Pipeline([
-        Node(XTrainOpL(), output_nodes="x_raw"),
-        Node(PCAOp(mode=MLMode.FIT), input_nodes=["x_raw"]),
-        ], "train_pca")
+        Node(XTrainOpL(), output_nodes='x_raw'),
+        Node(PCAOp(mode=MLMode.FIT), input_nodes=['x_raw']),
+    ], 'train_pca')
     train_rf = Pipeline([
-        Node(XTrainOpL(), output_nodes="x_raw"),
-        Node(YOp(), output_nodes="y_train"),
-        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["x_raw"], output_nodes="x_train"),
-        Node(SKLROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train_rf")
+        Node(XTrainOpL(), output_nodes='x_raw'),
+        Node(YOp(), output_nodes='y_train'),
+        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=['x_raw'], output_nodes='x_train'),
+        Node(SKLROp(mode=MLMode.FIT), input_nodes=['x_train', 'y_train'])
+    ], 'train_rf')
     pred_pipe = Pipeline([
-        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_train"),
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=["x_train"], output_nodes="__pipeline_output__")
-    ], "pred")
+        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'], output_nodes='x_train'),
+        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='__pipeline_output__')
+    ], 'pred')
     my_app = Chariots(app_pipelines=[train_pca, train_rf, pred_pipe],
-                      path=str(tmpdir), import_name="my_app")
+                      path=str(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
 
@@ -219,4 +180,3 @@ def test_fit_predict_pipeline_reload(SKLROp, YOp, XTrainOpL, PCAOp, tmpdir):
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
-

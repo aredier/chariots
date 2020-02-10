@@ -1,3 +1,4 @@
+"""module for the most basic node class"""
 from typing import Optional, List, Union, Text, Any
 
 # use the main package to resolve circular imports with root objects (Pipleine, ...)
@@ -53,7 +54,8 @@ class Node(BaseNode):
     def node_version(self) -> Version:
         return self._op.op_version
 
-    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
+    def execute(self, params: List[Any],  # pylint: disable=arguments-differ
+                runner: Optional[BaseRunner] = None) -> Any:
         """
         executes the underlying op on params
 
@@ -65,13 +67,13 @@ class Node(BaseNode):
         :return: the output of the op
         """
         if self.requires_runner and runner is None:
-            raise ValueError("runner was not provided but is required to execute this node")
+            raise ValueError('runner was not provided but is required to execute this node')
         if self.requires_runner:
             # if no params, the pipeline should be executed with None
             return runner.run(self._op, params if params else None)
         return self._op.execute_with_all_callbacks(params)
 
-    def load_latest_version(self, store_to_look_in: "chariots.OpStore") -> Optional[BaseNode]:
+    def load_latest_version(self, store_to_look_in: 'chariots.OpStore') -> Optional[BaseNode]:
         """
         reloads the latest version of the op this node represents by looking for available versions in the store
 
@@ -98,7 +100,7 @@ class Node(BaseNode):
         self._op.load(store_to_look_in.get_op_bytes_for_version(self._op, relevant_version))
         return self
 
-    def check_version_compatibility(self, upstream_node: "BaseNode", store_to_look_in: "chariots.OpStore"):
+    def check_version_compatibility(self, upstream_node: 'BaseNode', store_to_look_in: 'chariots.OpStore'):
         if self._op.allow_version_change:
             return
         super().check_version_compatibility(upstream_node, store_to_look_in)
@@ -115,19 +117,22 @@ class Node(BaseNode):
         """the name of the node. by default this will be the name of the underlying op."""
         return self._op.name
 
-    def persist(self, store: "chariots.OpStore", downstream_nodes: Optional[List["BaseNode"]]) -> Optional[Version]:
+    def persist(self, store: 'chariots.OpStore', downstream_nodes: Optional[List['BaseNode']]) -> Optional[Version]:
 
         version = super().persist(store, downstream_nodes)
         if not self.is_loadable:
-            return
-        if isinstance(self._op, chariots._pipeline.Pipeline):
+            return None
+
+        # protected access needed to solve circular imports
+        if isinstance(self._op, chariots._pipeline.Pipeline):  # pylint: disable=protected-access
             return self._op.save(store)
         store.save_op_bytes(self._op, version, op_bytes=self._op.serialize())
         return version
 
     @property
     def requires_runner(self) -> bool:
-        return isinstance(self._op, chariots._pipeline.Pipeline)
+        # protected access needed to solve circular imports
+        return isinstance(self._op, chariots._pipeline.Pipeline)  # pylint: disable=protected-access
 
     def __repr__(self):
-        return "<Node of {} with inputs {} and output {}>".format(self._op.name, self.input_nodes, self.output_nodes)
+        return '<Node of {} with inputs {} and output {}>'.format(self._op.name, self.input_nodes, self.output_nodes)

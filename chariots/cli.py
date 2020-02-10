@@ -4,9 +4,9 @@
 import json
 import os
 import sys
-import click
 from pathlib import Path
 
+import click
 from cookiecutter.main import cookiecutter
 
 import chariots
@@ -15,7 +15,6 @@ import chariots
 @click.group()
 def main():
     """Console scripts for chariots."""
-    pass
 
 
 @main.command()
@@ -25,13 +24,13 @@ def new(config_file=None):
     creates a new chariot project.
     this will open an interactive cookiecutter session with parameters to customize your projects
     """
-    template_path = os.path.join(str(Path(chariots.__file__).parents[1]), "project_template")
+    template_path = os.path.join(str(Path(chariots.__file__).parents[1]), 'project_template')
     if config_file is None:
         return cookiecutter(template_path)
-    with open(config_file) as config_file:
-        config = json.load(config_file)
+    with open(config_file) as file:
+        config = json.load(file)
     return cookiecutter(template_path, extra_context=config, no_input=True)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())  # pragma: no cover

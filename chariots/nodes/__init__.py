@@ -26,16 +26,17 @@ you can also link the first and/or the last node of your pipeline  to the pipeli
     ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
     ... ], 'pred')
 """
+# necessary because of circular imports
+from chariots.base._base_nodes import ReservedNodes
+
 from ._data_loading_node import DataLoadingNode
 from ._data_saving_node import DataSavingNode
 from ._node import Node
 
-# necessary because of circular imports
-from chariots.base._base_nodes import ReservedNodes
 
 __all__ = [
-    "Node",
-    "DataLoadingNode",
-    "DataSavingNode",
-    "ReservedNodes"
+    'Node',
+    'DataLoadingNode',
+    'DataSavingNode',
+    'ReservedNodes'
 ]

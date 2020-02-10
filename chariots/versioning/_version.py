@@ -1,3 +1,4 @@
+"""module for the version class"""
 import hashlib
 import time
 from typing import Optional
@@ -39,14 +40,14 @@ class Version:
 
     def __add__(self, other):
         if not isinstance(other, Version):
-            raise ValueError("can only add Version with version, got {}".format(type(other)))
+            raise ValueError('can only add Version with version, got {}'.format(type(other)))
         result = Version()
-        result.update_major(self.major.encode("utf-8"))
-        result.update_major(other.major.encode("utf-8"))
-        result.update_minor(self.minor.encode("utf-8"))
-        result.update_minor(other.minor.encode("utf-8"))
-        result.update_patch(self.patch.encode("utf-8"))
-        result.update_patch(other.patch.encode("utf-8"))
+        result.update_major(self.major.encode('utf-8'))
+        result.update_major(other.major.encode('utf-8'))
+        result.update_minor(self.minor.encode('utf-8'))
+        result.update_minor(other.minor.encode('utf-8'))
+        result.update_patch(self.patch.encode('utf-8'))
+        result.update_patch(other.patch.encode('utf-8'))
         return result
 
     def __hash__(self):
@@ -57,12 +58,12 @@ class Version:
         """the time stamp of the creation time of the version"""
         return self._creation_time
 
-    def __gt__(self, other: "Version") -> bool:
+    def __gt__(self, other: 'Version') -> bool:
         if self == other:
             return False
         return self.creation_time > other.creation_time
 
-    def __eq__(self, other: "Version") -> bool:
+    def __eq__(self, other: 'Version') -> bool:
         return (self.major == other.major and self.minor == other.minor and
                 self.patch == other.patch)
 
@@ -87,7 +88,7 @@ class Version:
             return self._patch
         return self._patch.hexdigest()
 
-    def update_major(self, input_bytes: bytes) -> "Version":
+    def update_major(self, input_bytes: bytes) -> 'Version':
         """
         updates the major subversion with some bytes
 
@@ -97,7 +98,7 @@ class Version:
         self._major.update(input_bytes)
         return self
 
-    def update_minor(self, input_bytes: bytes) -> "Version":
+    def update_minor(self, input_bytes: bytes) -> 'Version':
         """
         updates the minor subversion with some bytes
 
@@ -107,7 +108,7 @@ class Version:
         self._minor.update(input_bytes)
         return self
 
-    def update_patch(self, input_bytes: bytes) -> "Version":
+    def update_patch(self, input_bytes: bytes) -> 'Version':
         """
         updates the patch subversion with some bytes
 
@@ -117,7 +118,7 @@ class Version:
         self._patch.update(input_bytes)
         return self
 
-    def update(self, version_type: VersionType, input_bytes: bytes) -> "Version":
+    def update(self, version_type: VersionType, input_bytes: bytes) -> 'Version':
         """
         updates the corresponding subversion of this version with some bytes
 
@@ -131,14 +132,14 @@ class Version:
             return self.update_minor(input_bytes)
         if version_type is VersionType.PATCH:
             return self.update_patch(input_bytes)
-        raise ValueError("you provided an invalid version type: {}".format(version_type))
+        raise ValueError('you provided an invalid version type: {}'.format(version_type))
 
     def __repr__(self):
-        return "<Version, major:{}, minor: {}, patch: {}>".format(self.major[:5], self.minor[:5], self.patch[:5])
+        return '<Version, major:{}, minor: {}, patch: {}>'.format(self.major[:5], self.minor[:5], self.patch[:5])
 
     def __str__(self):
-        hash_str = ".".join((self.major, self.minor, self.patch))
-        return "_".join((hash_str, str(self._creation_time)))
+        hash_str = '.'.join((self.major, self.minor, self.patch))
+        return '_'.join((hash_str, str(self._creation_time)))
 
     def __getstate__(self):
         self._major = self.major
@@ -147,7 +148,7 @@ class Version:
         return self.__dict__
 
     @classmethod
-    def parse(cls, version_string: str) -> "Version":
+    def parse(cls, version_string: str) -> 'Version':
         """
         parses a string representation of a saved version and returns a valid `Version` object
 
@@ -155,6 +156,6 @@ class Version:
                                `repr(my_version)`
         :return: the version represented by the version string
         """
-        hash_str, creation_time = version_string.split("_")
-        major, minor, patch = hash_str.split(".")
+        hash_str, creation_time = version_string.split('_')
+        major, minor, patch = hash_str.split('.')
         return cls(major, minor, patch, float(creation_time))

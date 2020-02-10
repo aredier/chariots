@@ -1,7 +1,8 @@
+"""module for the `OpStore` class that handles saving op's data at the right place"""
 import json
 from typing import Union, Dict, Text, Set, Optional, List
 
-from chariots import base
+from chariots import base  # pylint: disable=unused-import;# noqa
 from chariots.versioning import Version
 
 _OpGraph = Dict[Text, Dict[Text, Set[Version]]]
@@ -45,9 +46,9 @@ class OpStore:
     #     }
     # }
 
-    _location = "/_meta.json"
+    _location = '/_meta.json'
 
-    def __init__(self, saver: "base.BaseSaver"):
+    def __init__(self, saver: 'base.BaseSaver'):
         self._saver = saver
         self._all_op_links = self._load_from_saver()  # type: _OpGraph
 
@@ -56,12 +57,13 @@ class OpStore:
         loads and parses all the versions from the meta json
         """
         try:
-            mapping = json.loads(self._saver.load(path=self._location).decode("utf-8"))
+            mapping = json.loads(self._saver.load(path=self._location).decode('utf-8'))
             return self._parse_mapping(mapping)
         except FileNotFoundError:
             return {}
 
     def reload(self):
+        """reloads the op data from the saver"""
         self._all_op_links = self._load_from_saver()
 
     def _parse_mapping(
@@ -93,35 +95,40 @@ class OpStore:
             }
             for downstream_op_name, downstream_data in self._all_op_links.items()
         }
-        self._saver.save(json.dumps(version_dict_with_str_versions).encode("utf-8"), path=self._location)
+        self._saver.save(json.dumps(version_dict_with_str_versions).encode('utf-8'), path=self._location)
 
-    def get_all_versions_of_op(self, op: "base.BaseOp") -> Optional[List[Version]]:
+    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[List[Version]]:
         """
         returns all the available versions of an op ever persisted in the OpGraph (or any Opgraph using the same
         _meta.json)
 
-        :param op: the op to get the previous persisted versions
+        :param desired_op: the op to get the previous persisted versions
         """
         all_versions = [
             versions
             for downstream_data in self._all_op_links.values()
             for upstream_op, versions in downstream_data.items()
-            if upstream_op == op.name
+            if upstream_op == desired_op.name
         ]
         return set.union(*all_versions) if all_versions else None
 
     def get_validated_links(self, downstream_op_name: Text, upstream_op_name: Text) -> Optional[Set[Version]]:
+        """
+        gets all the validated links (versions that works) between an upstream op and a downstream op (if none
+        exist, `None` is returned)
+        """
+
         return self._all_op_links.get(downstream_op_name, {}).get(upstream_op_name)
 
-    def get_op_bytes_for_version(self, op: "base.BaseOp", version: Version) -> bytes:
+    def get_op_bytes_for_version(self, desired_op: 'base.BaseOp', version: Version) -> bytes:
         """
         loads the persisted bytes of op for a specific version
 
-        :param op: the op that needs to be loaded
+        :param desired_op: the op that needs to be loaded
         :param version: the version of the op to load
         :return: the bytes of the op
         """
-        path = self._build_op_path(op.name, version)
+        path = self._build_op_path(desired_op.name, version)
         return self._saver.load(path=path)
 
     @staticmethod
@@ -134,9 +141,9 @@ class OpStore:
         :return: the path at which to save
         """
 
-        return "/models/{}/{}".format(op_name, str(version))
+        return '/models/{}/{}'.format(op_name, str(version))
 
-    def save_op_bytes(self, op_to_save: "base.BaseOp", version: Version, op_bytes: bytes):
+    def save_op_bytes(self, op_to_save: 'base.BaseOp', version: Version, op_bytes: bytes):
         """
         saves op_bytes of a specific op to the path /models/<op name>/<version>.
 
@@ -148,12 +155,10 @@ class OpStore:
         :param op_bytes: the bytes of the op to save that will be persisted
         """
 
-        # TODO use the op name rather than the op
-
         path = self._build_op_path(op_to_save.name, version=version)
         self._saver.save(serialized_object=op_bytes, path=path)
 
-    def register_valid_link(self, downstream_op: Optional[str], upstream_op: "str",
+    def register_valid_link(self, downstream_op: Optional[str], upstream_op: 'str',
                             upstream_op_version: Version):
         """
         registers a link between an upstream and a downstream op. This means that in future relaods the downstream op
@@ -165,5 +170,5 @@ class OpStore:
         :return:
         """
         self._all_op_links.setdefault(
-            downstream_op if downstream_op is not None else "__end_of_pipe__", {}
+            downstream_op if downstream_op is not None else '__end_of_pipe__', {}
         ).setdefault(upstream_op, set()).add(upstream_op_version)

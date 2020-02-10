@@ -1,3 +1,4 @@
+"""module to support sci-kit learn usupervised models"""
 from typing import Any
 
 from ._base_sk_op import BaseSKOp
@@ -29,7 +30,7 @@ class SKUnsupervisedOp(BaseSKOp):
         ... ], 'pred')
     """
 
-    def fit(self, X):
+    def fit(self, X):  # pylint: disable=arguments-differ
         """
         method used to fit the underlying unsupervised model.
 
@@ -39,7 +40,7 @@ class SKUnsupervisedOp(BaseSKOp):
         """
         self._model.fit(X)
 
-    def predict(self, X) -> Any:
+    def predict(self, X) -> Any:  # pylint: disable=arguments-differ
         """
         transforms the dataset using the underlying unsupervised model
 

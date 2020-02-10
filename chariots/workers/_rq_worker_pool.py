@@ -1,19 +1,17 @@
+""""RQ implementation of the Workers API"""
 import json
 from _sha1 import sha1
 from typing import Any, Dict, Optional
 
-import rq
 from redis import Redis
-from rq import Queue, Connection, Worker, get_current_job
-from rq.job import Job
+from rq import Queue, Connection, Worker
 
-import chariots
 from chariots._deployment.app import Chariots, PipelineResponse
-from chariots.workers import BaseWorkerPool, JobStatus
 from chariots.base import BaseRunner, BaseSaver
+from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 
-def _inner_pipe_execution(pipeline: chariots.Pipeline, pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
+def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
                           op_store: 'chariots.OpStore'):
     op_store.reload()
     pipeline.load(op_store)
@@ -74,15 +72,15 @@ class RQWorkerPool(BaseWorkerPool):
             worker = Worker(self._queue_name)
             worker.work()
 
-    def execute_pipeline_async(self, pipeline: chariots.Pipeline, pipeline_input: Any, app: Chariots) -> str:
+    def execute_pipeline_async(self, pipeline: 'chariots.Pipeline', pipeline_input: Any, app: Chariots) -> str:
         if not self.n_workers:
             raise ValueError('async job requested but it seems no workers are available')
         rq_job = self._queue.enqueue(_inner_pipe_execution, kwargs={
-            "pipeline": pipeline,
-            "pipeline_input": pipeline_input,
-            "saver": app.saver,
-            "runner": app.runner,
-            "op_store": app.op_store
+            'pipeline': pipeline,
+            'pipeline_input': pipeline_input,
+            'saver': app.saver,
+            'runner': app.runner,
+            'op_store': app.op_store
         })
         chariots_job_id = sha1(rq_job.id.encode('utf-8')).hexdigest()
         self._jobs[chariots_job_id] = rq_job

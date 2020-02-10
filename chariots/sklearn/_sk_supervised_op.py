@@ -1,3 +1,4 @@
+"""module to support sci-kit learn supervised models"""
 from typing import Any
 
 from ._base_sk_op import BaseSKOp
@@ -33,7 +34,7 @@ class SKSupervisedOp(BaseSKOp):
         ... ], 'pred')
     """
 
-    def fit(self, X, y):
+    def fit(self, X, y):  # pylint: disable=arguments-differ
         """
         method used by the operation to fit the underlying model
 
@@ -46,7 +47,7 @@ class SKSupervisedOp(BaseSKOp):
         """
         self._model.fit(X, y)
 
-    def predict(self, X) -> Any:
+    def predict(self, X) -> Any:  # pylint: disable=arguments-differ
         """
         method used internally by the op to predict with the underlying model.
 

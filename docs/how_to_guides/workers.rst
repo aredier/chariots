@@ -109,7 +109,7 @@ you than have several options:
     >>> with RQWorkerContext():
     ...     response = client.call_pipeline(is_odd_pipeline, 4, use_worker=True)
     ...     print(response.job_status)
-    ...     time.sleep(3)
+    ...     time.sleep(5)
     ...     response = client.fetch_job(response.job_id, is_odd_pipeline)
     ...     print(response.job_status)
     ...     print(response.value)

@@ -1,3 +1,4 @@
+"""abstract saver module"""
 from abc import ABC
 from typing import Text
 
@@ -27,7 +28,6 @@ class BaseSaver(ABC):
 
         :return: whether or not the object was correctly serialized.
         """
-        pass
 
     def load(self, path: Text) -> bytes:
         """
@@ -39,4 +39,3 @@ class BaseSaver(ABC):
 
         :return: saved bytes
         """
-        pass

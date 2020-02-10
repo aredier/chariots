@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# pylint: disable=missing-module-docstring
 from ._pipeline import Pipeline
 from ._deployment.client import Client
 from ._deployment.client import TestClient
@@ -25,7 +25,7 @@ __all__ = [
     'Pipeline',
     'Chariots',
     'Client',
-    'OStore',
+    'OpStore',
     'MLMode',
     'TestClient',
     'base',

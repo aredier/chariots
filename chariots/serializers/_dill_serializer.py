@@ -1,3 +1,4 @@
+"""module for the dill serializer"""
 from typing import Any
 
 import dill

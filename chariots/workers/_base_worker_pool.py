@@ -1,10 +1,9 @@
+"""module that provides base classes for the worker API"""
 from abc import abstractmethod, ABC
 from enum import Enum
 from typing import Any
 
 import rq
-
-import chariots
 
 
 class JobStatus(Enum):
@@ -22,15 +21,15 @@ class JobStatus(Enum):
         """
         Translates an RQ Job status into a Chariots JobStatus
         """
-        if status == rq.job.JobStatus.QUEUED:
+        if status == rq.job.JobStatus.QUEUED:  # pylint: disable = no-member
             return cls.queued
-        if status == rq.job.JobStatus.FINISHED:
+        if status == rq.job.JobStatus.FINISHED:  # pylint: disable = no-member
             return cls.done
-        if status == rq.job.JobStatus.FAILED:
+        if status == rq.job.JobStatus.FAILED:  # pylint: disable = no-member
             return cls.failed
-        if status == rq.job.JobStatus.STARTED:
+        if status == rq.job.JobStatus.STARTED:  # pylint: disable = no-member
             return cls.running
-        if status == rq.job.JobStatus.DEFFERED:
+        if status == rq.job.JobStatus.DEFFERED:  # pylint: disable = no-member
             return cls.deferred
         raise ValueError('unknown job status: {}'.format(status))
 
@@ -52,12 +51,10 @@ class BaseWorkerPool(ABC):
     @abstractmethod
     def n_workers(self):
         """total number of workers in the pool"""
-        pass
 
     @abstractmethod
     def spawn_worker(self):
         """create a new worker in the pool"""
-        pass
 
     @abstractmethod
     def execute_pipeline_async(self, pipeline: 'chariots.Pipeline', pipeline_input: Any,
@@ -72,7 +69,6 @@ class BaseWorkerPool(ABC):
         :return: the id string of the job. This id needs to correspond to the one that will get sent
                  to `BaseWorkerPool.get_pipeline_response_json_for_id`
         """
-        pass
 
     @abstractmethod
     def get_pipeline_response_json_for_id(self, job_id: str) -> str:
@@ -85,4 +81,3 @@ class BaseWorkerPool(ABC):
 
         :return: a jsonified version of the corresponding `PipelineResponse`
         """
-        pass

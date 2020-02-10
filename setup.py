@@ -11,15 +11,15 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-with open('requirements.txt') as requirements_file:
+with open('setup_requirements.txt') as requirements_file:
     requirements = list(requirements_file.readlines())
 
 setup_requirements = ['pytest-runner', ]
 
-test_requirements = ['pytest', "numpy", "scikit-learn"]
+test_requirements = ['pytest', 'numpy', 'scikit-learn']
 
 setup(
-    author="Antoine Redier",
+    author='Antoine Redier',
     author_email='antoine.redier2@gmail.com',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -31,14 +31,14 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    description="machine learning pipelines",
+    description='machine learning pipelines',
     entry_points={
         'console_scripts': [
             'chariots=chariots.cli:main',
         ],
     },
     install_requires=requirements,
-    license="GNU General Public License v3",
+    license='GNU General Public License v3',
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='chariots',

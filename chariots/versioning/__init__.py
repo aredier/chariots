@@ -98,9 +98,9 @@ from ._versioned_field_dict import VersionedFieldDict
 from ._version_type import VersionType
 
 __all__ = [
-    "Version",
-    "VersionType",
-    "VersionedField",
-    "VersionedFieldDict",
-    "VersionableMeta",
+    'Version',
+    'VersionType',
+    'VersionedField',
+    'VersionedFieldDict',
+    'VersionableMeta',
 ]

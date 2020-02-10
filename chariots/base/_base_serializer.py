@@ -1,3 +1,4 @@
+"""serializer's abstract classes"""
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -40,7 +41,6 @@ class BaseSerializer(ABC):
 
         :return: the bytes of the serialized object
         """
-        pass
 
     @abstractmethod
     def deserialize_object(self, serialized_object: bytes) -> Any:
@@ -51,4 +51,3 @@ class BaseSerializer(ABC):
 
         :return: the deserialized objects
         """
-        pass

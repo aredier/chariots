@@ -8,4 +8,3 @@ going quickly.
    :maxdepth: 1
 
    iris
-

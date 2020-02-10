@@ -1,3 +1,4 @@
+"""data saving node"""
 from typing import Optional, List, Any
 
 from chariots.base import BaseSerializer, BaseRunner, BaseSaver
@@ -61,7 +62,8 @@ class DataSavingNode(DataNode):
     :param name: the name of the op
     """
 
-    def __init__(self, serializer: BaseSerializer, path: str, input_nodes: Optional[InputNodes],
+    def __init__(self, serializer: BaseSerializer, path: str,  # pylint: disable=too-many-arguments
+                 input_nodes: Optional[InputNodes],
                  name: Optional[str] = None, saver: Optional[BaseSaver] = None):
         super().__init__(serializer=serializer, path=path, input_nodes=input_nodes, name=name, saver=saver)
 
@@ -69,10 +71,11 @@ class DataSavingNode(DataNode):
     def node_version(self) -> Version:
         return Version()
 
-    def execute(self, params: List[Any], runner: Optional[BaseRunner] = None) -> Any:
+    def execute(self, params: List[Any],  # pylint: disable=arguments-differ
+                runner: Optional[BaseRunner] = None) -> Any:
         if self._saver is None:
-            raise ValueError("cannot save data without a saver")
+            raise ValueError('cannot save data without a saver')
         self._saver.save(self.serializer.serialize_object(params[0]), self.path)
 
     def __repr__(self):
-        return "<DataLoadingNode of {}>".format(self.path)
+        return '<DataLoadingNode of {}>'.format(self.path)
