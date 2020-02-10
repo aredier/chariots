@@ -16,8 +16,6 @@ install:
   - pip install flake8
 script:
   - tox
-  - pylint chariots tests
-  - flake8 chariots tests
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
