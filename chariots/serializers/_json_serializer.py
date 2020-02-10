@@ -1,3 +1,4 @@
+"""json serialisation support"""
 import json
 from typing import Any
 
@@ -11,8 +12,8 @@ class JSONSerializer(BaseSerializer):
     """
 
     def serialize_object(self, target: Any) -> bytes:
-        return json.dumps(target).encode("utf-8")
+        return json.dumps(target).encode('utf-8')
 
     def deserialize_object(self, serialized_object: bytes) -> Any:
-        object_json = serialized_object.decode("utf-8")
+        object_json = serialized_object.decode('utf-8')
         return json.loads(object_json)

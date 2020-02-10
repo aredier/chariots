@@ -12,5 +12,5 @@ to create your own operations, you will need to subclass one of the base op clas
 from ._loadable_op import LoadableOp
 
 __all__ = [
-    "LoadableOp"
+    'LoadableOp'
 ]

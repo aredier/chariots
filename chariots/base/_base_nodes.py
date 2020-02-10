@@ -1,3 +1,4 @@
+"""abstract nodes of Chariots"""
 from abc import abstractmethod, ABC
 from enum import Enum
 
@@ -10,21 +11,22 @@ from .._helpers.typing import SymbolicToRealMapping
 
 
 class NodeReference:
+    """referecne between an upstream and a downstream node in a pipeline"""
 
-    def __init__(self, node: Union["BaseNode", "ReservedNodes"], reference: Text):
+    def __init__(self, node: Union['BaseNode', 'ReservedNodes'], reference: Text):
         self.node = node
         if isinstance(reference, ReservedNodes):
             reference = reference.value
         if not isinstance(reference, str):
-            raise TypeError("cannot reference with other than string")
+            raise TypeError('cannot reference with other than string')
         self.reference = reference
 
     def __repr__(self):
-        return "<NodeReference {} of {}>".format(self.reference, self.node.name)
+        return '<NodeReference {} of {}>'.format(self.reference, self.node.name)
 
     def __eq__(self, other):
         if not isinstance(other, NodeReference):
-            raise TypeError("cannot compare NodeReference to {}".format(type(other)))
+            raise TypeError('cannot compare NodeReference to {}'.format(type(other)))
         return self.node == other.node and self.reference == other.reference
 
     def __hash__(self):
@@ -76,7 +78,7 @@ class BaseNode(ABC):
                          downstream nodes to consume) use a list
     """
 
-    def __init__(self, input_nodes: Optional[List[Union[Text, "BaseNode"]]] = None,
+    def __init__(self, input_nodes: Optional[List[Union[Text, 'BaseNode']]] = None,
                  output_nodes: Union[List[Text], Text] = None):
         self.input_nodes = input_nodes or []
         if not isinstance(output_nodes, list):
@@ -98,7 +100,6 @@ class BaseNode(ABC):
     @abstractmethod
     def node_version(self) -> Version:
         """the version of this node"""
-        pass
 
     @abstractmethod
     def execute(self, *params) -> Any:
@@ -109,9 +110,8 @@ class BaseNode(ABC):
         :param params: the inputs provided by the `input_nodes`
         :return: the output(s) of the node
         """
-        pass
 
-    def replace_symbolic_references(self, symbolic_to_real_node: SymbolicToRealMapping) -> "BaseNode":
+    def replace_symbolic_references(self, symbolic_to_real_node: SymbolicToRealMapping) -> 'BaseNode':
         """
         replaces all the symbolic references of this node: if an input_node or output_node was defined with a string by
         the user, it will try to find the node represented by this string.
@@ -126,18 +126,18 @@ class BaseNode(ABC):
         return self
 
     @staticmethod
-    def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping) -> "BaseNode":
+    def _ensure_node_is_real(node, symbolic_real_node_map: SymbolicToRealMapping) -> 'BaseNode':
         if isinstance(node, BaseNode):
             output_refs = node.output_references
             if not len(output_refs) == 1:
-                raise ValueError("cannot use {} as input reference as it has {} output "
-                                 "references".format(node.name, len(output_refs)))
+                raise ValueError('cannot use {} as input reference as it has {} output '
+                                 'references'.format(node.name, len(output_refs)))
             ref = output_refs[0]
             return symbolic_real_node_map[ref.reference]
         return symbolic_real_node_map[node]
 
     @abstractmethod
-    def load_latest_version(self, store_to_look_in: _op_store.OpStore) -> "BaseNode":
+    def load_latest_version(self, store_to_look_in: _op_store.OpStore) -> 'BaseNode':
         """
         reloads the latest available version of thid node by looking for all available versions in the OpStore
 
@@ -146,7 +146,7 @@ class BaseNode(ABC):
         :return: this node once it has been loaded
         """
 
-    def check_version_compatibility(self, upstream_node: "BaseNode", store_to_look_in: _op_store.OpStore):
+    def check_version_compatibility(self, upstream_node: 'BaseNode', store_to_look_in: _op_store.OpStore):
         """
         checks that this node is compatible with a potentially new version of an upstream node`
 
@@ -159,7 +159,7 @@ class BaseNode(ABC):
         if validated_links is None:
             return
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
-            raise VersionError("cannot find a validated link from {} to {}".format(upstream_node.name, self.name))
+            raise VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
 
     @property
     def is_loadable(self) -> bool:
@@ -171,7 +171,7 @@ class BaseNode(ABC):
     def name(self) -> str:
         """the name of the node"""
 
-    def persist(self, store: _op_store.OpStore, downstream_nodes: Optional[List["BaseNode"]]) -> Version:
+    def persist(self, store: _op_store.OpStore, downstream_nodes: Optional[List['BaseNode']]) -> Version:
         """
         persists this nodes's data (usually this means saving the serialized bytes of the inner op of this node (for the
         `Node` class
@@ -209,8 +209,8 @@ class ReservedNodes(Enum):
     enum of reserved node names
     """
 
-    pipeline_input = "__pipeline_input__"
-    pipeline_output = "__pipeline_output__"
+    pipeline_input = '__pipeline_input__'
+    pipeline_output = '__pipeline_output__'
 
     @property
     def reference(self):

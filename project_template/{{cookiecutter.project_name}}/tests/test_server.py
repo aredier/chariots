@@ -1,19 +1,19 @@
-{%- if cookiecutter.use_iris_example == "y" %}
+{%- if cookiecutter.use_iris_example == 'y' %}
 import multiprocessing as mp
 import time
 
 {% endif -%}
 from click import testing
-{%- if cookiecutter.use_iris_example == "y" %}
+{%- if cookiecutter.use_iris_example == 'y' %}
 from chariots._deployment.client import Client
 {% endif -%}
 
-{% if cookiecutter.use_cli == "y" -%}
+{% if cookiecutter.use_cli == 'y' -%}
 from {{cookiecutter.project_name}} import cli
 {% else %}
 from {{cookiecutter.project_name}}.app import {{cookiecutter.project_name}}_app
 {%- endif -%}
-{%- if cookiecutter.use_iris_example == "y" -%}
+{%- if cookiecutter.use_iris_example == 'y' -%}
 {%- if cookiecutter.use_cli == 'n' -%}
 from {{cookiecutter.project_name}}.pipelines.download_iris import download_iris
 from {{cookiecutter.project_name}}.pipelines.train_iris import train_iris
@@ -32,7 +32,7 @@ def start_server():
 
 def test_server():
     """tests that the pipelines are running correctly"""
-    {% if cookiecutter.use_iris_example== "y" -%}
+    {% if cookiecutter.use_iris_example== 'y' -%}
     process = mp.Process(target=start_server, args=())
     try:
         process.start()

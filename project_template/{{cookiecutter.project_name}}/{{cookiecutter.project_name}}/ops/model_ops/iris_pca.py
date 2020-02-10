@@ -13,6 +13,6 @@ class IrisPCA(SKUnsupervisedOp):
     model_parameters = VersionedFieldDict(
         VersionType.MAJOR,
         {
-            "n_components": 2,
+            'n_components': 2,
         }
     )

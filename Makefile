@@ -51,6 +51,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .coverage*
 
 lint: ## check style with flake8
+	pylint chariots tests
 	flake8 chariots tests
 
 test: ## run tests quickly with the default Python

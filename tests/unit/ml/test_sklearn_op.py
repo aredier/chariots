@@ -1,38 +1,15 @@
-import pytest
-from sklearn.linear_model import LinearRegression
-
-from chariots import MLMode, Pipeline
-from chariots.nodes import Node
+"""module that tests the sci-kit learn MLOp API"""
 from chariots.runners import SequentialRunner
-from chariots.sklearn import SKSupervisedOp
-from chariots.versioning import VersionType, VersionedField
 
 
-@pytest.fixture
-def LROp():
-    class SKLROpInner(SKSupervisedOp):
-        model_class = VersionedField(
-            LinearRegression, VersionType.MINOR
-        )
-
-    return SKLROpInner
-
-
-def test_sk_training_pipeline(LROp, YOp, XTrainOp):
-    train_pipe = Pipeline([
-        Node(XTrainOp(), output_nodes="x_train"),
-        Node(YOp(), output_nodes="y_train"),
-        Node(LROp(mode=MLMode.FIT), input_nodes=["x_train", "y_train"])
-    ], "train")
-    pred_pipe = Pipeline([
-        Node(LROp(mode=MLMode.PREDICT), input_nodes=["__pipeline_input__"],
-             output_nodes="__pipeline_output__")
-    ], "pred")
+def test_sk_training_pipeline(basic_sk_pipelines):  # pylint: disable=invalid-name
+    """function that trains that sci-kit learn based op and checks laod and reload"""
+    train_pipe, pred_pipe = basic_sk_pipelines
 
     runner = SequentialRunner()
     runner.run(train_pipe)
-    op_bytes = train_pipe.node_for_name["sklropinner"]._op.serialize()
-    pred_pipe.node_for_name["sklropinner"]._op.load(op_bytes)
+    op_bytes = train_pipe.node_for_name['sklrop']._op.serialize()  # pylint: disable=protected-access
+    pred_pipe.node_for_name['sklrop']._op.load(op_bytes)  # pylint: disable=protected-access
     response = runner.run(pred_pipe, pipeline_input=[[100], [101], [102]])
 
     for i, individual_value in enumerate(response):

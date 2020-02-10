@@ -1,3 +1,4 @@
+"""meta class that handles versioning in python"""
 import operator
 from typing import Mapping, Text
 
@@ -21,18 +22,18 @@ class VersionableMeta(type):
             if not isinstance(super_class, VersionableMeta):
                 continue
             intermediate_versions.update(super_class._get_atomic_versions_dict())
-        intermediate_versions.update(cls._get_atomic_versions_dict())
+        intermediate_versions.update(cls._get_atomic_versions_dict())  # pylint: disable=no-value-for-parameter
         cls.__version__ = sum(
             map(operator.itemgetter(1), sorted(intermediate_versions.items(), key=operator.itemgetter(0))),
             Version()
         )
 
-    def _get_atomic_versions_dict(cls) -> Mapping[Text, "Version"]:
+    def _get_atomic_versions_dict(cls) -> Mapping[Text, 'Version']:
         version_dict = {}
         for attr_name, attr_value in cls.__dict__.items():
             if isinstance(attr_value, VersionedField):
                 version_dict[attr_name] = Version().update(attr_value.affected_version,
-                                                           attr_value.__chariots_hash__.encode("utf-8"))
+                                                           attr_value.__chariots_hash__.encode('utf-8'))
             if isinstance(attr_value, VersionedFieldDict):
                 version_dict.update(attr_value.version_dict)
         return version_dict

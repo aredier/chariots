@@ -11,4 +11,3 @@ In these few pages, we will discuss the guiding principles and general logic beh
 will be theoretical guides to understand the major rationale behind the technical decisions taken in the framework.
 
 As the framework is still in its early stage and evolving quite rapidly, these principles are not yet fully implemented.
-

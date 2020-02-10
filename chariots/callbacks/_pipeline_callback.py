@@ -1,7 +1,5 @@
+"""module  for Pipeline callbacks"""
 from typing import List, Any
-
-import chariots
-from chariots.base import BaseNode
 
 
 class PipelineCallback:
@@ -51,16 +49,15 @@ class PipelineCallback:
         False
     """
 
-    def before_execution(self, pipeline: "chariots.Pipeline", args: List[Any]):
+    def before_execution(self, pipeline: 'chariots.Pipeline', args: List[Any]):
         """
         called before any node in the pipeline is ran. provides the pipeline that is being run and the pipeline input
 
         :param pipeline: the pipeline being ran
         :param args: the pipeline inputs. DO NOT MODIFY those references as this might cause some undefined behavior
         """
-        pass
 
-    def after_execution(self, pipeline: "chariots.Pipeline", args: List[Any], output: Any):
+    def after_execution(self, pipeline: 'chariots.Pipeline', args: List[Any], output: Any):
         """
         called after all the nodes of the pipeline have been ran with the pipeline being run and the output of the run
 
@@ -69,9 +66,8 @@ class PipelineCallback:
         :param output: the output of the pipeline run. DO NOT MODIFY those references as this might cause some
                        undefined behavior
         """
-        pass
 
-    def before_node_execution(self, pipeline: "chariots.Pipeline", node: "BaseNode", args: List[Any]):
+    def before_node_execution(self, pipeline: 'chariots.Pipeline', node: 'BaseNode', args: List[Any]):
         """
         called before each node is executed the pipeline the node is in as well as the node are provided alongside the
         arguments the node is going to be given
@@ -81,9 +77,8 @@ class PipelineCallback:
         :param args: the arguments that are going to be given to the node. DO NOT MODIFY those references as this might
                      cause some undefined behavior
         """
-        pass
 
-    def after_node_execution(self, pipeline: "chariots.Pipeline", node: "BaseNode", args: List[Any], output: Any):
+    def after_node_execution(self, pipeline: 'chariots.Pipeline', node: 'BaseNode', args: List[Any], output: Any):
         """
         called after each node is executed. The pipeline the node is in as well as the node are provided alongside the
         input/output of the node that ran
@@ -94,4 +89,3 @@ class PipelineCallback:
         :param output: the output the node produced. . DO NOT MODIFY those references as this might cause some
                        undefined behavior
         """
-        pass

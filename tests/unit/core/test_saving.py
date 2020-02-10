@@ -1,3 +1,4 @@
+"""module that tests the Savers API"""
 import hashlib
 import json
 import os
@@ -10,23 +11,26 @@ from chariots.serializers import DillSerializer, JSONSerializer
 
 
 def test_file_saver(tmpdir):
+    """tests the basic functionality of the file saver"""
     saver = FileSaver(str(tmpdir))
-    fake_string = hashlib.sha1(str(random.randint(0, 1000)).encode("utf-8")).hexdigest()
-    saver.save(fake_string.encode("utf-8"), "/foo/bar.bin")
+    fake_string = hashlib.sha1(str(random.randint(0, 1000)).encode('utf-8')).hexdigest()
+    saver.save(fake_string.encode('utf-8'), '/foo/bar.bin')
 
-    file_path = os.path.join(str(tmpdir), "foo/bar.bin")
+    file_path = os.path.join(str(tmpdir), 'foo/bar.bin')
     assert os.path.exists(file_path)
-    with open(file_path, "rb") as file:
-        assert file.read().decode("utf-8") == fake_string
+    with open(file_path, 'rb') as file:
+        assert file.read().decode('utf-8') == fake_string
 
-    loaded_bytes = saver.load("foo/bar.bin")
-    assert loaded_bytes.decode("utf-8") == fake_string
+    loaded_bytes = saver.load('foo/bar.bin')
+    assert loaded_bytes.decode('utf-8') == fake_string
 
 
 def test_dill_serialisation():
+    """tests using the `DillSerializer` class"""
     dill_serializer = DillSerializer()
 
     def fake_function():
+        """a function that serves no purpose besides being a pickalable function"""
         return 42
 
     serialized_bytes = dill_serializer.serialize_object(fake_function)
@@ -41,12 +45,13 @@ def test_dill_serialisation():
 
 
 def test_json_serialisation():
+    """tests the `JSONSerializer` class"""
     json_serializer = JSONSerializer()
 
-    mapping = {"foo": 42}
+    mapping = {'foo': 42}
     serialised_bytes = json_serializer.serialize_object(mapping)
 
-    hand_deserialized = json.loads(serialised_bytes.decode("utf-8"))
+    hand_deserialized = json.loads(serialised_bytes.decode('utf-8'))
     assert hand_deserialized == mapping
 
     deserialized = json_serializer.deserialize_object(serialised_bytes)

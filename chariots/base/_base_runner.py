@@ -1,10 +1,9 @@
+"""module for the abstract runner classes"""
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 
-import chariots
 
-
-class BaseRunner(ABC):
+class BaseRunner(ABC):  # pylint: disable=too-few-public-methods
     """
     a runner is used to define the execution behavior of a Pipeline. there main entry point is the `run` method
 
@@ -29,7 +28,7 @@ class BaseRunner(ABC):
     """
 
     @abstractmethod
-    def run(self, pipeline: "chariots.Pipeline", pipeline_input: Optional[Any] = None):
+    def run(self, pipeline: 'chariots.Pipeline', pipeline_input: Optional[Any] = None):
         """
         runs a pipeline, provides it with the correct input and extracts the results if any
 
@@ -38,4 +37,3 @@ class BaseRunner(ABC):
 
         :return: the output of the graph called on the input if applicable
         """
-        pass

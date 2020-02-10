@@ -1,6 +1,5 @@
+"""op callbacks module"""
 from typing import List, Any
-
-from chariots import base
 
 
 class OpCallBack:
@@ -40,23 +39,21 @@ class OpCallBack:
         False
     """
 
-    def before_execution(self, op: "base.BaseOp", args: List[Any]):
+    def before_execution(self, callback_op: 'base.BaseOp', args: List[Any]):
         """
         called before the operation is executed (and before the operation's `before_execution`'s method).
 
-        :param op: the operation that is going to be executed
+        :param callback_op: the operation that is going to be executed
         :param args: the list of arguments that are going to be passed to the operation. DO NOT MODIFY those references
                      as this might cause some undefined behavior
         """
-        pass
 
-    def after_execution(self, op: "base.BaseOp", args: List[Any], output: Any):
+    def after_execution(self, callback_op: 'base.BaseOp', args: List[Any], output: Any):
         """
         called after the operation has been executed (and after it's `after_execution`'s method).
 
-        :param op: the operation that was executed
+        :param callback_op: the operation that was executed
         :param args: the arguments that were passed to the op
         :param output: the output the op produced. DO NOT MODIFY the output reference as it might cause some undefined
                        behavior
         """
-        pass

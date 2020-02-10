@@ -1,3 +1,4 @@
+"""versioned field module"""
 import hashlib
 from typing import Any, Text
 
@@ -25,7 +26,7 @@ class VersionedField:
     :param affected_version: the subversion this class attribute has to affect
     """
 
-    def __init__(self, value: Any, affected_version: VersionType, ):
+    def __init__(self, value: Any, affected_version: VersionType):
         self.value = value
         self.affected_version = affected_version
 
@@ -41,5 +42,4 @@ class VersionedField:
         how to generate the hash (on which the version is built) from the value
         :return: the hash of the inner value
         """
-        # TODO find better way to hash
-        return hashlib.sha1(str(self.value).encode("utf-8")).hexdigest()
+        return hashlib.sha1(str(self.value).encode('utf-8')).hexdigest()

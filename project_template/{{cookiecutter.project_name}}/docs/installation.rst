@@ -16,4 +16,3 @@ or you can install with editable mode if you want the installed package to refle
 
     $ cd {{cookiecutter.project_name}}
     $ pip install -e ./
-

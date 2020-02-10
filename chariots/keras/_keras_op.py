@@ -1,10 +1,11 @@
+"""Keras Op class"""
 from typing import Any, List, Union, Optional
 
 import numpy as np
 
 from chariots import MLMode
 from chariots.base import BaseMLOp
-from chariots.versioning import VersionedFieldDict, VersionedField, VersionType
+from chariots.versioning import VersionedFieldDict
 
 
 class KerasOp(BaseMLOp):
@@ -91,12 +92,12 @@ class KerasOp(BaseMLOp):
         super().__init__(mode)
         self.verbose_level = verbose
 
-    def fit(self, input_data_sets: Union[List[np.ndarray], np.ndarray],
-            output_datasets:  Union[List[np.ndarray], np.ndarray]):
+    def fit(self, input_data_sets: Union[List[np.ndarray], np.ndarray],  # pylint: disable=arguments-differ
+            output_datasets: Union[List[np.ndarray], np.ndarray]):
         self._model.fit(input_data_sets, output_datasets, verbose=self.verbose_level, **self.input_params)
 
-    def predict(self, input_datasets) -> Any:
+    def predict(self, input_datasets) -> Any:  # pylint: disable=arguments-differ
         return self._model.predict(input_datasets)
 
     def _init_model(self):
-        raise NotImplementedError("you need to define the initialisation behavior of your NN")
+        raise NotImplementedError('you need to define the initialisation behavior of your NN')

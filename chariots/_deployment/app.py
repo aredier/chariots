@@ -1,3 +1,4 @@
+"""class that handles the backend setup of the Chariots app, to deploy the pipelines in a Flask server"""
 import json
 from typing import Mapping, Any, List, Type, Optional, Union
 
@@ -19,7 +20,7 @@ class PipelineResponse:
     A PipelineResponse represents all the information that is sent from the _deployment when a pipeline is executed.
     """
 
-    def __init__(self, value: Any, versions: Mapping[BaseNode, Version], job_id: Any,
+    def __init__(self, value: Any, versions: Mapping[BaseNode, Version], job_id: str,
                  job_status: '_base_worker_pool.JobSatus'):
         self.value = value
         self.versions = versions
@@ -134,11 +135,11 @@ class Chariots(Flask):
 
     """
 
-    def __init__(self, app_pipelines: List[Pipeline], path, saver_cls: Type[BaseSaver] = FileSaver,
+    def __init__(self, app_pipelines: List[Pipeline], path, *args, saver_cls: Type[BaseSaver] = FileSaver,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
                  worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: Optional[bool] = None,
-                 *args, **kwargs):
+                 **kwargs):  # pylint: disable=too-many-arguments
         super().__init__(*args, **kwargs)
 
         self.saver = saver_cls(path)
@@ -172,7 +173,8 @@ class Chariots(Flask):
             pipe.prepare(self.saver)
         return app_pipeline
 
-    def _should_execute_pipeline_async(self, app_worker_config: Union[bool, None],
+    @staticmethod
+    def _should_execute_pipeline_async(app_worker_config: Union[bool, None],
                                        pipeline_worker_config: Union[bool, None],
                                        request_worker_config: Union[bool, None]) -> bool:
         """
@@ -191,7 +193,6 @@ class Chariots(Flask):
 
     def _build_route(self):
 
-        @self.route('/pipelines/<pipeline_name>/main', methods=['POST'])
         def serve_pipeline(pipeline_name):
             if not self._loaded_pipelines[pipeline_name]:
                 raise ValueError('pipeline not loaded, load before execution')
@@ -208,44 +209,47 @@ class Chariots(Flask):
                                         pipeline.get_pipeline_versions(), job_id=None,
                                         job_status=chariots.workers.JobStatus.done)
             return json.dumps(response.json())
+        self.add_url_rule('/pipelines/<pipeline_name>/main', 'serve_pipeline', serve_pipeline, methods=['POST'])
 
-        @self.route('/pipelines/<pipeline_name>/load', methods=['POST'])
         def load_pipeline(pipeline_name):
             self.op_store.reload()
             self._load_single_pipeline(pipeline_name)
             return json.dumps({})
+        self.add_url_rule('/pipelines/<pipeline_name>/load', 'load_pipeline', load_pipeline, methods=['POST'])
 
-        @self.route('/pipelines/<pipeline_name>/versions', methods=['POST'])
         def pipeline_versions(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
             return json.dumps({node.name: str(version) for node, version in pipeline.get_pipeline_versions().items()})
+        self.add_url_rule('/pipelines/<pipeline_name>/versions', 'pipeline_versions', pipeline_versions,
+                          methods=['POST'])
 
-        @self.route('/pipelines/<pipeline_name>/save', methods=['POST'])
         def save_pipeline(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
             pipeline.save(self.op_store)
             self.op_store.save()
             return json.dumps({})
+        self.add_url_rule('/pipelines/<pipeline_name>/save', 'save_pipeline', save_pipeline, methods=['POST'])
 
-        @self.route('/pipelines/<pipeline_name>/health_check', methods=['GET'])
         def pipeline_health_check(pipeline_name):
             is_loaded = self._loaded_pipelines[pipeline_name]
             return json.dumps({'is_loaded': is_loaded}), 200 if is_loaded else 419
+        self.add_url_rule('/pipelines/<pipeline_name>/health_check', 'pipeline_health_check', pipeline_health_check,
+                          methods=['GET'])
 
-        @self.route('/health_check', methods=['GET'])
         def health_check():
             return json.dumps(self._loaded_pipelines)
+        self.add_url_rule('/health_check', 'health_check', health_check, methods=['GET'])
 
-        @self.route('/jobs/fetch/', methods=['POST'])
         def fetch_job():
             job_id = request.json['job_id']
             if job_id is None:
                 raise ValueError('job id is None, results are probably already present')
             return self._worker_pool.get_pipeline_response_json_for_id(job_id)
+        self.add_url_rule('/jobs/fetch/', 'fetch_job', fetch_job, methods=['POST'])
 
-        @self.route('/available_pipelines', methods=['GET'])
         def all_pipelines():
             return json.dumps(list(self._pipelines.keys()))
+        self.add_url_rule('/available_pipelines', 'all_pipelines', all_pipelines, methods=['GET'])
 
     def _load_pipelines(self):
         for pipeline in self._pipelines.values():

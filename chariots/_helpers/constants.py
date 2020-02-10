@@ -1,2 +1,4 @@
-DATA_PATH = "/data"
-OPS_PATH = "/ops"
+"""package constants"""
+
+DATA_PATH = '/data'
+OPS_PATH = '/ops'

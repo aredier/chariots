@@ -1,16 +1,16 @@
+"""sequential runner op module"""
 from typing import Optional, Any
 
-from chariots import Pipeline
 from chariots.base import BaseRunner
 from chariots.nodes import ReservedNodes
 
 
-class SequentialRunner(BaseRunner):
+class SequentialRunner(BaseRunner):  # pylint: disable=too-few-public-methods
     """
     runner that executes every node in a pipeline sequentially in a single thread.
     """
 
-    def run(self, pipeline: "Pipeline", pipeline_input: Optional[Any] = None):
+    def run(self, pipeline: 'Pipeline', pipeline_input: Optional[Any] = None):
 
         for callback in pipeline.callbacks:
             callback.before_execution(pipeline, [pipeline_input])
@@ -20,7 +20,7 @@ class SequentialRunner(BaseRunner):
 
         results = {key: value for key, value in temp_results.items() if value is not None}
         if len(results) > 1:
-            raise ValueError("multiple pipeline outputs cases not handled, got {}".format(results))
+            raise ValueError('multiple pipeline outputs cases not handled, got {}'.format(results))
 
         temp_results = pipeline.extract_results(temp_results)
         for callback in pipeline.callbacks:

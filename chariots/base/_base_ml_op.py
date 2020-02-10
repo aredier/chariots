@@ -1,3 +1,4 @@
+"""machine learning abstract Ops"""
 import io
 import json
 import time
@@ -6,10 +7,10 @@ from typing import Optional, List, Any
 from zipfile import ZipFile
 
 from chariots.callbacks import OpCallBack
-from chariots.ops import LoadableOp
 from chariots.serializers import DillSerializer
 from chariots.versioning import Version, VersionType
 from .._ml_mode import MLMode
+from ..ops._loadable_op import LoadableOp
 
 
 class BaseMLOp(LoadableOp):
@@ -114,13 +115,13 @@ class BaseMLOp(LoadableOp):
         """
         if self.mode == MLMode.FIT:
             self._fit(*args, **kwargs)
-            return
+            return None
         if self.mode == MLMode.PREDICT:
             return self.predict(*args, **kwargs)
         if self.mode == MLMode.FIT_PREDICT:
             self._fit(*args, **kwargs)
             return self.predict(*args, **kwargs)
-        raise ValueError("unknown mode for {}: {}".format(type(self), self.mode))
+        raise ValueError('unknown mode for {}: {}'.format(type(self), self.mode))
 
     def _fit(self, *args, **kwargs):
         """
@@ -142,32 +143,30 @@ class BaseMLOp(LoadableOp):
         """
         the method used to do predictions/inference once the model has been fitted/loaded
         """
-        pass
 
     @abstractmethod
     def _init_model(self):
         """
         method used to create a new (blank) model (used at initialisation)
         """
-        pass
 
     @property
     def op_version(self):
         time_version = Version().update(self.training_update_version,
-                                        str(self._last_training_time).encode("utf-8"))
+                                        str(self._last_training_time).encode('utf-8'))
         return super().op_version + time_version
 
     def load(self, serialized_object: bytes):
 
         io_file = io.BytesIO(serialized_object)
-        with ZipFile(io_file, "r") as zip_file:
-            self._model = self.serializer   .deserialize_object(zip_file.read("model"))
-            meta = json.loads(zip_file.read("_meta.json").decode("utf-8"))
-            self._last_training_time = meta["train_time"]
+        with ZipFile(io_file, 'r') as zip_file:
+            self._model = self.serializer   .deserialize_object(zip_file.read('model'))
+            meta = json.loads(zip_file.read('_meta.json').decode('utf-8'))
+            self._last_training_time = meta['train_time']
 
     def serialize(self) -> bytes:
         io_file = io.BytesIO()
-        with ZipFile(io_file, "w") as zip_file:
-            zip_file.writestr("model", self.serializer.serialize_object(self._model))
-            zip_file.writestr("_meta.json", json.dumps({"train_time": self._last_training_time}))
+        with ZipFile(io_file, 'w') as zip_file:
+            zip_file.writestr('model', self.serializer.serialize_object(self._model))
+            zip_file.writestr('_meta.json', json.dumps({'train_time': self._last_training_time}))
         return io_file.getvalue()

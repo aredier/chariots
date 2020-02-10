@@ -40,4 +40,3 @@ Api Docs
 
    .. autoclass::  TestClient
       :members:
-
