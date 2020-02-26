@@ -1,6 +1,5 @@
-
-
 bumpversion==0.5.3
+
 # setup requirements
 Click>=6.0
 cookiecutter>=1.6.0, <2.0
@@ -9,6 +8,7 @@ dill==0.2.9
 flake8==3.5.0
 flaky==3.6.1
 flask==1.0.3
+google-cloud-storage==1.26.0
 Keras>=2.0.0
 
 # ml stuff
