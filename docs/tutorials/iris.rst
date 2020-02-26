@@ -121,6 +121,11 @@ Machine Learning Pipelines
 
 Once we have our data set saved, we will need to use it to train our models, we will than create a training pipeline:
 
+
+.. testsetup::
+
+    >>> from chariots._helpers.test_helpers import FromArray
+
 .. doctest::
 
     >>> from chariots import MLMode, Pipeline
@@ -153,7 +158,8 @@ user:
     ...         Node(IrisPCA(MLMode.PREDICT), input_nodes=["__pipeline_input__"],
     ...              output_nodes="x_pca"),
     ...         Node(IrisRF(MLMode.PREDICT), input_nodes=["x_pca"],
-    ...              output_nodes="__pipeline_output__")
+    ...              output_nodes="pred"),
+    ...     Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ...     ], "pred_iris"
     ... )
 

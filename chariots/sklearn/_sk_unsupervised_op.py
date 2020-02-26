@@ -2,6 +2,7 @@
 from typing import Any
 
 from ._base_sk_op import BaseSKOp
+from .. import versioning
 
 
 class SKUnsupervisedOp(BaseSKOp):
@@ -30,6 +31,8 @@ class SKUnsupervisedOp(BaseSKOp):
         ... ], 'pred')
     """
 
+    fit_extra_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {})
+
     def fit(self, X):  # pylint: disable=arguments-differ
         """
         method used to fit the underlying unsupervised model.
@@ -38,7 +41,7 @@ class SKUnsupervisedOp(BaseSKOp):
 
         :param X: the dataset (compatible type with the sklearn lib as pandas data-frames or numpy arrays).
         """
-        self._model.fit(X)
+        self._model.fit(X, **self.fit_extra_parameters)
 
     def predict(self, X) -> Any:  # pylint: disable=arguments-differ
         """

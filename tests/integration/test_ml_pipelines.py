@@ -7,7 +7,7 @@ from chariots import MLMode, Pipeline, Chariots, TestClient
 from chariots.base import BaseMLOp
 from chariots.errors import VersionError
 from chariots.nodes import Node
-from chariots._helpers.test_helpers import XTrainOpL, PCAOp, YOp, SKLROp
+from chariots._helpers.test_helpers import XTrainOpL, PCAOp, YOp, SKLROp, FromArray
 
 
 @pytest.fixture
@@ -137,7 +137,8 @@ def test_fit_predict_pipeline_reload(tmpdir):
     ], 'train_rf')
     pred_pipe = Pipeline([
         Node(PCAOp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'], output_nodes='x_train'),
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='__pipeline_output__')
+        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='pred'),
+        Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
     my_app = Chariots(app_pipelines=[train_pca, train_rf, pred_pipe],
                       path=str(tmpdir), import_name='my_app')
@@ -180,3 +181,44 @@ def test_fit_predict_pipeline_reload(tmpdir):
     assert len(response.value) == 3
     for i, individual_value in enumerate(response.value):
         assert abs(101 + i - individual_value) < 1e-5
+
+
+def test_multiple_models_per_pipeline(tmpdir):
+    """
+    tests a complex pipeline system with a pca-train, model-train and prediction pipeline. The aim of this test is
+    to check that the version check and reload behavior works
+    """
+
+    def make_prediction_test(client, train_pipe, pred_pipe):
+        client.call_pipeline(train_pipe)
+        client.save_pipeline(train_pipe)
+        client.load_pipeline(pred_pipe)
+        response = test_client.call_pipeline(pred_pipe,
+                                             pipeline_input=[[100, 101, 102], [101, 102, 103], [102, 103, 104]])
+
+        assert len(response.value) == 3
+        for i, individual_value in enumerate(response.value):
+            assert abs(101 + i - individual_value) < 1e-5
+
+    train = Pipeline([
+        Node(XTrainOpL(), output_nodes='x_raw'),
+        Node(YOp(), output_nodes='y_train'),
+        Node(PCAOp(mode=MLMode.FIT_PREDICT), input_nodes=['x_raw'], output_nodes='x_train'),
+        Node(SKLROp(mode=MLMode.FIT), input_nodes=['x_train', 'y_train'])
+    ], 'train')
+
+    pred_pipe = Pipeline([
+        Node(PCAOp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'], output_nodes='x_train'),
+        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='pred'),
+        Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
+    ], 'pred')
+    my_app = Chariots(app_pipelines=[train, pred_pipe],
+                      path=str(tmpdir), import_name='my_app')
+
+    test_client = TestClient(my_app)
+
+    # test that the train save load is working
+    make_prediction_test(test_client, train, pred_pipe)
+
+    # test that that retrain is possible
+    make_prediction_test(test_client, train, pred_pipe)

@@ -2,6 +2,7 @@
 from typing import Any
 
 from ._base_sk_op import BaseSKOp
+from .. import versioning
 
 
 class SKSupervisedOp(BaseSKOp):
@@ -32,7 +33,17 @@ class SKSupervisedOp(BaseSKOp):
         ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
         ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
         ... ], 'pred')
+
+
+    To change the behavior of the Op, you can:
+
+    * change the `predict_function` class attribute with a new `VersionedField` (to use `predict_proba` for instance)
+    * change the `fit_extra_parameters` class attribute with a new `VersionedFieldDict` (to pass some new parameters
+      during prediction)
     """
+
+    predict_function = versioning.VersionedField('predict', versioning.VersionType.MAJOR)
+    fit_extra_parameters = versioning.VersionedFieldDict(versioning.VersionType.MAJOR, {})
 
     def fit(self, X, y):  # pylint: disable=arguments-differ
         """
@@ -45,7 +56,7 @@ class SKSupervisedOp(BaseSKOp):
         :param y: the output that hte underlying supervised model will fit on (type must be compatible with the sklearn
                   lib such as numpy arrays or pandas data frames)
         """
-        self._model.fit(X, y)
+        self._model.fit(X, y, **self.fit_extra_parameters)
 
     def predict(self, X) -> Any:  # pylint: disable=arguments-differ
         """
@@ -57,4 +68,6 @@ class SKSupervisedOp(BaseSKOp):
                   arrays or pandas data frames)
 
         """
-        return self._model.predict(X).tolist()
+
+        # TODO remove tolist
+        return getattr(self._model, self.predict_function)(X)

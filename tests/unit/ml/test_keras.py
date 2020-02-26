@@ -105,4 +105,4 @@ def test_keras_multiple_datasets(tmpdir):
     assert len(pred) == 1
     for batch_predictions, batch_inputs in zip(pred, inputs):
         assert len(batch_predictions) == 1
-        assert batch_inputs[0][0] < batch_predictions[0] < batch_inputs[0][0] + 1
+        assert batch_inputs[0][0] < batch_predictions[0] < batch_inputs[0][0] + 2

@@ -192,6 +192,7 @@ class Client(AbstractClient):
         >>> from chariots import Pipeline, Chariots, MLMode, TestClient
         >>> from chariots.nodes import Node
         >>> from chariots._helpers.doc_utils import IrisXDataSet, PCAOp, IrisFullDataSet, LogisticOp
+        >>> from chariots._helpers.test_helpers import FromArray
 
         >>> app_path = tempfile.mkdtemp()
 
@@ -203,12 +204,13 @@ class Client(AbstractClient):
         >>> train_logistic = Pipeline([
         ...     Node(IrisFullDataSet(), output_nodes=["x", "y"]),
         ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["x"], output_nodes="x_transformed"),
-        ...     Node(LogisticOp(MLMode.FIT), input_nodes=["x_transformed", "y"])
+        ...     Node(LogisticOp(MLMode.FIT), input_nodes=["x_transformed", "y"]),
         ... ], 'train_logistics')
 
         >>> pred = Pipeline([
         ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_transformed"),
-        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes="__pipeline_output__")
+        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes="pred"),
+        ...     Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
         ... ], "pred")
 
         >>> app = Chariots([train_pca, train_logistic, pred], app_path, import_name="iris_app")
