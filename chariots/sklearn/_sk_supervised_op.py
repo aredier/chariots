@@ -69,5 +69,4 @@ class SKSupervisedOp(BaseSKOp):
 
         """
 
-        # TODO remove tolist
         return getattr(self._model, self.predict_function)(X)
