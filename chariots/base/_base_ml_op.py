@@ -36,6 +36,7 @@ class BaseMLOp(LoadableOp):
         >>> from chariots.nodes import Node
         >>> from chariots import Pipeline
         >>> from chariots._helpers.doc_utils import IrisFullDataSet, PCAOp, LogisticOp
+        >>> from chariots._helpers.test_helpers import FromArray
 
     first create your pipelines:
 
@@ -49,7 +50,8 @@ class BaseMLOp(LoadableOp):
 
         >>> pred = Pipeline([
         ...     Node(PCAOp(MLMode.PREDICT), input_nodes=["__pipeline_input__"], output_nodes="x_transformed"),
-        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
+        ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['pred']),
+        ...     Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
         ... ], 'pred')
 
     .. testsetup::

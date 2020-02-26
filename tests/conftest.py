@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 
 from chariots import MLMode, Pipeline
-from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp
+from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp, FromArray
 from chariots.base import BaseOp
 from chariots.callbacks import OpCallBack
 from chariots.nodes import Node
@@ -136,7 +136,8 @@ def complex_sk_pipelines():
     ], 'train')
     pred_pipe = Pipeline([
         Node(PCAOp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'], output_nodes='x_train'),
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='__pipeline_output__')
+        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='pred'),
+        Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
     return train_transform, train_pipe, pred_pipe
 
@@ -151,7 +152,7 @@ def basic_sk_pipelines(XTrainOp):  # pylint: disable=invalid-name, redefined-out
         Node(SKLROp(mode=MLMode.FIT), input_nodes=['x_train', 'y_train'])
     ], name='train')
     pred_pipe = Pipeline([
-        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'],
-             output_nodes='__pipeline_output__')
+        Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'], output_nodes='pred'),
+        Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], name='pred')
     return train_pipe, pred_pipe
