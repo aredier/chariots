@@ -21,9 +21,11 @@ class GoogleStorageSaver(BaseSaver):
         self.bucket = bucket
 
     def save(self, serialized_object: bytes, path: Text) -> bool:
-        blob = self.bucket.get_blob(path)
+        blob = self.bucket.blob(path)
         blob.upload_from_string(serialized_object)
 
     def load(self, path: Text) -> bytes:
         blob = self.bucket.get_blob(path)
+        if blob is None:
+            raise FileNotFoundError('{} does not exist'.format(path))
         return blob.download_as_string(path)
