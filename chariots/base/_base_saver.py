@@ -38,4 +38,6 @@ class BaseSaver(ABC):
                      `/my/root/path/foo/bar.txt`
 
         :return: saved bytes
+
+        :raises FileNotFoundError: if the file does not exist
         """
