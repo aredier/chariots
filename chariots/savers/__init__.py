@@ -33,7 +33,9 @@ To use a specific saver in your app, you will need to specify the saver class an
 
 """
 from ._file_saver import FileSaver
+from ._google_storage_saver import GoogleStorageSaver
 
 __all__ = [
-    'FileSaver'
+    'FileSaver',
+    'GoogleStorageSaver'
 ]
