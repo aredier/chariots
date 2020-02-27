@@ -28,4 +28,4 @@ class GoogleStorageSaver(BaseSaver):
         blob = self.bucket.get_blob(path)
         if blob is None:
             raise FileNotFoundError('{} does not exist'.format(path))
-        return blob.download_as_string(path)
+        return blob.download_as_string()
