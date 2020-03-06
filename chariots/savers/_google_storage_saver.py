@@ -1,6 +1,6 @@
 """google storage integration"""
 
-from typing import Text
+from typing import Text, Optional, Mapping
 
 from google.cloud import storage
 from chariots.base import BaseSaver
