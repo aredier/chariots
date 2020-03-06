@@ -144,8 +144,10 @@ class Chariots(Flask):
                  **kwargs):  # pylint: disable=too-many-arguments
         super().__init__(*args, **kwargs)
 
-        saver_kwargs = saver_kwargs or {}
-        self.saver = saver_cls(root_path=path, **saver_kwargs)
+        self.saver_kwargs = saver_kwargs or {}
+        self.saver_kwargs['root_path'] = path
+        self.saver_class = saver_cls
+        self.saver = saver_cls(**saver_kwargs)
         self.runner = runner or SequentialRunner()
         self.op_store = OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
