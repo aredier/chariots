@@ -1,7 +1,7 @@
 """"RQ implementation of the Workers API"""
 import json
 from _sha1 import sha1
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional
 
 from redis import Redis
 from rq import Queue, Connection, Worker
@@ -9,15 +9,10 @@ from rq import Queue, Connection, Worker
 from chariots._deployment.app import Chariots, PipelineResponse
 from chariots.base import BaseRunner, BaseSaver
 from ._base_worker_pool import BaseWorkerPool, JobStatus
-from .. import OpStore
 
 
-def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, saver_class: Type[BaseSaver],
-                          saver_kwargs,
-                          runner: BaseRunner
-                          ):
-    saver = saver_class(**saver_kwargs)
-    op_store = OpStore(saver)
+def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
+                          op_store: 'chariots.OpStore'):
     op_store.reload()
     pipeline.load(op_store)
     pipeline.prepare(saver)
@@ -83,9 +78,9 @@ class RQWorkerPool(BaseWorkerPool):
         rq_job = self._queue.enqueue(_inner_pipe_execution, kwargs={
             'pipeline': pipeline,
             'pipeline_input': pipeline_input,
-            'saver_class': app.saver_class,
-            'saver_kwargs': app.saver_kwargs,
+            'saver': app.saver,
             'runner': app.runner,
+            'op_store': app.op_store
         })
         chariots_job_id = sha1(rq_job.id.encode('utf-8')).hexdigest()
         self._jobs[chariots_job_id] = rq_job
