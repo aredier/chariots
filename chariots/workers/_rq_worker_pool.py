@@ -65,7 +65,6 @@ class RQWorkerPool(BaseWorkerPool):
         queue_kwargs['name'] = self._queue_name
         self._queue = Queue(**queue_kwargs)
         self._jobs = {}
-        self.spawn_worker()
 
     def spawn_worker(self):
         with Connection(self._redis):
