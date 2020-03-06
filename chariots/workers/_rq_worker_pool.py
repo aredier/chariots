@@ -96,4 +96,8 @@ class RQWorkerPool(BaseWorkerPool):
 
     @property
     def n_workers(self):
-        return Worker.count(connection=self._redis)
+        workers = Worker.all(connection=self._redis)
+
+        # Returns all workers in this queue (new in version 0.10.0)
+        queue = Queue(self._queue_name)
+        return len(Worker.all(queue=queue))
