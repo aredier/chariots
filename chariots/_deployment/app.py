@@ -135,14 +135,17 @@ class Chariots(Flask):
 
     """
 
-    def __init__(self, app_pipelines: List[Pipeline], path, *args, saver_cls: Type[BaseSaver] = FileSaver,
+    def __init__(self, app_pipelines: List[Pipeline], path, *args,
+                 saver_cls: Type[BaseSaver] = FileSaver,
+                 saver_kwargs: Optional[Mapping[str, Any]] = None,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
                  worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: Optional[bool] = None,
                  **kwargs):  # pylint: disable=too-many-arguments
         super().__init__(*args, **kwargs)
 
-        self.saver = saver_cls(path)
+        saver_kwargs = saver_kwargs or {}
+        self.saver = saver_cls(root_path=path, **saver_kwargs)
         self.runner = runner or SequentialRunner()
         self.op_store = OpStore(self.saver)
         app_pipelines = self._prepare_pipelines(app_pipelines)
