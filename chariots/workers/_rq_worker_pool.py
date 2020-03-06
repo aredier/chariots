@@ -71,6 +71,8 @@ class RQWorkerPool(BaseWorkerPool):
 
             worker = Worker(self._queue_name)
             worker.work()
+            print(self.n_workers)
+        print(self.n_workers)
 
     def execute_pipeline_async(self, pipeline: 'chariots.Pipeline', pipeline_input: Any, app: Chariots) -> str:
         if not self.n_workers:
@@ -96,7 +98,6 @@ class RQWorkerPool(BaseWorkerPool):
 
     @property
     def n_workers(self):
-        workers = Worker.all(connection=self._redis)
 
         # Returns all workers in this queue (new in version 0.10.0)
         queue = Queue(self._queue_name)
