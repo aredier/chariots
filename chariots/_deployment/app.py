@@ -58,7 +58,7 @@ class PipelineResponse:
         )
 
 
-class Chariots(Flask):
+class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
     """
     small `Flask` application used to rapidly deploy pipelines:
 
