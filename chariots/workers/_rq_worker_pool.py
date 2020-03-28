@@ -13,19 +13,12 @@ from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
                           op_store: 'chariots.OpStore'):
-    print('starting')
     op_store.reload()
-    print('reloading')
     pipeline.load(op_store)
-    print('loaded')
     pipeline.prepare(saver)
-    print('prepared')
     res = json.dumps(runner.run(pipeline, pipeline_input))
-    print('ran')
     pipeline.save(op_store)
-    print('saved')
     op_store.save()
-    print('saved op store')
     return res
 
 

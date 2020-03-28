@@ -20,7 +20,7 @@ def do_async_pipeline_test(test_client, pipe, use_worker=None):
     """helper function that tests the basic pipeline with just the IsPair op"""
     response = test_client.call_pipeline(pipe, pipeline_input=list(range(20)), use_worker=use_worker)
     assert response.job_status == JobStatus.queued
-    time.sleep(3)
+    time.sleep(5)
     response = test_client.fetch_job(response.job_id, pipe)
     assert response.job_status == JobStatus.done
     assert response.value == [not i % 2 for i in range(20)]

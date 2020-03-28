@@ -262,7 +262,6 @@ class Pipeline(base.BaseOp):
         latest_node = upstream_node.load_latest_version(op_store)
         if latest_node is None:
             upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
-            print('did not find', upstream_node.name)
             return upstream_node
 
         if downstream_node is None:
