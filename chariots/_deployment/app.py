@@ -3,6 +3,8 @@ import json
 from typing import Mapping, Any, List, Type, Optional, Union
 
 from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 import chariots
 from chariots import Pipeline
@@ -13,6 +15,7 @@ from chariots.runners import SequentialRunner
 from chariots.savers import FileSaver
 from chariots.versioning import Version
 from .._op_store import OpStore
+from .models import op, pipeline, validated_link, version
 
 
 class PipelineResponse:
@@ -169,6 +172,20 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
         self._build_error_handlers()
         self._worker_pool = worker_pool
         self.use_workers = use_workers
+
+        self._init_db()
+
+    def _init_db(self):
+        self.config.from_mapping({
+            'SQLALCHEMY_DATABASE_URI': 'sqlite://',
+            'SQLALCHEMY_TRACK_MODIFICATIONS': False
+        })
+        self.db = SQLAlchemy(self)
+        self.migrate = Migrate(self, self.db)
+        self.db.Op = op.build_op_table(self.db)
+        self.db.Version = version.build_version_table(self.db)
+        self.db.ValidatedLink = validated_link.build_validated_link_table(self.db)
+        self.db.Pipeline = pipeline.build_pipeline_table(self.db)
 
     def _build_error_handlers(self):
         self.register_error_handler(VersionError, lambda error: error.handle())
