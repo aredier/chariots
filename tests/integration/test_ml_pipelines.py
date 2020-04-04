@@ -8,6 +8,9 @@ from chariots.base import BaseMLOp
 from chariots.errors import VersionError
 from chariots.nodes import Node
 from chariots._helpers.test_helpers import XTrainOpL, PCAOp, YOp, SKLROp, FromArray
+from chariots.op_store._op_store import OpStoreServer
+from chariots.op_store._op_store_client import TestOpStoreClient
+from chariots.savers import FileSaver
 
 
 @pytest.fixture
@@ -31,9 +34,9 @@ def LROp():  # pylint: disable=invalid-name
 
 
 def test_raw_training_pipeline(  # pylint: disable=invalid-name, invalid-name
-        XTrainOp,
+        XTrainOp, tmpdir,
         LROp,  # pylint: disable=redefined-outer-name
-        tmpdir):
+        opstore_func):
     """test basic training and prediction pipeline"""
     train_pipe = Pipeline([
         Node(XTrainOp(), output_nodes='x_train'),
@@ -44,7 +47,8 @@ def test_raw_training_pipeline(  # pylint: disable=invalid-name, invalid-name
         Node(LROp(mode=MLMode.PREDICT), input_nodes=['__pipeline_input__'],
              output_nodes='__pipeline_output__')
     ], 'pred')
-    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name='my_app')
+    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe],
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -66,10 +70,10 @@ def test_raw_training_pipeline(  # pylint: disable=invalid-name, invalid-name
     assert prior_versions_pred[lrop_pred.name] < posterior_versions_pred[lrop_pred.name]
 
 
-def test_sk_training_pipeline(tmpdir, basic_sk_pipelines):
+def test_sk_training_pipeline(opstore_func, tmpdir, basic_sk_pipelines):
     """test a train/predict pipelines using sci-kit learn ops"""
     train_pipe, pred_pipe = basic_sk_pipelines
-    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], path=str(tmpdir), import_name='my_app')
+    my_app = Chariots(app_pipelines=[train_pipe, pred_pipe], op_store_client=opstore_func(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     prior_versions_train = test_client.pipeline_versions(train_pipe)
@@ -93,12 +97,12 @@ def test_sk_training_pipeline(tmpdir, basic_sk_pipelines):
     assert prior_versions_pred[lrop_pred.name] < posterior_versions_pred[lrop_pred.name]
 
 
-def test_complex_sk_training_pipeline(complex_sk_pipelines, tmpdir):
+def test_complex_sk_training_pipeline(complex_sk_pipelines, opstore_func, tmpdir):
     """tests complex ml pipelines (with a pca pipelines, a model training pipeline and a prediction pipeline)"""
 
     train_transform, train_pipe, pred_pipe = complex_sk_pipelines
     my_app = Chariots(app_pipelines=[train_transform, train_pipe, pred_pipe],
-                      path=str(tmpdir), import_name='my_app')
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
     test_client.call_pipeline(train_transform)
@@ -119,7 +123,7 @@ def test_complex_sk_training_pipeline(complex_sk_pipelines, tmpdir):
         test_client.load_pipeline(pred_pipe)
 
 
-def test_fit_predict_pipeline_reload(tmpdir):
+def test_fit_predict_pipeline_reload(opstore_func, tmpdir):
     """
     tests a complex pipeline system with a pca-train, model-train and prediction pipeline. The aim of this test is
     to check that the version check and reload behavior works
@@ -140,9 +144,9 @@ def test_fit_predict_pipeline_reload(tmpdir):
         Node(SKLROp(mode=MLMode.PREDICT), input_nodes=['x_train'], output_nodes='pred'),
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
-    my_app = Chariots(app_pipelines=[train_pca, train_rf, pred_pipe],
-                      path=str(tmpdir), import_name='my_app')
 
+    my_app = Chariots(app_pipelines=[train_pca, train_rf, pred_pipe],
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
     test_client = TestClient(my_app)
 
     # test that the train save load is working
@@ -183,7 +187,7 @@ def test_fit_predict_pipeline_reload(tmpdir):
         assert abs(101 + i - individual_value) < 1e-5
 
 
-def test_multiple_models_per_pipeline(tmpdir):
+def test_multiple_models_per_pipeline(opstore_func, tmpdir):
     """
     tests a complex pipeline system with a pca-train, model-train and prediction pipeline. The aim of this test is
     to check that the version check and reload behavior works
@@ -213,7 +217,7 @@ def test_multiple_models_per_pipeline(tmpdir):
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
     my_app = Chariots(app_pipelines=[train, pred_pipe],
-                      path=str(tmpdir), import_name='my_app')
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
 
     test_client = TestClient(my_app)
 

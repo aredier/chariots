@@ -7,7 +7,7 @@ from chariots import callbacks
 from chariots.versioning import Version
 from chariots.base._base_nodes import NodeReference
 from ._helpers.typing import SymbolicToRealMapping, ResultDict
-from ._op_store import OpStore
+from chariots.op_store._op_store import OpStore
 
 
 class Pipeline(base.BaseOp):
@@ -260,13 +260,13 @@ class Pipeline(base.BaseOp):
     def _check_and_load_single_node(op_store: OpStore, upstream_node: 'base.BaseNode',
                                     downstream_node: Optional['base.BaseNode']) -> 'base.BaseNode':
         latest_node = upstream_node.load_latest_version(op_store)
-        if latest_node is None:
-            upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
-            return upstream_node
+        # TODO remove commented code
+        # if latest_node is None:
+        #     upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
+        #     return upstream_node
 
-        if downstream_node is None:
-            return latest_node
-        downstream_node.check_version_compatibility(latest_node, op_store)
+        if downstream_node is not None:
+            downstream_node.check_version_compatibility(latest_node, op_store)
         return latest_node
 
     @property
@@ -282,9 +282,8 @@ class Pipeline(base.BaseOp):
 
         :param op_store: the store to persist the nodes and their versions in
         """
-        for i in range(len(self._graph)):
-            upstream_node = self._graph[i]
-            downstream_node = self._find_downstream(upstream_node)
+
+        for upstream_node, downstream_node in self.get_all_op_links():
             upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
 
     def _find_downstream(self, upstream_node: 'base.BaseNode') -> Optional['base.BaseNode']:
@@ -294,3 +293,6 @@ class Pipeline(base.BaseOp):
         :param upstream_node: the upstream node to find the downstream of
         """
         return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
+
+    def get_all_op_links(self):
+        return [(upstream_node, self._find_downstream(upstream_node)) for upstream_node in self._graph]

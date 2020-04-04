@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from hashlib import sha1
 from typing import Optional, Any
 
-import chariots._op_store
+import chariots.op_store._op_store
 from chariots.base import BaseNode, BaseSaver, BaseSerializer
 from chariots.versioning import Version
 from .._helpers.constants import DATA_PATH
@@ -39,7 +39,7 @@ class DataNode(BaseNode, metaclass=ABCMeta):
         self._saver = saver
 
     def load_latest_version(
-            self, store_to_look_in: chariots._op_store.OpStore) -> BaseNode:  # pylint: disable=protected-access
+            self, store_to_look_in: chariots.op_store._op_store.OpStore) -> BaseNode:  # pylint: disable=protected-access
         return self
 
     def attach_saver(self, saver: BaseSaver):

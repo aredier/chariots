@@ -9,10 +9,22 @@ from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp, FromAr
 from chariots.base import BaseOp
 from chariots.callbacks import OpCallBack
 from chariots.nodes import Node
+from chariots.op_store._op_store import OpStoreServer
+from chariots.op_store._op_store_client import TestOpStoreClient
 from chariots.ops import LoadableOp
+from chariots.savers import FileSaver
 from chariots.serializers import DillSerializer
 from chariots.versioning import VersionType, VersionedField
 
+
+@pytest.fixture
+def opstore_func():
+    def inner(tmpdir):
+        op_store_server = OpStoreServer(FileSaver(str(tmpdir)))
+        op_store_server.db.create_all()
+        return TestOpStoreClient(op_store_server)
+
+    return inner
 
 @pytest.fixture
 def savable_op_generator():

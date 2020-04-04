@@ -97,6 +97,8 @@ class Node(BaseNode):
             return self
 
         relevant_version = max(all_versions)
+        if self.name == 'pcaop':
+            print('all available versions for {}: {}'.format(self.name, all_versions))
         self._op.load(store_to_look_in.get_op_bytes_for_version(self._op, relevant_version))
         return self
 

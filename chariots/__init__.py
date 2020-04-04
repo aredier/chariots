@@ -4,7 +4,7 @@ from ._deployment.client import Client
 from ._deployment.client import TestClient
 from ._deployment.app import Chariots
 from ._ml_mode import MLMode
-from ._op_store import OpStore
+from .op_store._op_store import OpStore
 from . import base
 from . import callbacks
 from . import keras
