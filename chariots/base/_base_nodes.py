@@ -183,7 +183,6 @@ class BaseNode(ABC):
         """
         version = self.node_version
         if downstream_nodes is None:
-            print('going the None Route')
             store.register_valid_link(downstream_op_name=None, upstream_op_name=self.name,
                                       upstream_op_version=version)
             return version

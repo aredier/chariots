@@ -11,11 +11,19 @@ from chariots.base import BaseRunner, BaseSaver
 from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 
-def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, saver: BaseSaver, runner: BaseRunner,
+def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, runner: BaseRunner,
                           op_store: 'chariots.OpStore'):
-    op_store.reload()
+    print('*********************************************************')
+    print('*********************************************************')
+    print('*********************************************************')
+    print('*********************************************************')
+    print(op_store)
+    print('*********************************************************')
+    print('*********************************************************')
+    print('*********************************************************')
+    print('*********************************************************')
+
     pipeline.load(op_store)
-    pipeline.prepare(saver)
     res = json.dumps(runner.run(pipeline, pipeline_input))
     pipeline.save(op_store)
     op_store.save()
@@ -78,7 +86,6 @@ class RQWorkerPool(BaseWorkerPool):
         rq_job = self._queue.enqueue(_inner_pipe_execution, kwargs={
             'pipeline': pipeline,
             'pipeline_input': pipeline_input,
-            'saver': app.saver,
             'runner': app.runner,
             'op_store': app.op_store
         })

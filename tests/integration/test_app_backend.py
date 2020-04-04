@@ -6,7 +6,7 @@ from chariots import Chariots, Pipeline, TestClient
 from chariots.nodes import Node, ReservedNodes
 
 
-def test_app_response(Range10, IsPair, NotOp, tmpdir):  # pylint: disable=invalid-name
+def test_app_response(Range10, IsPair, NotOp, tmpdir, opstore_func):  # pylint: disable=invalid-name
     """check basic response call behavior"""
     pipe1 = Pipeline([
         Node(Range10(), output_nodes='my_list'),
@@ -18,7 +18,7 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):  # pylint: disable=invali
         Node(NotOp(), input_nodes=['og_pipe'], output_nodes=ReservedNodes.pipeline_output)
     ], name='outer_pipe')
 
-    app = Chariots([pipe1, pipe], path=str(tmpdir), import_name='some_app')
+    app = Chariots([pipe1, pipe], op_store_client=opstore_func(tmpdir), import_name='some_app')
     test_client = TestClient(app)
 
     response = test_client.call_pipeline(pipe)
@@ -28,26 +28,26 @@ def test_app_response(Range10, IsPair, NotOp, tmpdir):  # pylint: disable=invali
     assert response.value == [not i % 2 for i in range(10)]
 
 
-def test_app_response_with_input(IsPair, tmpdir):  # pylint: disable=invalid-name
+def test_app_response_with_input(IsPair, tmpdir, opstore_func):  # pylint: disable=invalid-name
     """check the app response to a pipeline call with an input"""
     pipe1 = Pipeline([
         Node(IsPair(), input_nodes=['__pipeline_input__'], output_nodes='__pipeline_output__')
     ], name='inner_pipe')
 
-    app = Chariots([pipe1], path=str(tmpdir), import_name='some_app')
+    app = Chariots([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app')
     test_client = TestClient(app)
 
     response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)))
     assert response.value == [not i % 2 for i in range(20)]
 
 
-def test_app_with_data_nodes(tmpdir, data_nodes_paths, data_nodes_pipeline):  # pylint: disable=invalid-name
+def test_app_with_data_nodes(tmpdir, opstore_func, data_nodes_paths, data_nodes_pipeline):  # pylint: disable=invalid-name
     """check the app when the pipeline uses data nodes"""
     _, output_path = data_nodes_paths
 
     pipe, _, _ = data_nodes_pipeline
 
-    app = Chariots([pipe], path=str(tmpdir), import_name='some_app')
+    app = Chariots([pipe], op_store_client=opstore_func(tmpdir), import_name='some_app')
     test_client = TestClient(app)
     test_client.call_pipeline(pipe)
 
@@ -58,11 +58,12 @@ def test_app_with_data_nodes(tmpdir, data_nodes_paths, data_nodes_pipeline):  # 
     assert res == [True] + [False] * 9
 
 
-def test_app_persistance(enchrined_pipelines_generator, tmpdir):
+def test_app_persistance(enchrined_pipelines_generator, tmpdir, opstore_func):
     """test the app is able to persist and reload ops that have a state"""
     pipe = enchrined_pipelines_generator(counter_step=1)
 
-    app = Chariots([pipe], path=str(tmpdir), import_name='some_app')
+    op_store_client = opstore_func(tmpdir)
+    app = Chariots([pipe], op_store_client=op_store_client, import_name='some_app')
     test_client = TestClient(app)
     res = test_client.call_pipeline(pipe)
     assert len(res.value) == 10
@@ -85,7 +86,7 @@ def test_app_persistance(enchrined_pipelines_generator, tmpdir):
     del pipe
 
     pipe = enchrined_pipelines_generator(counter_step=1)
-    app = Chariots([pipe], path=str(tmpdir), import_name='some_app')
+    app = Chariots([pipe], op_store_client=op_store_client, import_name='some_app')
     test_client = TestClient(app)
 
     test_client.load_pipeline(pipe)
