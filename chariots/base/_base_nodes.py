@@ -4,7 +4,7 @@ from enum import Enum
 
 from typing import Any, Union, Optional, List, Text
 
-from chariots import _op_store
+from ..op_store import _op_store
 from chariots.versioning import Version
 from chariots.errors import VersionError
 from .._helpers.typing import SymbolicToRealMapping
@@ -158,6 +158,8 @@ class BaseNode(ABC):
         validated_links = store_to_look_in.get_validated_links(self.name, upstream_node.name)
         if validated_links is None:
             return
+        print('{} checking if {} is ok'.format(self.name, upstream_node.name))
+        print(validated_links, upstream_node.node_version.major)
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
             raise VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
 
@@ -181,11 +183,12 @@ class BaseNode(ABC):
         """
         version = self.node_version
         if downstream_nodes is None:
-            store.register_valid_link(downstream_op=None, upstream_op=self.name,
+            print('going the None Route')
+            store.register_valid_link(downstream_op_name=None, upstream_op_name=self.name,
                                       upstream_op_version=version)
             return version
         for downstream_node in downstream_nodes:
-            store.register_valid_link(downstream_op=downstream_node.name, upstream_op=self.name,
+            store.register_valid_link(downstream_op_name=downstream_node.name, upstream_op_name=self.name,
                                       upstream_op_version=version)
         return version
 

@@ -1,6 +1,7 @@
 """module for the version class"""
 import hashlib
-import time
+import datetime as dt
+from dateutil import parser
 from typing import Optional
 
 from .._helpers.typing import Hash
@@ -36,7 +37,7 @@ class Version:
         self._major = major or hashlib.sha1()
         self._minor = minor or hashlib.sha1()
         self._patch = patch or hashlib.sha1()
-        self._creation_time = creation_time or time.time()
+        self._creation_time = creation_time or dt.datetime.utcnow()
 
     def __add__(self, other):
         if not isinstance(other, Version):
@@ -158,4 +159,4 @@ class Version:
         """
         hash_str, creation_time = version_string.split('_')
         major, minor, patch = hash_str.split('.')
-        return cls(major, minor, patch, float(creation_time))
+        return cls(major, minor, patch, parser.parse(creation_time))

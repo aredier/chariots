@@ -14,8 +14,7 @@ from chariots.errors import VersionError
 from chariots.runners import SequentialRunner
 from chariots.savers import FileSaver
 from chariots.versioning import Version
-from .._op_store import OpStore
-from .models import op, pipeline, validated_link, version
+from chariots.op_store._op_store_client import OpStoreClient
 
 
 class PipelineResponse:
@@ -138,21 +137,27 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, app_pipelines: List[Pipeline], path, *args,
+    def __init__(self, app_pipelines: List[Pipeline],
+                 *args,
                  saver_cls: Type[BaseSaver] = FileSaver,
                  saver_kwargs: Optional[Mapping[str, Any]] = None,
+                 path=None,
+                 op_store_client=None,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
-                 worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None, use_workers: Optional[bool] = None,
+                 worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None,
+                 use_workers: Optional[bool] = None,
                  **kwargs):  # pylint: disable=too-many-arguments
         super().__init__(*args, **kwargs)
 
-        self.saver_kwargs = saver_kwargs or {}
-        self.saver_kwargs['root_path'] = path
-        self.saver_class = saver_cls
-        self.saver = saver_cls(**self.saver_kwargs)
+        # TODO delete
+        # self.saver_kwargs = saver_kwargs or {}
+        # self.saver_kwargs['root_path'] = path
+        # self.saver_class = saver_cls
+        # self.saver = saver_cls(**self.saver_kwargs)
         self.runner = runner or SequentialRunner()
-        self.op_store = OpStore(self.saver)
+        self.op_store = op_store_client
+        # self.op_store.use_db(self.db)
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
         # adding the default pipeline callbacks to all the pipelines of the app
@@ -167,32 +172,39 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
             pipe.name: False for pipe in app_pipelines
         }
 
-        self._load_pipelines()
+        self._init_pipelines()
         self._build_route()
         self._build_error_handlers()
         self._worker_pool = worker_pool
         self.use_workers = use_workers
 
-        self._init_db()
+    # def _init_db(self):
+    #     self.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    #     self.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    #     self.db = SQLAlchemy(self)
+    #     self.migrate = Migrate(self, self.db)
+    #     self.db.Op = op.build_op_table(self.db)
+    #     self.db.Version = version.build_version_table(self.db)
+    #     self.db.ValidatedLink = validated_link.build_validated_link_table(self.db)
+    #     self.db.Pipeline = pipeline.build_pipeline_table(self.db)
+    #     self.db.create_all()
 
-    def _init_db(self):
-        self.config.from_mapping({
-            'SQLALCHEMY_DATABASE_URI': 'sqlite://',
-            'SQLALCHEMY_TRACK_MODIFICATIONS': False
-        })
-        self.db = SQLAlchemy(self)
-        self.migrate = Migrate(self, self.db)
-        self.db.Op = op.build_op_table(self.db)
-        self.db.Version = version.build_version_table(self.db)
-        self.db.ValidatedLink = validated_link.build_validated_link_table(self.db)
-        self.db.Pipeline = pipeline.build_pipeline_table(self.db)
+    def _init_pipelines(self):
+        for pipeline_name, pipeline in self._pipelines.items():
+            if self.op_store.pipeline_exists(pipeline_name):
+                self._loaded_pipelines[pipeline_name] = True
+                continue
+
+            self.op_store.register_new_pipeline(pipeline)
+            pipeline.save(self.op_store)
+            self._loaded_pipelines[pipeline_name] = True
 
     def _build_error_handlers(self):
         self.register_error_handler(VersionError, lambda error: error.handle())
 
     def _prepare_pipelines(self, app_pipeline: List[Pipeline]):
         for pipe in app_pipeline:
-            pipe.prepare(self.saver)
+            pipe.prepare(None)
         return app_pipeline
 
     @staticmethod
