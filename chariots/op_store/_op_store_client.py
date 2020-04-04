@@ -1,13 +1,17 @@
 """module for the `OpStore` class that handles saving op's data at the right place"""
 import abc
 import base64
+import copy
 import json
+import os
 from typing import Union, Dict, Text, Set, Optional, List
 
 import requests
 from sqlalchemy.orm import aliased
 
 from chariots import base  # pylint: disable=unused-import;# noqa
+from chariots.op_store._op_store import OpStoreServer
+from chariots.savers import FileSaver
 from chariots.versioning import Version
 
 # TODO test db
@@ -95,7 +99,7 @@ class BaseOpStoreClient(abc.ABC):
         # }
         # self._saver.save(json.dumps(version_dict_with_str_versions).encode('utf-8'), path=self._location)
 
-    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[List[Version]]:
+    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[Version]]:
         """
         returns all the available versions of an op ever persisted in the OpGraph (or any Opgraph using the same
         _meta.json)
@@ -222,8 +226,13 @@ class OpStoreClient(BaseOpStoreClient):
 
 class TestOpStoreClient(BaseOpStoreClient):
 
-    def __init__(self, op_store_server):
-        self._test_client = op_store_server.flask.test_client()
+    def __init__(self, path, saver=None):
+        self.db_path = os.path.join(path, 'db.sqlite')
+        ops_path = os.path.join(path, 'ops')
+        os.makedirs(ops_path, exist_ok=True)
+        self._saver = saver or FileSaver(ops_path)
+        self.server = OpStoreServer(self._saver, db_url='sqlite:///{}'.format(self.db_path))
+        self._test_client = self.server.flask.test_client()
 
     def post(self, route, arguments_json):
         response = self._test_client.post(route, data=json.dumps(arguments_json), content_type='application/json')
@@ -232,3 +241,19 @@ class TestOpStoreClient(BaseOpStoreClient):
             raise ValueError('something went wrong')
 
         return json.loads(response.data.decode('utf-8'))
+
+    def __getstate__(self):
+        server = self.server
+        _test_client = self._test_client
+        res = self.__dict__
+        res['_test_client'] = None
+        res['server'] = None
+        res = copy.deepcopy(res)
+        self.server = server
+        self._test_client = _test_client
+        return res
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.server = OpStoreServer(self._saver, 'sqlite:///{}'.format(self.db_path))
+        self._test_client = self.server.flask.test_client()

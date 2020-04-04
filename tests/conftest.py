@@ -20,9 +20,9 @@ from chariots.versioning import VersionType, VersionedField
 @pytest.fixture
 def opstore_func():
     def inner(tmpdir):
-        op_store_server = OpStoreServer(FileSaver(str(tmpdir)))
-        op_store_server.db.create_all()
-        return TestOpStoreClient(op_store_server)
+        op_store_client = TestOpStoreClient(str(tmpdir))
+        op_store_client.server.db.create_all()
+        return op_store_client
 
     return inner
 

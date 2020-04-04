@@ -17,9 +17,9 @@ class OpStore:
 
 class OpStoreServer:
 
-    def __init__(self, saver):
+    def __init__(self, saver, db_url='sqlite:///:memory:'):
         self.flask = Flask('OpStoreServer')
-        self.flask.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        self.flask.config['SQLALCHEMY_DATABASE_URI'] = db_url
         self.flask.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         self.db = db
         self.db.app = self.flask

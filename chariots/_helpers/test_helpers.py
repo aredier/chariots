@@ -128,12 +128,12 @@ def build_keras_pipeline(train_async=None, pred_async=None):
     """builds basic pipelines for testing the keras api in different setups"""
     train = Pipeline([
         Node(LinearDataSet(rows=10), output_nodes=['X', 'y']),
-        Node(KerasLogistic(MLMode.FIT), input_nodes=['X', 'y'])
+        Node(KerasLogistic(MLMode.FIT, verbose=0), input_nodes=['X', 'y'])
     ], 'train', use_worker=train_async)
 
     pred = Pipeline([
         Node(ToArray(output_shape=(-1, 1)), input_nodes=['__pipeline_input__'], output_nodes='X'),
-        Node(KerasLogistic(MLMode.PREDICT), input_nodes=['X'], output_nodes='pred'),
+        Node(KerasLogistic(MLMode.PREDICT, verbose=0), input_nodes=['X'], output_nodes='pred'),
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred', use_worker=pred_async)
     return train, pred

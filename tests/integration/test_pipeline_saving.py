@@ -12,7 +12,6 @@ def test_savable_pipeline(pipe_generator, tmpdir, opstore_func):
 
     op_store_client = opstore_func(tmpdir)
     pipe = pipe_generator(counter_step=1)
-    pipe.load(op_store_client)
     runner = SequentialRunner()
 
     res = runner.run(pipe)
@@ -43,7 +42,6 @@ def test_savable_pipeline_new_version(pipe_generator, tmpdir, opstore_func):
 
     op_store_client = opstore_func(tmpdir)
     pipe = pipe_generator(counter_step=1)
-    pipe.load(op_store_client)
     runner = SequentialRunner()
 
     res = runner.run(pipe)
