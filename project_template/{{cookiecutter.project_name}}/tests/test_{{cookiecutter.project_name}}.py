@@ -1,8 +1,9 @@
 import pytest
 from chariots._deployment.client import TestClient
+from chariots.op_store._op_store_client import  import TestClient
 
 
-from {{cookiecutter.project_name}}.app import {{cookiecutter.project_name}}_app
+from {{cookiecutter.project_name}}.app import {{cookiecutter.project_name}}_app,
 from {{cookiecutter.project_name}}.pipelines.download_iris import download_iris
 from {{cookiecutter.project_name}}.pipelines.train_iris import train_iris
 from {{cookiecutter.project_name}}.pipelines.pred_iris import pred_iris
@@ -10,6 +11,7 @@ from {{cookiecutter.project_name}}.pipelines.pred_iris import pred_iris
 
 @pytest.fixture
 def {{cookiecutter.project_name}}_test_client():
+
     return TestClient({{cookiecutter.project_name}}_app)
 
 

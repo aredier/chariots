@@ -5,7 +5,7 @@ import os
 import pytest
 
 from chariots import Pipeline
-from chariots.nodes import Node, DataLoadingNode, DataSavingNode
+from chariots.nodes import Node
 from chariots.nodes import ReservedNodes
 from chariots.serializers import JSONSerializer
 
@@ -49,20 +49,3 @@ def data_nodes_paths(tmpdir):
     with open(os.path.join(str(tmpdir), 'data', input_path), 'w') as file:
         json.dump(list(range(10)), file)
     return input_path, output_path
-
-
-@pytest.fixture
-def data_nodes_pipeline(data_nodes_paths, NotOp):  # pylint: disable=invalid-name, redefined-outer-name
-    """basic pipeline including data nodes for tests"""
-
-    input_path, output_path = data_nodes_paths
-
-    in_node = DataLoadingNode(JSONSerializer(), input_path, output_nodes='data_in')
-    out_node = DataSavingNode(JSONSerializer(), output_path, input_nodes=['data_trans'])
-
-    pipe = Pipeline([
-        in_node,
-        Node(NotOp(), input_nodes=['data_in'], output_nodes='data_trans'),
-        out_node
-    ], name='my_pipe')
-    return pipe, in_node, out_node

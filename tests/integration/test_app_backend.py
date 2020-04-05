@@ -41,23 +41,6 @@ def test_app_response_with_input(IsPair, tmpdir, opstore_func):  # pylint: disab
     assert response.value == [not i % 2 for i in range(20)]
 
 
-def test_app_with_data_nodes(tmpdir, opstore_func, data_nodes_paths, data_nodes_pipeline):  # pylint: disable=invalid-name
-    """check the app when the pipeline uses data nodes"""
-    _, output_path = data_nodes_paths
-
-    pipe, _, _ = data_nodes_pipeline
-
-    app = Chariots([pipe], op_store_client=opstore_func(tmpdir), import_name='some_app')
-    test_client = TestClient(app)
-    test_client.call_pipeline(pipe)
-
-    with open(os.path.join(str(tmpdir), 'data', output_path), 'r') as file:
-        res = json.load(file)
-
-    assert len(res) == 10
-    assert res == [True] + [False] * 9
-
-
 def test_app_persistance(enchrined_pipelines_generator, tmpdir, opstore_func):
     """test the app is able to persist and reload ops that have a state"""
     pipe = enchrined_pipelines_generator(counter_step=1)

@@ -2,10 +2,10 @@
 import os
 from typing import Text
 
-from chariots.base import BaseSaver
+from chariots import base
 
 
-class FileSaver(BaseSaver):
+class FileSaver(base.BaseSaver):
     """
     a saver that persists to the local file system of the machine the `Chariots` saver is running on.
     """

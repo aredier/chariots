@@ -4,17 +4,14 @@ import base64
 import copy
 import json
 import os
-from typing import Union, Dict, Text, Set, Optional, List
+from typing import Text, Set, Optional
 
 import requests
-from sqlalchemy.orm import aliased
 
-from chariots import base  # pylint: disable=unused-import;# noqa
-from chariots.op_store._op_store import OpStoreServer
-from chariots.savers import FileSaver
-from chariots.versioning import Version
+from chariots import op_store, savers, versioning
 
 # TODO test db
+# TODO doc
 
 class BaseOpStoreClient(abc.ABC):
     """
@@ -41,7 +38,6 @@ class BaseOpStoreClient(abc.ABC):
     the OpStore identifies op's by there name (usually a snake case of the Class of your op) so changing this name
     (or changing the class name) might make it hard to recover the metadata and serialized bytes of the Ops
 
-    :param saver: the saver the op_store will use to retrieve it's metadata and subsequent ops
     """
 
     @abc.abstractmethod
@@ -99,7 +95,7 @@ class BaseOpStoreClient(abc.ABC):
         # }
         # self._saver.save(json.dumps(version_dict_with_str_versions).encode('utf-8'), path=self._location)
 
-    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[Version]]:
+    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[versioning.Version]]:
         """
         returns all the available versions of an op ever persisted in the OpGraph (or any Opgraph using the same
         _meta.json)
@@ -109,7 +105,7 @@ class BaseOpStoreClient(abc.ABC):
         response_json = self.post('/v1/get_all_versions_of_op', {'desired_op_name': desired_op.name})
         if not response_json:
             return None
-        return {Version.parse(version_string) for version_string in response_json['all_versions']}
+        return {versioning.Version.parse(version_string) for version_string in response_json['all_versions']}
 
         # all_versions = [
         #     versions
@@ -118,7 +114,8 @@ class BaseOpStoreClient(abc.ABC):
         #     if upstream_op == desired_op.name
         # ]
 
-    def get_validated_links(self, downstream_op_name: Text, upstream_op_name: Text) -> Optional[Set[Version]]:
+    def get_validated_links(self, downstream_op_name: Text,
+                            upstream_op_name: Text) -> Optional[Set[versioning.Version]]:
         """
         gets all the validated links (versions that works) between an upstream op and a downstream op (if none
         exist, `None` is returned)
@@ -129,12 +126,12 @@ class BaseOpStoreClient(abc.ABC):
         })
 
         return {
-            Version.parse(version_string) for version_string in response_json['upstream_versions']
+            versioning.Version.parse(version_string) for version_string in response_json['upstream_versions']
         } if response_json else None
 
         # return self._all_op_links.get(downstream_op_name, {}).get(upstream_op_name)
 
-    def get_op_bytes_for_version(self, desired_op: 'base.BaseOp', version: Version) -> bytes:
+    def get_op_bytes_for_version(self, desired_op: 'base.BaseOp', version: versioning.Version) -> bytes:
         """
         loads the persisted bytes of op for a specific version
 
@@ -150,7 +147,7 @@ class BaseOpStoreClient(abc.ABC):
 
         return base64.b64decode(response_json['bytes'].encode('utf-8'))
 
-    def save_op_bytes(self, op_to_save: 'base.BaseOp', version: Version, op_bytes: bytes):
+    def save_op_bytes(self, op_to_save: 'base.BaseOp', version: versioning.Version, op_bytes: bytes):
         """
         saves op_bytes of a specific op to the path /models/<op name>/<version>.
 
@@ -169,7 +166,7 @@ class BaseOpStoreClient(abc.ABC):
         })
 
     def register_valid_link(self, downstream_op_name: Optional[str], upstream_op_name: 'str',
-                            upstream_op_version: Version):
+                            upstream_op_version: versioning.Version):
         """
         registers a link between an upstream and a downstream op. This means that in future relaods the downstream op
         will whitelist this version for this upstream op
@@ -230,8 +227,8 @@ class TestOpStoreClient(BaseOpStoreClient):
         self.db_path = os.path.join(path, 'db.sqlite')
         ops_path = os.path.join(path, 'ops')
         os.makedirs(ops_path, exist_ok=True)
-        self._saver = saver or FileSaver(ops_path)
-        self.server = OpStoreServer(self._saver, db_url='sqlite:///{}'.format(self.db_path))
+        self._saver = saver or savers.FileSaver(ops_path)
+        self.server = op_store.OpStoreServer(self._saver, db_url='sqlite:///{}'.format(self.db_path))
         self._test_client = self.server.flask.test_client()
 
     def post(self, route, arguments_json):
@@ -255,5 +252,5 @@ class TestOpStoreClient(BaseOpStoreClient):
 
     def __setstate__(self, state):
         self.__dict__ = state
-        self.server = OpStoreServer(self._saver, 'sqlite:///{}'.format(self.db_path))
+        self.server = op_store.OpStoreServer(self._saver, 'sqlite:///{}'.format(self.db_path))
         self._test_client = self.server.flask.test_client()
