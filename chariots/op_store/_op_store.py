@@ -20,7 +20,51 @@ class OpStoreServer:
     To Create a server, you need to provide it with a saver (to know how to persist the Ops) and db_url (a sqlalchemy
     compatible url for the server to connect to the url)
 
-    ..testsetup::
+    .. testsetup::
+
+        >>> import tempfile
+        >>> import shutil
+        >>> my_url = 'foo'
+        >>> saver_path = tempfile.mkdtemp()
+
+    .. doctest::
+
+        >>> from chariots import savers
+        ...
+        >>> saver = savers.FileSaver(saver_path)
+        >>> op_store = OpStoreServer(saver=saver, db_url=my_url)
+
+    The OpStore is created around a Flask app that you can access through the `.flask` attribute:
+
+    .. doctest::
+
+        >>> op_store.flask
+        <Flask 'OpStoreServer'>
+
+    You can also access the `.db` and `.migrate` to control the db and potential migration (if newer versions
+    of Chariots change the schema of the OpStore database for instance
+
+    .. testsetup::
+        >>> shutil.rmtree(saver_path)
+
+    Since this is a server, its public methods should not be accessed directly but instead through http (using the
+    op store client)
+
+    The OpStore is mostly used by the Pipelines and the nodes at saving time to:
+
+    - persist the ops that they have updated
+    - register new versions
+    - register links between different ops and different versions that are valid (for instance this versions of the PCA
+      is valid for this new version of the RandomForest
+
+    and at loading time to:
+
+    - check latest available version of an op
+    - check if this version is valid with the rest of the pipeline
+    - recover the bytes of the latest version if it is valid
+
+    the OpStore identifies op's by there name (usually a snake case of the Class of your op) so changing this name
+    (or changing the class name) might make it hard to recover the metadata and serialized bytes of the Ops.
 
     :param saver: the saver to use to persist the ops.
     :param db_url: the URL of the database (where all the versions and pipeline informations are stored)
