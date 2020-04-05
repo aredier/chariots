@@ -4,6 +4,7 @@ Api Docs
 .. toctree::
    :maxdepth: 1
 
+   chariots.op_store
    chariots.base
    chariots.callbacks
    chariots.workers
@@ -31,10 +32,6 @@ Api Docs
       :members:
 
    .. autoclass::  Client
-      :members:
-      :inherited-members:
-
-   .. autoclass::  OpStore
       :members:
       :inherited-members:
 

@@ -1,13 +1,10 @@
 """module for the `Pipeline` class"""
 from typing import List, Optional, Set, Dict, Any, Mapping, Text
 
-from chariots import base
-from chariots import nodes
-from chariots import callbacks
+from chariots import base, nodes, callbacks, op_store
 from chariots.versioning import Version
 from chariots.base._base_nodes import NodeReference
 from ._helpers.typing import SymbolicToRealMapping, ResultDict
-from chariots.op_store._op_store import OpStore
 
 
 class Pipeline(base.BaseOp):
@@ -235,7 +232,7 @@ class Pipeline(base.BaseOp):
         """
         return {node: node.node_version for node in self._graph}
 
-    def load(self, op_store: OpStore):
+    def load(self, op_store: op_store.OpStoreClient):
         """
         loads all the latest versions of the nodes in the pipeline if they are compatible from an `OpStore`. if the
         latest version is not compatible, it will raise a `VersionError`
@@ -257,7 +254,7 @@ class Pipeline(base.BaseOp):
         return self
 
     @staticmethod
-    def _check_and_load_single_node(op_store: OpStore, upstream_node: 'base.BaseNode',
+    def _check_and_load_single_node(op_store: op_store.OpStoreClient, upstream_node: 'base.BaseNode',
                                     downstream_node: Optional['base.BaseNode']) -> 'base.BaseNode':
         latest_node = upstream_node.load_latest_version(op_store)
         # TODO remove commented code
@@ -274,7 +271,7 @@ class Pipeline(base.BaseOp):
         """utils mapping that has node names in input and the nodes objects in values"""
         return {node.name: node for node in self._graph}
 
-    def save(self, op_store: OpStore):
+    def save(self, op_store: op_store.OpStoreClient):
         """
         persists all the nodes (that need saving) in an `OpStore`. this is used for instance when a training pipeline
         has been executed and needs to save it's trained node(s) for the inference pipeline to load them. This method

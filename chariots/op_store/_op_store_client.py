@@ -8,37 +8,12 @@ from typing import Text, Set, Optional
 
 import requests
 
+import chariots
 from chariots import op_store, savers, versioning
 
 # TODO test db
-# TODO doc
 
 class BaseOpStoreClient(abc.ABC):
-    """
-    A Chariots OpStore handles the persisting of Ops and their versions as well as the accepted versions of each op's
-    inputs.
-
-   the OpStore persists all this metadata about persisted ops in the `/_meta.json` file using the saver provided at init
-
-   all the serialized ops are saved at /models/<op name>/<version>
-
-    The OpStore is mostly used by the Pipelines and the nodes at saving time to:
-
-    - persist the ops that they have updated
-    - register new versions
-    - register links between different ops and different versions that are valid (for instance this versions of the PCA
-      is valid for this new version of the RandomForest
-
-    and at loading time to:
-
-    - check latest available version of an op
-    - check if this version is valid with the rest of the pipeline
-    - recover the bytes of the latest version if it is valid
-
-    the OpStore identifies op's by there name (usually a snake case of the Class of your op) so changing this name
-    (or changing the class name) might make it hard to recover the metadata and serialized bytes of the Ops
-
-    """
 
     @abc.abstractmethod
     def post(self, route, arguments_json):
@@ -187,11 +162,23 @@ class BaseOpStoreClient(abc.ABC):
         #     downstream_op if downstream_op is not None else '__end_of_pipe__', {}
         # ).setdefault(upstream_op, set()).add(upstream_op_version)
 
-    def pipeline_exists(self, pipeline_name):
+    def pipeline_exists(self, pipeline_name: str) -> bool:
+        """
+        checks if a pipeline is already registered in the OpStore
+
+        :param pipeline_name: the name of the pipeline to check
+        :return: a boolean (True if the pipeline exists)
+        """
 
         return self.post('/v1/pipeline_exists', {'pipeline_name': pipeline_name})['exists']
 
-    def register_new_pipeline(self, pipeline):
+    def register_new_pipeline(self, pipeline: 'chariots.Pipeline'):
+        """
+        registers a new pipeline to register to the Store (this will only update the `db_pipeline` table of the db so
+        you will need to save each of your Ops and their validated links if using manually
+
+        :param pipeline: the pipeline to register
+        """
 
         for upstream_node, downstream_node in pipeline.get_all_op_links():
             if downstream_node is None:
@@ -204,6 +191,9 @@ class BaseOpStoreClient(abc.ABC):
 
 
 class OpStoreClient(BaseOpStoreClient):
+    """
+    Client used to query the OpStoreServer.
+    """
 
     def __init__(self, url):
         self.url = url
