@@ -4,7 +4,7 @@ from enum import Enum
 
 from typing import Any, Union, Optional, List, Text
 
-from ..op_store import _op_store
+import chariots
 from chariots.versioning import Version
 from chariots.errors import VersionError
 from .._helpers.typing import SymbolicToRealMapping
@@ -137,7 +137,7 @@ class BaseNode(ABC):
         return symbolic_real_node_map[node]
 
     @abstractmethod
-    def load_latest_version(self, store_to_look_in: _op_store.OpStore) -> 'BaseNode':
+    def load_latest_version(self, store_to_look_in: 'chariots.op_store.OpStoreClient') -> 'BaseNode':
         """
         reloads the latest available version of thid node by looking for all available versions in the OpStore
 
@@ -146,7 +146,8 @@ class BaseNode(ABC):
         :return: this node once it has been loaded
         """
 
-    def check_version_compatibility(self, upstream_node: 'BaseNode', store_to_look_in: _op_store.OpStore):
+    def check_version_compatibility(self, upstream_node: 'BaseNode',
+                                    store_to_look_in: 'chariots.op_store.OpStoreClient'):
         """
         checks that this node is compatible with a potentially new version of an upstream node`
 
@@ -173,7 +174,7 @@ class BaseNode(ABC):
     def name(self) -> str:
         """the name of the node"""
 
-    def persist(self, store: _op_store.OpStore, downstream_nodes: Optional[List['BaseNode']]) -> Version:
+    def persist(self, store: 'chariots.op_store.OpStoreClient', downstream_nodes: Optional[List['BaseNode']]) -> Version:
         """
         persists this nodes's data (usually this means saving the serialized bytes of the inner op of this node (for the
         `Node` class

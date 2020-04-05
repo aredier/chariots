@@ -2,7 +2,6 @@
 import json
 import os
 
-from chariots import OpStore
 from chariots.runners import SequentialRunner
 from chariots.savers import FileSaver
 
@@ -92,24 +91,3 @@ def test_saving_with_pipe_as_op(enchrined_pipelines_generator, tmpdir, opstore_f
     res = runner.run(pipe_load)
     assert len(res) == 10
     assert res == [bool(i % 3) for i in range(10)]
-
-
-def test_data_ops(tmpdir, data_nodes_paths, data_nodes_pipeline):  # pylint: disable=invalid-name
-    """test the saving behavior of data ops"""
-
-    _, output_path = data_nodes_paths
-    pipe, in_node, out_node = data_nodes_pipeline
-
-    saver = FileSaver(str(tmpdir))
-    in_node.attach_saver(saver)
-    out_node.attach_saver(saver)
-
-    runner = SequentialRunner()
-
-    runner.run(pipe)
-
-    with open(os.path.join(str(tmpdir), 'data', output_path), 'r') as file:
-        res = json.load(file)
-
-    assert len(res) == 10
-    assert res == [True] + [False] * 9

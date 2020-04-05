@@ -12,7 +12,7 @@ from chariots.versioning import VersionedFieldDict, VersionType
 
 
 @flaky(5, 1)
-def test_train_keras_pipeline(tmpdir):
+def test_train_keras_pipeline(tmpdir, opstore_func):
     """tests using an op in training and testing"""
 
     train = Pipeline([
@@ -26,7 +26,7 @@ def test_train_keras_pipeline(tmpdir):
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
     my_app = Chariots(app_pipelines=[train, pred],
-                      path=str(tmpdir), import_name='my_app')
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
     client = TestClient(my_app)
     client.call_pipeline(train)
     client.save_pipeline(train)
@@ -75,7 +75,7 @@ class MultiInputKeras(KerasOp):
 
 
 @flaky(5, 1)
-def test_keras_multiple_datasets(tmpdir):
+def test_keras_multiple_datasets(tmpdir, opstore_func):
     """tests keras with a multi-input model (build using the functional API)"""
     class CreateInputs(BaseOp):
         """op that creates inputs for the pipeline"""
@@ -94,7 +94,7 @@ def test_keras_multiple_datasets(tmpdir):
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
     my_app = Chariots(app_pipelines=[train, pred, ],
-                      path=str(tmpdir), import_name='my_app')
+                      op_store_client=opstore_func(tmpdir), import_name='my_app')
     client = TestClient(my_app)
     client.call_pipeline(train)
     client.save_pipeline(train)

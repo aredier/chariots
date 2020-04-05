@@ -9,7 +9,6 @@ from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp, FromAr
 from chariots.base import BaseOp
 from chariots.callbacks import OpCallBack
 from chariots.nodes import Node
-from chariots.op_store._op_store import OpStoreServer
 from chariots.op_store._op_store_client import TestOpStoreClient
 from chariots.ops import LoadableOp
 from chariots.savers import FileSaver

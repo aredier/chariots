@@ -13,7 +13,7 @@ import pandas as pd
 
 from chariots import Pipeline, MLMode
 from chariots.base import BaseOp
-from chariots.nodes import Node, DataSavingNode, DataLoadingNode
+from chariots.nodes import Node
 from chariots.serializers import CSVSerializer, DillSerializer
 from chariots.sklearn import SKSupervisedOp, SKUnsupervisedOp
 from chariots.versioning import VersionedFieldDict, VersionType, VersionedField
@@ -74,20 +74,6 @@ class AnalyseDataSetOp(BaseOp):
 
     def execute(self, df):  # pylint: disable=arguments-differ
         return Counter(df.target)
-
-
-save_train_test = Pipeline([
-    Node(IrisDF(), output_nodes='df'),
-    Node(TrainTestSplit(), input_nodes=['df'], output_nodes=['train_df', 'test_df']),
-    DataSavingNode(serializer=CSVSerializer(), path='/train.csv', input_nodes=['train_df']),
-    DataSavingNode(serializer=DillSerializer(), path='/test.pkl', input_nodes=['test_df'])
-
-], 'save')
-
-load_and_analyse_iris = Pipeline([
-    DataLoadingNode(serializer=CSVSerializer(), path='/train.csv', output_nodes=['train_df']),
-    Node(AnalyseDataSetOp(), input_nodes=['train_df'], output_nodes=['__pipeline_output__']),
-], 'analyse')
 
 
 class IrisXDataSet(BaseOp):

@@ -12,10 +12,19 @@ from .models.pipeline import DBPipeline
 from ..versioning import Version
 
 
-class OpStore:
-    pass
-
 class OpStoreServer:
+    """
+    The OpStore Server is the server that handles Saving and loading the different ops as well as keeping track
+    of all the existing versions of each op.
+
+    To Create a server, you need to provide it with a saver (to know how to persist the Ops) and db_url (a sqlalchemy
+    compatible url for the server to connect to the url)
+
+    ..testsetup::
+
+    :param saver: the saver to use to persist the ops.
+    :param db_url: the URL of the database (where all the versions and pipeline informations are stored)
+    """
 
     def __init__(self, saver, db_url='sqlite:///:memory:'):
         self.flask = Flask('OpStoreServer')
