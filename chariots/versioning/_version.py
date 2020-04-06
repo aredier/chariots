@@ -1,8 +1,9 @@
 """module for the version class"""
 import hashlib
 import datetime as dt
-from dateutil import parser
 from typing import Optional
+
+from dateutil import parser
 
 from .._helpers.typing import Hash
 from ._version_type import VersionType

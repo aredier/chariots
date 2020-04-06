@@ -4,7 +4,7 @@ from enum import Enum
 
 from typing import Any, Union, Optional, List, Text
 
-import chariots
+import chariots  # pylint: disable=unused-import; # noqa
 from chariots.versioning import Version
 from chariots.errors import VersionError
 from .._helpers.typing import SymbolicToRealMapping
@@ -152,7 +152,8 @@ class BaseNode(ABC):
         checks that this node is compatible with a potentially new version of an upstream node`
 
         :param upstream_node: the upstream node to check for version compatibality with
-        :param store_to_look_in: the op_store to look for valid relationships between this node and upstream versions
+        :param store_to_look_in: the op_store_client to look for valid relationships between this node and upstream
+                                 versions
 
         :raises VersionError: when the two nodes are not compatible
         """
@@ -172,7 +173,8 @@ class BaseNode(ABC):
     def name(self) -> str:
         """the name of the node"""
 
-    def persist(self, store: 'chariots.op_store.OpStoreClient', downstream_nodes: Optional[List['BaseNode']]) -> Version:
+    def persist(self, store: 'chariots.op_store.OpStoreClient',
+                downstream_nodes: Optional[List['BaseNode']]) -> Version:
         """
         persists this nodes's data (usually this means saving the serialized bytes of the inner op of this node (for the
         `Node` class

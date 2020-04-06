@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring, missing-class-docstring, too-few-public-methods
 from sqlalchemy import Column, String, Integer
 
 from ..models import db

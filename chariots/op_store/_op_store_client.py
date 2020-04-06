@@ -8,16 +8,16 @@ from typing import Text, Set, Optional
 
 import requests
 
-import chariots
+import chariots  # pylint: disable=unused-import; # noqa
 from chariots import op_store, savers, versioning
 
 
 class BaseOpStoreClient(abc.ABC):
+    """base class for op store clients"""
 
     @abc.abstractmethod
     def post(self, route, arguments_json):
-        pass
-
+        """posts request the backend"""
 
     def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[versioning.Version]]:
         """
@@ -154,13 +154,13 @@ class OpStoreClient(BaseOpStoreClient):
             data=json.dumps(arguments_json)
         )
         if response.status_code != 200:
-            # TODO propagate error
             raise ValueError('something went wrong')
 
         return response.json()
 
 
 class TestOpStoreClient(BaseOpStoreClient):
+    """helper class to have a client without launching the server"""
 
     def __init__(self, path, saver=None):
         self.db_path = os.path.join(path, 'db.sqlite')
@@ -173,7 +173,6 @@ class TestOpStoreClient(BaseOpStoreClient):
     def post(self, route, arguments_json):
         response = self._test_client.post(route, data=json.dumps(arguments_json), content_type='application/json')
         if response.status_code != 200:
-            # TODO propagate error
             raise ValueError('something went wrong')
 
         return json.loads(response.data.decode('utf-8'))

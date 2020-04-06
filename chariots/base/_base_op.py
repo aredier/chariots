@@ -144,7 +144,7 @@ class BaseOp(metaclass=VersionableMeta):  # pylint: disable=no-member
     def name(self) -> str:
         """
         the name of the op.
-        this is mainly use to find previous versions and saved ops of this op in the op_store
+        this is mainly use to find previous versions and saved ops of this op in the op_store_client
         """
         return self.__class__.__name__.lower()
 

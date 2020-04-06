@@ -1,5 +1,5 @@
 """module for the `Pipeline` class"""
-from typing import List, Optional, Set, Dict, Any, Mapping, Text
+from typing import List, Optional, Set, Dict, Any, Mapping, Text, Tuple
 
 from chariots import base, nodes, callbacks, op_store
 from chariots.versioning import Version
@@ -235,13 +235,13 @@ class Pipeline(base.BaseOp):
         """
         return {node: node.node_version for node in self._graph}
 
-    def load(self, op_store: op_store.OpStoreClient):
+    def load(self, op_store_client: op_store.OpStoreClient):
         """
         loads all the latest versions of the nodes in the pipeline if they are compatible from an `OpStore`. if the
         latest version is not compatible, it will raise a `VersionError`
 
-        :param op_store: the op store to look for existing versions if any and to load the bytes of said version if
-                         possible
+        :param op_store_client: the op store to look for existing versions if any and to load the bytes of said version
+        if possible
 
         :raises VersionError: if a node is incompatible with one of it's input. For instance if a node has not been
                               trained on the latest version of it's input in an inference pipeline
@@ -253,20 +253,16 @@ class Pipeline(base.BaseOp):
             # against the one next node (that it needs to be compatible with)
             upstream_node = self._graph[i]
             downstream_node = self._find_downstream(upstream_node)
-            self._graph[i] = self._check_and_load_single_node(op_store, upstream_node, downstream_node)
+            self._graph[i] = self._check_and_load_single_node(op_store_client, upstream_node, downstream_node)
         return self
 
     @staticmethod
-    def _check_and_load_single_node(op_store: op_store.OpStoreClient, upstream_node: 'base.BaseNode',
+    def _check_and_load_single_node(op_store_client: op_store.OpStoreClient, upstream_node: 'base.BaseNode',
                                     downstream_node: Optional['base.BaseNode']) -> 'base.BaseNode':
-        latest_node = upstream_node.load_latest_version(op_store)
-        # TODO remove commented code
-        # if latest_node is None:
-        #     upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
-        #     return upstream_node
+        latest_node = upstream_node.load_latest_version(op_store_client)
 
         if downstream_node is not None:
-            downstream_node.check_version_compatibility(latest_node, op_store)
+            downstream_node.check_version_compatibility(latest_node, op_store_client)
         return latest_node
 
     @property
@@ -274,17 +270,17 @@ class Pipeline(base.BaseOp):
         """utils mapping that has node names in input and the nodes objects in values"""
         return {node.name: node for node in self._graph}
 
-    def save(self, op_store: op_store.OpStoreClient):
+    def save(self, op_store_client: op_store.OpStoreClient):
         """
         persists all the nodes (that need saving) in an `OpStore`. this is used for instance when a training pipeline
         has been executed and needs to save it's trained node(s) for the inference pipeline to load them. This method
         also updates the versions available for the store to serve in the future
 
-        :param op_store: the store to persist the nodes and their versions in
+        :param op_store_client: the store to persist the nodes and their versions in
         """
 
         for upstream_node, downstream_node in self.get_all_op_links():
-            upstream_node.persist(op_store, [downstream_node] if downstream_node else None)
+            upstream_node.persist(op_store_client, [downstream_node] if downstream_node else None)
 
     def _find_downstream(self, upstream_node: 'base.BaseNode') -> Optional['base.BaseNode']:
         """
@@ -294,5 +290,6 @@ class Pipeline(base.BaseOp):
         """
         return next((node for node in self._graph if upstream_node in [ref.node for ref in node.input_nodes]), None)
 
-    def get_all_op_links(self):
+    def get_all_op_links(self) -> List[Tuple['base.BaseNode', 'base.BaseNode']]:
+        """gets all the links present in the pipeline"""
         return [(upstream_node, self._find_downstream(upstream_node)) for upstream_node in self._graph]
