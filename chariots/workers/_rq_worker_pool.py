@@ -7,7 +7,7 @@ from redis import Redis
 from rq import Queue, Connection, Worker
 
 from chariots._deployment.app import Chariots, PipelineResponse
-from chariots.base import BaseRunner, BaseSaver
+from chariots.base import BaseRunner
 from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 
@@ -78,7 +78,7 @@ class RQWorkerPool(BaseWorkerPool):
             'pipeline': pipeline,
             'pipeline_input': pipeline_input,
             'runner': app.runner,
-            'op_store': app.op_store_client
+            'op_store_client': app.op_store_client
         })
         chariots_job_id = sha1(rq_job.id.encode('utf-8')).hexdigest()
         self._jobs[chariots_job_id] = rq_job

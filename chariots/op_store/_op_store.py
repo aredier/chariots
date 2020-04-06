@@ -1,3 +1,6 @@
+"""op store server file"""
+# pylint: disable=no-member
+
 import base64
 
 from flask import Flask, request, jsonify
@@ -32,13 +35,13 @@ class OpStoreServer:
         >>> from chariots import savers
         ...
         >>> saver = savers.FileSaver(saver_path)
-        >>> op_store = OpStoreServer(saver=saver, db_url=my_url)
+        >>> op_store_client = OpStoreServer(saver=saver, db_url=my_url)
 
     The OpStore is created around a Flask app that you can access through the `.flask` attribute:
 
     .. doctest::
 
-        >>> op_store.flask
+        >>> op_store_client.flask
         <Flask 'OpStoreServer'>
 
     You can also access the `.db` and `.migrate` to control the db and potential migration (if newer versions
@@ -74,7 +77,7 @@ class OpStoreServer:
         self.flask = Flask('OpStoreServer')
         self.flask.config['SQLALCHEMY_DATABASE_URI'] = db_url
         self.flask.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        self.db = db
+        self.db = db  # pylint: disable=invalid-name
         self.db.app = self.flask
         self.db.init_app(self.flask)
         self.migrate = Migrate(self.flask, self.db)
@@ -203,7 +206,12 @@ class OpStoreServer:
     def _get_db_op(self, op_name: str):
         return self._session.query(DBOp).filter(DBOp.op_name == op_name).one_or_none()
 
-    def get_or_register_db_op(self, op_name: str):
+    def get_or_register_db_op(self, op_name: str) -> DBOp:
+        """
+        creates the db op corresponding to op name if it doesn't exist, otherwise returns the existing one
+        :param op_name: the name of the op to look for
+        :return: the created op
+        """
         db_op = self._get_db_op(op_name)
         if db_op is not None:
             return db_op
@@ -214,18 +222,25 @@ class OpStoreServer:
 
     def _get_db_version(self, version: Version, op_id: int):
         return (self._session.query(DBVersion)
-                      .filter(DBVersion.op_id == op_id)
-                      .filter(DBVersion.major_hash == version.major)
-                      .filter(DBVersion.minor_hash == version.minor)
-                      .filter(DBVersion.patch_hash == version.patch)
-                      ).one_or_none()
+                .filter(DBVersion.op_id == op_id)
+                .filter(DBVersion.major_hash == version.major)
+                .filter(DBVersion.minor_hash == version.minor)
+                .filter(DBVersion.patch_hash == version.patch)
+                ).one_or_none()
 
-    def get_or_register_db_version(self, version: Version, op_id: int):
+    def get_or_register_db_version(self, version: Version, op_id: int) -> DBVersion:
+        """
+        creates the db version corresponding to version if it does not exist yet. Otherwise creates it
+
+        :param version: the version ti look for
+        :param op_id: the id of the op this version is attached to
+        :return: the DBVersion
+        """
         db_version = self._get_db_version(version, op_id)
         if db_version is not None:
             return db_version
 
-        major_version_number, minor_version_number, patch_version_number = self._get_version_numbers(version)
+        major_version_number, minor_version_number, patch_version_number = self._get_version_numbers(version, op_id)
         db_version = DBVersion(
             op_id=op_id,
             version_time=version.creation_time,
@@ -240,11 +255,26 @@ class OpStoreServer:
         self._session.commit()
         return db_version
 
-    def _get_version_numbers(self, version):
-        # TODO implement
-        return 1, 1, 1
+    def _get_version_numbers(self, version: Version, op_id):
+        last_op_versions = self._session.query(
+            DBVersion
+        ).filter(DBVersion.op_id == op_id).order_by(
+            DBVersion.major_version_number, DBVersion.minor_version_number, DBVersion.patch_version_number
+        ).limit(1).one_or_none()
+        if not last_op_versions:
+            return 1, 0, 0
+        if last_op_versions.major_hash != version.major:
+            return last_op_versions.major_version_number + 1, 0, 0
+        if last_op_versions.minor_hash != version.minor:
+            return last_op_versions.major_version_number, last_op_versions.minor_version_number + 1, 0
+        if last_op_versions.patch_hash != version.patch:
+            return (last_op_versions.major_version_number, last_op_versions.minor_version_number,
+                    last_op_versions.patch_version_number + 1)
+        return (last_op_versions.major_version_number, last_op_versions.minor_version_number,
+                last_op_versions.patch_version_number)
 
     def pipeline_exists(self):
+        """endpoint to check if the pipeline exists"""
         pipeline_name = request.json['pipeline_name']
         return jsonify({
             'exists': (self._session
@@ -254,6 +284,7 @@ class OpStoreServer:
         })
 
     def register_new_pipeline(self):
+        """endpoint ot register a new pipeline"""
 
         pipeline_name = request.json['pipeline_name']
         last_op_name = request.json['last_op_name']

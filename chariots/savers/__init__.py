@@ -3,8 +3,8 @@ Savers are used to persist and reload ops. A saver can be viewed as the basic ab
 (interprets path) and always has a root path (that represents the path after which the saver will start
 persisting data).
 
-To use a specific saver, you need to pass it as a parameter of your `OpStoreServer` so that the op_store in terms knows
-how and where to persist your ops
+To use a specific saver, you need to pass it as a parameter of your `OpStoreServer` so that the op_store_client in terms
+ knows how and where to persist your ops
 
 .. testsetup::
 
@@ -19,7 +19,7 @@ how and where to persist your ops
 .. doctest::
 
     >>> my_saver = FileSaver(app_path)
-    >>> op_store = OpStoreServer(my_saver, db_url)
+    >>> op_store_client = OpStoreServer(my_saver, db_url)
 
 .. testsetup::
     >>> shutil.rmtree(app_path)

@@ -71,6 +71,9 @@ def test_register_valid_link_no_ops(op_store_client: TestOpStoreClient, session_
     assert version.major_hash == upstream_version.major
     assert version.minor_hash == upstream_version.minor
     assert version.patch_hash == upstream_version.patch
+    assert version.major_version_number == 1
+    assert version.minor_version_number == 0
+    assert version.minor_version_number == 0
 
     links = list(session.query(models.DBValidatedLink))
     assert len(links) == 1
@@ -113,6 +116,9 @@ def test_register_validated_lin_ops_present(op_store_client: TestOpStoreClient, 
     assert new_db_version.major_hash == new_version.major
     assert new_db_version.minor_hash == new_version.minor
     assert new_db_version.patch_hash == new_version.patch
+    assert new_db_version.major_version_number == 2
+    assert new_db_version.minor_version_number == 0
+    assert new_db_version.minor_version_number == 0
 
     links = list(session.query(models.DBValidatedLink))
     assert len(links) == 2

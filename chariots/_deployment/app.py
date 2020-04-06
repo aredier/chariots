@@ -149,7 +149,6 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
         self.runner = runner or SequentialRunner()
         self.op_store_client = op_store_client
-        app_pipelines = self._prepare_pipelines(app_pipelines)
 
         # adding the default pipeline callbacks to all the pipelines of the app
         for pipeline in app_pipelines:
@@ -181,11 +180,6 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
     def _build_error_handlers(self):
         self.register_error_handler(VersionError, lambda error: error.handle())
-
-    def _prepare_pipelines(self, app_pipeline: List[Pipeline]):
-        for pipe in app_pipeline:
-            pipe.prepare(None)
-        return app_pipeline
 
     @staticmethod
     def _should_execute_pipeline_async(app_worker_config: Union[bool, None],
