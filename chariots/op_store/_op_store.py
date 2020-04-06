@@ -163,9 +163,16 @@ class OpStoreServer:
         some behaviors of the versioning of their underlying op
         """
         op_name = request.json['op_name']
+        db_op = self._get_db_op(op_name=op_name)
+        if db_op is None:
+            raise ValueError('op {} not registered please register before saving op_bytes'.format(op_name))
         version = Version.parse(request.json['version'])
+        db_version = self._get_db_version(version, db_op.id)
+        if not db_version:
+            raise ValueError('version {} not registered for {} please register'
+                             ' op version before saving'.format(version, op_name))
         op_bytes = base64.b64decode(request.json['bytes'].encode('utf-8'))
-        path = self._build_op_path(op_name, version=version)
+        path = self._build_op_path(db_op.op_name, version=db_version.to_chariots_version())
         self._saver.save(serialized_object=op_bytes, path=path)
         return jsonify({})
 
@@ -205,13 +212,16 @@ class OpStoreServer:
         self._session.commit()
         return db_op
 
-    def _get_or_register_db_version(self, version: Version, op_id: int):
-        db_version = (self._session.query(DBVersion)
+    def _get_db_version(self, version: Version, op_id: int):
+        return (self._session.query(DBVersion)
                       .filter(DBVersion.op_id == op_id)
                       .filter(DBVersion.major_hash == version.major)
                       .filter(DBVersion.minor_hash == version.minor)
                       .filter(DBVersion.patch_hash == version.patch)
                       ).one_or_none()
+
+    def _get_or_register_db_version(self, version: Version, op_id: int):
+        db_version = self._get_db_version(version, op_id)
         if db_version is not None:
             return db_version
 

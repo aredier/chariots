@@ -10,3 +10,7 @@ class DBValidatedLink(db.Model):
     upstream_op_id = Column(Integer, ForeignKey(DBOp.id))
     downstream_op_id = Column(Integer, ForeignKey(DBOp.id))
     upstream_op_version_id = Column(Integer, ForeignKey(DBVersion.id))
+
+    def __repr__(self):
+        return 'DBValidatedLink(id={}, upstream_op_id={}, downstream_op_id={}, upstream_op_version_id={})'.format(
+            self.id, self.upstream_op_id, self.downstream_op_id, self.upstream_op_version_id)

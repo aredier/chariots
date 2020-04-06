@@ -37,15 +37,3 @@ def enchrined_pipelines_generator(
         ], name='outer_pipe')
         return pipe
     return inner
-
-
-@pytest.fixture
-def data_nodes_paths(tmpdir):
-    """fixture that prepares the needed files for data nodes test"""
-    input_path = 'in.json'
-    output_path = 'out.json'
-
-    os.makedirs(os.path.join(str(tmpdir), 'data'), exist_ok=True)
-    with open(os.path.join(str(tmpdir), 'data', input_path), 'w') as file:
-        json.dump(list(range(10)), file)
-    return input_path, output_path

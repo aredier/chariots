@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
 
+from chariots import versioning
 from .op import DBOp
 from ..models import db
 
@@ -19,6 +20,8 @@ class DBVersion(db.Model):
     patch_hash = Column(String)
     patch_version_number = Column(Integer)
 
+    def to_chariots_version(self):
+        return versioning.Version(self.major_hash, self.minor_hash, self.patch_hash, self.version_time)
+
     def to_version_string(self):
-        hash_str = '.'.join((self.major_hash, self.minor_hash, self.patch_hash))
-        return '_'.join((hash_str, str(self.version_time)))
+        return str(self.to_chariots_version())
