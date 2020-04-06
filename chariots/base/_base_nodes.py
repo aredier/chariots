@@ -159,8 +159,6 @@ class BaseNode(ABC):
         validated_links = store_to_look_in.get_validated_links(self.name, upstream_node.name)
         if validated_links is None:
             return
-        print('{} checking if {} is ok'.format(self.name, upstream_node.name))
-        print(validated_links, upstream_node.node_version.major)
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
             raise VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
 

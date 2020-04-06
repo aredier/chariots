@@ -24,12 +24,15 @@ or you can set the default runner of your app and it will be used every time a p
     >>> import tempfile
     >>> import shutil
     >>> from chariots import Chariots
+    >>> from chariots.op_store._op_store_client import TestOpStoreClient
 
     >>> app_path = tempfile.mkdtemp()
+    >>> op_store_client = TestOpStoreClient(app_path)
+    >>> op_store_client.server.db.create_all()
 
 .. doctest::
 
-    >>> my_app = Chariots(app_pipelines=[is_odd_pipeline], runner=SequentialRunner(), path=app_path,
+    >>> my_app = Chariots(app_pipelines=[is_odd_pipeline], runner=SequentialRunner(), op_store_client=op_store_client,
     ...                   import_name="my_app")
 
 .. testsetup::

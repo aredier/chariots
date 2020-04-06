@@ -27,17 +27,6 @@ there are for instance used to serialize the inner models of the machine learnin
     ...     serializer_cls = MySerializerCls
     ...
     ...     model_class = PCA
-
-there are also usually used in the saving nodes to choose the serialization method for your datasets:
-
-.. testsetup::
-
-    >>> from chariots.nodes import DataSavingNode
-    >>> from chariots.serializers import CSVSerializer
-
-.. doctest::
-
-    >>> saving_node = DataSavingNode(serializer=CSVSerializer(), path='my_path.csv', input_nodes=["my_dataset"])
 """
 from ._csv_serialzer import CSVSerializer
 from ._dill_serializer import DillSerializer

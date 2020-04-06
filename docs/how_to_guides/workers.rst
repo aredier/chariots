@@ -7,7 +7,9 @@ Once you have built your app you might want to deploy it using
 
     >>> import tempfile
     >>> import shutil
+    >>> from chariots.op_store._op_store_client import TestOpStoreClient
     >>> app_path = tempfile.mkdtemp()
+    >>> op_store_client = TestOpStoreClient(app_path)
     >>> my_pipelines = []
 
 .. doctest::
@@ -17,9 +19,13 @@ Once you have built your app you might want to deploy it using
     ...
     >>> app = Chariots(
     ...     my_pipelines,
-    ...     path=app_path,
+    ...     op_store_client=op_store_client,
     ...     import_name="my_app"
     ... )
+
+.. testsetup::
+
+    >>> shutil.rmtree(app_path)
 
 
 but you will soon discover that by default that all the pipeline's are executed in the main server process.
@@ -40,18 +46,21 @@ such:
 
     >>> import tempfile
     >>> import shutil
+    >>> from chariots.op_store._op_store_client import TestOpStoreClient
     >>> app_path = tempfile.mkdtemp()
     >>> my_pipelines = []
+    >>> op_store_client = TestOpStoreClient(app_path)
+    >>> op_store_client.server.db.create_all()
 
 .. doctest::
 
     >>> from redis import Redis
-    >>> from chariots import Chariots, workers
+    >>> from chariots import Chariots, workers, savers, op_store
     ...
     ...
     >>> app = Chariots(
     ...     my_pipelines,
-    ...     path=app_path,
+    ...     op_store_client=op_store_client,
     ...     import_name="my_app",
     ...     worker_pool=workers.RQWorkerPool(redis=Redis())
     ... )
@@ -68,7 +77,7 @@ you than have several options:
     ...
     >>> app = Chariots(
     ...     my_pipelines,
-    ...     path=app_path,
+    ...     op_store_client=op_store_client,
     ...     import_name="my_app",
     ...     worker_pool=workers.RQWorkerPool(redis=Redis()),
     ...     use_workers=True
@@ -100,7 +109,8 @@ you than have several options:
     >>> from chariots.workers import RQWorkerPool
     >>> from chariots._helpers.doc_utils import is_odd_pipeline
     >>> from chariots._helpers.test_helpers import RQWorkerContext
-    >>> app = Chariots([is_odd_pipeline], app_path, import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
+    >>> app = Chariots([is_odd_pipeline], op_store_client=op_store_client,
+    ...                 import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
     >>> client = TestClient(app)
 
 
@@ -116,6 +126,10 @@ you than have several options:
     JobStatus.queued
     JobStatus.done
     False
+
+.. testsetup::
+
+    >>> shutil.rmtree(app_path)
 
 Creating your Own worker class
 ------------------------------

@@ -62,10 +62,13 @@ class KerasOp(BaseMLOp):
         >>> import numpy as np
         >>> from chariots.runners import SequentialRunner
         >>> from chariots import Chariots
+        >>> from chariots.op_store._op_store_client import TestOpStoreClient
         ...
         ...
         >>> app_path = tempfile.mkdtemp()
         >>> runner = SequentialRunner()
+        >>> op_store_client = TestOpStoreClient(app_path)
+        >>> op_store_client.server.db.create_all()
 
     .. doctest::
 
@@ -78,7 +81,7 @@ class KerasOp(BaseMLOp):
 
     .. doctest::
 
-        >>> app = Chariots([train, pred], app_path, import_name='my_app')
+        >>> app = Chariots([train, pred], op_store_client=op_store_client, import_name='my_app')
 
     .. testsetup::
 

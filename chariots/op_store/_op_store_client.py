@@ -11,7 +11,6 @@ import requests
 import chariots
 from chariots import op_store, savers, versioning
 
-# TODO test db
 
 class BaseOpStoreClient(abc.ABC):
 
@@ -19,56 +18,6 @@ class BaseOpStoreClient(abc.ABC):
     def post(self, route, arguments_json):
         pass
 
-    # def _load_from_saver(self) -> _OpGraph:
-    #     """
-    #     loads and parses all the versions from the meta json
-    #     """
-    #     try:
-    #         mapping = json.loads(self._saver.load(path=self._location).decode('utf-8'))
-    #         return self._parse_mapping(mapping)
-    #     except FileNotFoundError:
-    #         return {}
-
-    def reload(self):
-        """reloads the op data from the saver"""
-        # TODO delete
-        return
-        # self._all_op_links = self._load_from_saver()
-    #
-    # def _parse_mapping(
-    #         self, op_version_json: Union[Dict[Text, Dict[Text, Set[Text]]], Dict[Text, Set[Text]]]
-    # ) -> Union[Dict[Text, Dict[Text, Set[Version]]], Dict[Text, Set[Version]]]:
-    #     """
-    #     parses the saved meta and returns a valid metadata (with versions as object rather than strings)
-    #
-    #     :param op_version_json: all the op version metadata in json format
-    #     :return: the op version metadata
-    #     """
-    #     for key, value in op_version_json.items():
-    #         if isinstance(value, dict):
-    #             op_version_json[key] = self._parse_mapping(value)
-    #         if isinstance(value, list):
-    #             op_version_json[key] = {Version.parse(version_str) for version_str in value}
-    #     return op_version_json
-
-    def save(self):
-        """
-        persists all the metadata about ops and versions available in the store using the store's saver.
-
-        The saved metadata can be found at `/_meta.json` from the saver's route.
-        """
-        # TODO delete
-
-        return
-
-        # version_dict_with_str_versions = {
-        #     downstream_op_name: {
-        #         upstream_op_name: [str(version) for version in upstream_data]
-        #         for upstream_op_name, upstream_data in downstream_data.items()
-        #     }
-        #     for downstream_op_name, downstream_data in self._all_op_links.items()
-        # }
-        # self._saver.save(json.dumps(version_dict_with_str_versions).encode('utf-8'), path=self._location)
 
     def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[versioning.Version]]:
         """
