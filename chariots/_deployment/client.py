@@ -66,8 +66,13 @@ class AbstractClient(ABC):
             >>> from chariots.workers import RQWorkerPool
             >>> from chariots._helpers.doc_utils import is_odd_pipeline
             >>> from chariots._helpers.test_helpers import RQWorkerContext
+            >>> from chariots.op_store._op_store_client import TestOpStoreClient
+
             >>> app_path = tempfile.mkdtemp()
-            >>> app = Chariots([is_odd_pipeline], app_path, import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
+            >>> op_store_client = TestOpStoreClient(app_path)
+            >>> op_store_client.server.db.create_all()
+            >>> app = Chariots([is_odd_pipeline], op_store_client=op_store_client, import_name='simple_app',
+            ...                worker_pool=RQWorkerPool(Redis()))
             >>> client = TestClient(app)
 
         .. doctest::
@@ -84,7 +89,7 @@ class AbstractClient(ABC):
             >>> with RQWorkerContext():
             ...     response = client.call_pipeline(is_odd_pipeline, 4, use_worker=True)
             ...     print(response.job_status)
-            ...     time.sleep(3)
+            ...     time.sleep(5)
             ...     response = client.fetch_job(response.job_id, is_odd_pipeline)
             ...     print(response.job_status)
             ...     print(response.value)
@@ -191,10 +196,13 @@ class Client(AbstractClient):
 
         >>> from chariots import Pipeline, Chariots, MLMode, TestClient
         >>> from chariots.nodes import Node
+        >>> from chariots.op_store._op_store_client import TestOpStoreClient
         >>> from chariots._helpers.doc_utils import IrisXDataSet, PCAOp, IrisFullDataSet, LogisticOp
         >>> from chariots._helpers.test_helpers import FromArray
 
         >>> app_path = tempfile.mkdtemp()
+        >>> op_store_client = TestOpStoreClient(app_path)
+        >>> op_store_client.server.db.create_all()
 
     .. doctest::
 
@@ -213,7 +221,7 @@ class Client(AbstractClient):
         ...     Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
         ... ], "pred")
 
-        >>> app = Chariots([train_pca, train_logistic, pred], app_path, import_name="iris_app")
+        >>> app = Chariots([train_pca, train_logistic, pred], op_store_client=op_store_client, import_name="iris_app")
 
     .. testsetup::
 

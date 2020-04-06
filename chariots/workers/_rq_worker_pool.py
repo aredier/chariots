@@ -13,20 +13,9 @@ from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, runner: BaseRunner,
                           op_store: 'chariots.OpStore'):
-    print('*********************************************************')
-    print('*********************************************************')
-    print('*********************************************************')
-    print('*********************************************************')
-    print(op_store)
-    print('*********************************************************')
-    print('*********************************************************')
-    print('*********************************************************')
-    print('*********************************************************')
-
     pipeline.load(op_store)
     res = json.dumps(runner.run(pipeline, pipeline_input))
     pipeline.save(op_store)
-    op_store.save()
     return res
 
 
@@ -42,8 +31,10 @@ class RQWorkerPool(BaseWorkerPool):
 
         >>> import tempfile
         >>> import shutil
+        >>> from chariots.op_store._op_store_client import TestOpStoreClient
         >>> app_path = tempfile.mkdtemp()
         >>> my_pipelines = []
+        >>> op_store_client = TestOpStoreClient(app_path)
 
     .. doctest::
 
@@ -53,10 +44,10 @@ class RQWorkerPool(BaseWorkerPool):
         ...
         >>> app = Chariots(
         ...     my_pipelines,
-        ...     path=app_path,
-        ...     import_name="my_app",
+        ...     op_store_client=op_store_client,
         ...     worker_pool=workers.RQWorkerPool(redis=Redis()),
-        ...     use_workers=True
+        ...     use_workers=True,
+        ...     import_name='app'
         ... )
 
 
@@ -87,7 +78,7 @@ class RQWorkerPool(BaseWorkerPool):
             'pipeline': pipeline,
             'pipeline_input': pipeline_input,
             'runner': app.runner,
-            'op_store': app.op_store
+            'op_store': app.op_store_client
         })
         chariots_job_id = sha1(rq_job.id.encode('utf-8')).hexdigest()
         self._jobs[chariots_job_id] = rq_job

@@ -1,20 +1,17 @@
 """class that handles the backend setup of the Chariots app, to deploy the pipelines in a Flask server"""
 import json
-from typing import Mapping, Any, List, Type, Optional, Union
+from typing import Mapping, Any, List, Optional, Union
 
 from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+
 
 import chariots
 from chariots import Pipeline
-from chariots.base import BaseRunner, BaseSaver, BaseNode
+from chariots.base import BaseRunner, BaseNode
 from chariots.callbacks import PipelineCallback
 from chariots.errors import VersionError
 from chariots.runners import SequentialRunner
-from chariots.savers import FileSaver
 from chariots.versioning import Version
-from chariots.op_store._op_store_client import OpStoreClient
 
 
 class PipelineResponse:
@@ -68,17 +65,17 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
         >>> import tempfile
         >>> import shutil
-        ...
         >>> from chariots import Pipeline, Chariots
+        >>> from chariots.op_store._op_store_client import TestOpStoreClient
         >>> from chariots._helpers.doc_utils import is_odd_pipeline
+        ...
         >>> app_path = tempfile.mkdtemp()
+        >>> op_store_client = TestOpStoreClient(app_path)
+        >>> op_store_client.server.db.create_all()
 
     .. doctest::
 
-        >>> my_app = Chariots(app_pipelines=[is_odd_pipeline], path=app_path, import_name='my_app')
-
-    .. testsetup::
-        >>> shutil.rmtree(app_path)
+        >>> my_app = Chariots(app_pipelines=[is_odd_pipeline],op_store_client=op_store_client, import_name='my_app')
 
     you can then deploy the app as you would with the flask comand:
 
@@ -105,6 +102,9 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
         >>> client.call_pipeline(is_odd_pipeline, 4).value
         False
+
+    .. testsetup::
+        >>> shutil.rmtree(app_path)
 
     alternatively, you can query the `Chariots` server directly as you would for any normal micro-service. The server
     has the following routes:
@@ -139,25 +139,16 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, app_pipelines: List[Pipeline],
                  *args,
-                 saver_cls: Type[BaseSaver] = FileSaver,
-                 saver_kwargs: Optional[Mapping[str, Any]] = None,
-                 path=None,
                  op_store_client=None,
                  runner: Optional[BaseRunner] = None,
                  default_pipeline_callbacks: Optional[List[PipelineCallback]] = None,
                  worker_pool: 'Optional[chariots.workers.BaseWorkerPool]' = None,
                  use_workers: Optional[bool] = None,
-                 **kwargs):  # pylint: disable=too-many-arguments
+                 **kwargs):
         super().__init__(*args, **kwargs)
 
-        # TODO delete
-        # self.saver_kwargs = saver_kwargs or {}
-        # self.saver_kwargs['root_path'] = path
-        # self.saver_class = saver_cls
-        # self.saver = saver_cls(**self.saver_kwargs)
         self.runner = runner or SequentialRunner()
-        self.op_store = op_store_client
-        # self.op_store.use_db(self.db)
+        self.op_store_client = op_store_client
         app_pipelines = self._prepare_pipelines(app_pipelines)
 
         # adding the default pipeline callbacks to all the pipelines of the app
@@ -178,25 +169,14 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
         self._worker_pool = worker_pool
         self.use_workers = use_workers
 
-    # def _init_db(self):
-    #     self.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    #     self.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #     self.db = SQLAlchemy(self)
-    #     self.migrate = Migrate(self, self.db)
-    #     self.db.Op = op.build_op_table(self.db)
-    #     self.db.Version = version.build_version_table(self.db)
-    #     self.db.ValidatedLink = validated_link.build_validated_link_table(self.db)
-    #     self.db.Pipeline = pipeline.build_pipeline_table(self.db)
-    #     self.db.create_all()
-
     def _init_pipelines(self):
         for pipeline_name, pipeline in self._pipelines.items():
-            if self.op_store.pipeline_exists(pipeline_name):
+            if self.op_store_client.pipeline_exists(pipeline_name):
                 self._loaded_pipelines[pipeline_name] = True
                 continue
 
-            self.op_store.register_new_pipeline(pipeline)
-            pipeline.save(self.op_store)
+            self.op_store_client.register_new_pipeline(pipeline)
+            pipeline.save(self.op_store_client)
             self._loaded_pipelines[pipeline_name] = True
 
     def _build_error_handlers(self):
@@ -246,7 +226,6 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
         self.add_url_rule('/pipelines/<pipeline_name>/main', 'serve_pipeline', serve_pipeline, methods=['POST'])
 
         def load_pipeline(pipeline_name):
-            self.op_store.reload()
             self._load_single_pipeline(pipeline_name)
             return json.dumps({})
         self.add_url_rule('/pipelines/<pipeline_name>/load', 'load_pipeline', load_pipeline, methods=['POST'])
@@ -259,8 +238,7 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
 
         def save_pipeline(pipeline_name):
             pipeline = self._pipelines[pipeline_name]
-            pipeline.save(self.op_store)
-            self.op_store.save()
+            pipeline.save(self.op_store_client)
             return json.dumps({})
         self.add_url_rule('/pipelines/<pipeline_name>/save', 'save_pipeline', save_pipeline, methods=['POST'])
 
@@ -293,5 +271,5 @@ class Chariots(Flask):  # pylint: disable=too-many-instance-attributes
                 continue
 
     def _load_single_pipeline(self, pipeline_name):
-        self._pipelines[pipeline_name].load(self.op_store)
+        self._pipelines[pipeline_name].load(self.op_store_client)
         self._loaded_pipelines[pipeline_name] = True

@@ -185,11 +185,11 @@ class OpStoreServer:
         upstream_op_name = request.json['upstream_op_name']
         upstream_op_version = Version.parse(request.json['upstream_op_version'])
 
-        upstream_op_id = self._get_or_register_db_op(upstream_op_name).id
-        upstream_version_id = self._get_or_register_db_version(version=upstream_op_version, op_id=upstream_op_id).id
+        upstream_op_id = self.get_or_register_db_op(upstream_op_name).id
+        upstream_version_id = self.get_or_register_db_version(version=upstream_op_version, op_id=upstream_op_id).id
         if downstream_op_name is None:
             return jsonify({})
-        downstream_op_id = self._get_or_register_db_op(downstream_op_name).id
+        downstream_op_id = self.get_or_register_db_op(downstream_op_name).id
         validated_link = DBValidatedLink(
             upstream_op_id=upstream_op_id,
             downstream_op_id=downstream_op_id,
@@ -203,7 +203,7 @@ class OpStoreServer:
     def _get_db_op(self, op_name: str):
         return self._session.query(DBOp).filter(DBOp.op_name == op_name).one_or_none()
 
-    def _get_or_register_db_op(self, op_name: str):
+    def get_or_register_db_op(self, op_name: str):
         db_op = self._get_db_op(op_name)
         if db_op is not None:
             return db_op
@@ -220,7 +220,7 @@ class OpStoreServer:
                       .filter(DBVersion.patch_hash == version.patch)
                       ).one_or_none()
 
-    def _get_or_register_db_version(self, version: Version, op_id: int):
+    def get_or_register_db_version(self, version: Version, op_id: int):
         db_version = self._get_db_version(version, op_id)
         if db_version is not None:
             return db_version
@@ -258,7 +258,7 @@ class OpStoreServer:
         pipeline_name = request.json['pipeline_name']
         last_op_name = request.json['last_op_name']
 
-        last_node_id = self._get_or_register_db_op(last_op_name).id
+        last_node_id = self.get_or_register_db_op(last_op_name).id
 
         db_pipeline = DBPipeline(
             pipeline_name=pipeline_name,

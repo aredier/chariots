@@ -150,6 +150,10 @@ def test_save_op_bytes(op_store_client: TestOpStoreClient, ops_path):
 
     fake_op = FakeOp('the_one_op')
 
+    # saving the op and the version
+    db_op = op_store_client.server.get_or_register_db_op(fake_op.name)
+    op_store_client.server.get_or_register_db_version(version, db_op.id)
+
     # saving op
     op_store_client.save_op_bytes(fake_op, version, op_bytes)
 
@@ -166,6 +170,10 @@ def test_get_saved_op_bytes(op_store_client: TestOpStoreClient):
     version = versioning.Version()
 
     fake_op = FakeOp('the_one_op')
+
+    # saving the op and the version
+    db_op = op_store_client.server.get_or_register_db_op(fake_op.name)
+    op_store_client.server.get_or_register_db_version(version, db_op.id)
 
     # saving op
     op_store_client.save_op_bytes(fake_op, version, op_bytes)

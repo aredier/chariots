@@ -94,32 +94,12 @@ Pipelines
 
 We will than need to build our pipelines using the nodes we have just created:
 
-Data Pipelines
-^^^^^^^^^^^^^^
-
-We have our op that downloads the dataset. We than need to feed this dataset into a data saving node that will persist
-it for future uses (as the iris dataset is quite light, we could wire the download directly into the training pipeline
-but we will persist it to demonstrate that dynamic).
-
-.. doctest::
-
-    >>> from chariots import Pipeline
-    >>> from chariots.nodes import DataSavingNode, Node
-    >>> from chariots.serializers import CSVSerializer
-    ...
-    ...
-    >>> download_iris = Pipeline(
-    ...     [
-    ...         Node(DownloadIris(), output_nodes="iris_df"),
-    ...         DataSavingNode(serializer=CSVSerializer(), path="iris.csv",
-    ...                        input_nodes=["iris_df"])
-    ...     ], "download_iris"
-    ... )
 
 Machine Learning Pipelines
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Once we have our data set saved, we will need to use it to train our models, we will than create a training pipeline:
+We have our op that downloads the dataset. We than need to feed this dataset into our training node properly. We do
+this by writing a training pipeline.
 
 
 .. testsetup::
@@ -129,15 +109,14 @@ Once we have our data set saved, we will need to use it to train our models, we 
 .. doctest::
 
     >>> from chariots import MLMode, Pipeline
-    >>> from chariots.nodes import DataLoadingNode, Node
+    >>> from chariots.nodes import Node
     >>> from chariots.serializers import CSVSerializer
     ...
     ...
     >>> train_iris = Pipeline(
     ...     [
-    ...         DataLoadingNode(serializer=CSVSerializer(), path="iris.csv",
-    ...                         output_nodes="iris"),
-    ...         Node(XYSplit(), input_nodes=["iris"], output_nodes=["raw_X", "y"]),
+    ...         Node(DownloadIris(), output_nodes="iris_df"),
+    ...         Node(XYSplit(), input_nodes=["iris_df"], output_nodes=["raw_X", "y"]),
     ...         Node(IrisPCA(MLMode.FIT_PREDICT), input_nodes=["raw_X"],
     ...              output_nodes="pca_X"),
     ...         Node(IrisRF(MLMode.FIT), input_nodes=["pca_X", "y"])
@@ -173,7 +152,10 @@ Once our pipelines are all done, we will only need to create `Chariots` server t
 
     >>> import tempfile
     >>> import shutil
+    >>> from chariots.op_store._op_store_client import TestOpStoreClient
     >>> app_path = tempfile.mkdtemp()
+    >>> op_store_client = TestOpStoreClient(app_path)
+    >>> op_store_client.server.db.create_all()
 
 .. doctest::
 
@@ -181,8 +163,8 @@ Once our pipelines are all done, we will only need to create `Chariots` server t
     ...
     ...
     >>> app = Chariots(
-    ...     [download_iris, train_iris, pred_iris],
-    ...     path=app_path,
+    ...     [train_iris, pred_iris],
+    ...     op_store_client=op_store_client,
     ...     import_name="iris_app"
     ... )
 
@@ -217,7 +199,6 @@ we will need to execute several steps before getting to a prediction:
 
 .. doctest::
 
-    >>> res = client.call_pipeline(download_iris)
     >>> res = client.call_pipeline(train_iris)
     >>> client.save_pipeline(train_iris)
     >>> client.load_pipeline(pred_iris)

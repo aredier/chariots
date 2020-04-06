@@ -108,7 +108,6 @@ def test_pipeline_saving(basic_sk_pipelines: Pipeline, op_store_client: TestOpSt
 
     response = test_client.call_pipeline(train)
     test_client.save_pipeline(train)
-    print(response.versions)
     new_version = response.versions[train.node_for_name['sklrop']]
 
     session = session_func()
