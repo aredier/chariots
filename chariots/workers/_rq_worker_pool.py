@@ -12,10 +12,10 @@ from ._base_worker_pool import BaseWorkerPool, JobStatus
 
 
 def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, runner: BaseRunner,
-                          op_store: 'chariots.OpStore'):
-    pipeline.load(op_store)
+                          op_store_client: 'chariots.OpStore'):
+    pipeline.load(op_store_client)
     res = json.dumps(runner.run(pipeline, pipeline_input))
-    pipeline.save(op_store)
+    pipeline.save(op_store_client)
     return res
 
 
