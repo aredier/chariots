@@ -1,15 +1,12 @@
 """module for the `OpStore` class that handles saving op's data at the right place"""
 import abc
 import base64
-import copy
 import json
-import os
 from typing import Text, Set, Optional
 
 import requests
 
-import chariots  # pylint: disable=unused-import; # noqa
-from chariots import op_store, savers, versioning
+from .. import versioning, pipelines
 
 
 class BaseOpStoreClient(abc.ABC):
@@ -19,7 +16,7 @@ class BaseOpStoreClient(abc.ABC):
     def post(self, route, arguments_json):
         """posts request the backend"""
 
-    def get_all_versions_of_op(self, desired_op: 'base.BaseOp') -> Optional[Set[versioning.Version]]:
+    def get_all_versions_of_op(self, desired_op: 'pipelines.ops.BaseOp') -> Optional[Set[versioning.Version]]:
         """
         returns all the available versions of an op ever persisted in the OpGraph (or any Opgraph using the same
         _meta.json)
@@ -55,7 +52,7 @@ class BaseOpStoreClient(abc.ABC):
 
         # return self._all_op_links.get(downstream_op_name, {}).get(upstream_op_name)
 
-    def get_op_bytes_for_version(self, desired_op: 'base.BaseOp', version: versioning.Version) -> bytes:
+    def get_op_bytes_for_version(self, desired_op: 'pipelines.ops.BaseOp', version: versioning.Version) -> bytes:
         """
         loads the persisted bytes of op for a specific version
 
@@ -71,7 +68,7 @@ class BaseOpStoreClient(abc.ABC):
 
         return base64.b64decode(response_json['bytes'].encode('utf-8'))
 
-    def save_op_bytes(self, op_to_save: 'base.BaseOp', version: versioning.Version, op_bytes: bytes):
+    def save_op_bytes(self, op_to_save: 'pipelines.ops.BaseOp', version: versioning.Version, op_bytes: bytes):
         """
         saves op_bytes of a specific op to the path /models/<op name>/<version>.
 
@@ -121,7 +118,7 @@ class BaseOpStoreClient(abc.ABC):
 
         return self.post('/v1/pipeline_exists', {'pipeline_name': pipeline_name})['exists']
 
-    def register_new_pipeline(self, pipeline: 'chariots.Pipeline'):
+    def register_new_pipeline(self, pipeline: 'pipelines.Pipeline'):
         """
         registers a new pipeline to register to the Store (this will only update the `db_pipeline` table of the db so
         you will need to save each of your Ops and their validated links if using manually
@@ -157,38 +154,3 @@ class OpStoreClient(BaseOpStoreClient):
             raise ValueError('something went wrong')
 
         return response.json()
-
-
-class TestOpStoreClient(BaseOpStoreClient):
-    """helper class to have a client without launching the server"""
-
-    def __init__(self, path, saver=None):
-        self.db_path = os.path.join(path, 'db.sqlite')
-        ops_path = os.path.join(path, 'ops')
-        os.makedirs(ops_path, exist_ok=True)
-        self._saver = saver or savers.FileSaver(ops_path)
-        self.server = op_store.OpStoreServer(self._saver, db_url='sqlite:///{}'.format(self.db_path))
-        self._test_client = self.server.flask.test_client()
-
-    def post(self, route, arguments_json):
-        response = self._test_client.post(route, data=json.dumps(arguments_json), content_type='application/json')
-        if response.status_code != 200:
-            raise ValueError('something went wrong')
-
-        return json.loads(response.data.decode('utf-8'))
-
-    def __getstate__(self):
-        server = self.server
-        _test_client = self._test_client
-        res = self.__dict__
-        res['_test_client'] = None
-        res['server'] = None
-        res = copy.deepcopy(res)
-        self.server = server
-        self._test_client = _test_client
-        return res
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.server = op_store.OpStoreServer(self._saver, 'sqlite:///{}'.format(self.db_path))
-        self._test_client = self.server.flask.test_client()
