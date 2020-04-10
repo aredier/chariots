@@ -6,13 +6,12 @@ from typing import Any, Dict, Optional
 from redis import Redis
 from rq import Queue, Connection, Worker
 
-from chariots._deployment.app import Chariots, PipelineResponse
-from chariots.base import BaseRunner
-from ._base_worker_pool import BaseWorkerPool, JobStatus
+from .. import pipelines, op_store
+from . import BaseWorkerPool, JobStatus
 
 
-def _inner_pipe_execution(pipeline: 'chariots.Pipeline', pipeline_input: Any, runner: BaseRunner,
-                          op_store_client: 'chariots.OpStore'):
+def _inner_pipe_execution(pipeline: 'pipelines.Pipeline', pipeline_input: Any, runner: pipelines.runners.BaseRunner,
+                          op_store_client: 'op_store.OpStoreClient'):
     pipeline.load(op_store_client)
     res = json.dumps(runner.run(pipeline, pipeline_input))
     pipeline.save(op_store_client)
@@ -31,7 +30,7 @@ class RQWorkerPool(BaseWorkerPool):
 
         >>> import tempfile
         >>> import shutil
-        >>> from chariots.op_store._op_store_client import TestOpStoreClient
+        >>> from chariots.testing import TestOpStoreClient
         >>> app_path = tempfile.mkdtemp()
         >>> my_pipelines = []
         >>> op_store_client = TestOpStoreClient(app_path)
@@ -39,7 +38,8 @@ class RQWorkerPool(BaseWorkerPool):
     .. doctest::
 
         >>> from redis import Redis
-        >>> from chariots import Chariots, workers
+        >>> from chariots import workers
+        >>> from chariots.pipelines import Chariots
         ...
         ...
         >>> app = Chariots(
@@ -71,7 +71,8 @@ class RQWorkerPool(BaseWorkerPool):
             worker = Worker(self._queue_name)
             worker.work()
 
-    def execute_pipeline_async(self, pipeline: 'chariots.Pipeline', pipeline_input: Any, app: Chariots) -> str:
+    def execute_pipeline_async(self, pipeline: 'pipelines.Pipeline', pipeline_input: Any,
+                               app: pipelines.Chariots) -> str:
         if not self.n_workers:
             raise ValueError('async job requested but it seems no workers are available')
         rq_job = self._queue.enqueue(_inner_pipe_execution, kwargs={
@@ -89,8 +90,9 @@ class RQWorkerPool(BaseWorkerPool):
         if rq_job is None:
             raise ValueError('job {} was not found, are you sure you submited it using workers'.format(job_id))
         job_status = JobStatus.from_rq(rq_job.get_status())
-        return json.dumps(PipelineResponse(json.loads(rq_job.result) if job_status is JobStatus.done else None,
-                                           {}, job_id=job_id, job_status=job_status).json())
+        return json.dumps(
+            pipelines.PipelineResponse(json.loads(rq_job.result) if job_status is JobStatus.done else None,
+                                       {}, job_id=job_id, job_status=job_status).json())
 
     @property
     def n_workers(self):

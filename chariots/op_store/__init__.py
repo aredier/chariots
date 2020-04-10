@@ -7,10 +7,13 @@ than interact with the OpStore Client. Alternatively You can pass the OpStore cl
 App and use this instead.
 """
 
-from ._op_store_client import OpStoreClient
+from . import savers
+from ._op_store_client import OpStoreClient, BaseOpStoreClient
 from ._op_store import OpStoreServer
 
 __all__ = [
     'OpStoreServer',
-    'OpStoreClient'
+    'OpStoreClient',
+    'savers',
+    'BaseOpStoreClient'
 ]
