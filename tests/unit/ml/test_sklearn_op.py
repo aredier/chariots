@@ -1,5 +1,5 @@
 """module that tests the sci-kit learn MLOp API"""
-from chariots.runners import SequentialRunner
+from chariots.pipelines.runners import SequentialRunner
 
 
 def test_sk_training_pipeline(basic_sk_pipelines):  # pylint: disable=invalid-name

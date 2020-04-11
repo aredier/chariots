@@ -3,14 +3,12 @@ import pytest
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
-from chariots import MLMode, Pipeline, Chariots, TestClient
-from chariots.base import BaseMLOp
+from chariots.ml import MLMode, BaseMLOp
+from chariots.pipelines import Pipeline, Chariots
+from chariots.pipelines.nodes import Node
+from chariots.testing import TestClient
 from chariots.errors import VersionError
-from chariots.nodes import Node
 from chariots._helpers.test_helpers import XTrainOpL, PCAOp, YOp, SKLROp, FromArray
-from chariots.op_store._op_store import OpStoreServer
-from chariots.op_store._op_store_client import TestOpStoreClient
-from chariots.savers import FileSaver
 
 
 @pytest.fixture

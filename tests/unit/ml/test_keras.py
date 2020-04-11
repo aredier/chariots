@@ -3,12 +3,14 @@ import numpy as np
 from flaky import flaky
 from keras import models, layers, optimizers, callbacks
 
-from chariots import Pipeline, MLMode, Chariots, TestClient
-from chariots._helpers.test_helpers import FromArray, ToArray, LinearDataSet, KerasLogistic
-from chariots.base import BaseOp
-from chariots.keras import KerasOp
-from chariots.nodes import Node
+from chariots.pipelines import Pipeline, Chariots
+from chariots.pipelines.nodes import Node
+from chariots.pipelines.ops import BaseOp
+from chariots.ml import MLMode
+from chariots.ml.keras import KerasOp
 from chariots.versioning import VersionedFieldDict, VersionType
+from chariots.testing import TestClient
+from chariots._helpers.test_helpers import FromArray, ToArray, LinearDataSet, KerasLogistic
 
 
 @flaky(5, 1)

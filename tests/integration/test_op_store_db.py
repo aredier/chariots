@@ -4,9 +4,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from chariots import Pipeline, Chariots, TestClient
+from chariots.pipelines import Pipeline, Chariots
+from chariots.testing import TestClient, TestOpStoreClient
 from chariots.op_store import models
-from chariots.op_store._op_store_client import TestOpStoreClient
 
 
 @pytest.fixture

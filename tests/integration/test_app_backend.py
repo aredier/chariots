@@ -1,9 +1,7 @@
 """module to test that the flask layer of the Chariots app works properly"""
-import json
-import os
-
-from chariots import Chariots, Pipeline, TestClient
-from chariots.nodes import Node, ReservedNodes
+from chariots.pipelines import Chariots, Pipeline
+from chariots.pipelines.nodes import Node, ReservedNodes
+from chariots.testing import TestClient
 
 
 def test_app_response(Range10, IsPair, NotOp, tmpdir, opstore_func):  # pylint: disable=invalid-name

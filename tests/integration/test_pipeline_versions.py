@@ -1,6 +1,6 @@
 """module that tests the versions evolution"""
-from chariots import Pipeline
-from chariots.nodes import Node
+from chariots.pipelines import Pipeline
+from chariots.pipelines.nodes import Node
 
 
 def test_pipe_version_op_change(savable_op_generator, Range10):  # pylint: disable=invalid-name
