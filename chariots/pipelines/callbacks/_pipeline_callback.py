@@ -17,10 +17,10 @@ class PipelineCallback:
 
     .. testsetup::
 
-        >>> from chariots import Pipeline
-        >>> from chariots.callbacks import PipelineCallback
-        >>> from chariots.nodes import Node
-        >>> from chariots.runners import SequentialRunner
+        >>> from chariots.pipelines import Pipeline
+        >>> from chariots.pipelines.callbacks import PipelineCallback
+        >>> from chariots.pipelines.nodes import Node
+        >>> from chariots.pipelines.runners import SequentialRunner
         >>> from chariots._helpers.doc_utils import IsOddOp, AddOneOp
 
         >>> runner = SequentialRunner()

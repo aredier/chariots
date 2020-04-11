@@ -57,20 +57,20 @@ class BaseMLOp(ops.LoadableOp):
         >>> import tempfile
         >>> import shutil
 
-        >>> from chariots.pipelines import Pipeline, Chariots
-        >>> from chariots.testing import TestOpStoreClient, TestClient
+        >>> from chariots.pipelines import Pipeline, PipelinesServer
+        >>> from chariots.testing import TestOpStoreClient, TestPipelinesClient
 
         >>> app_path = tempfile.mkdtemp()
         >>> op_store_client = TestOpStoreClient(app_path)
         >>> op_store_client.server.db.create_all()
-        >>> app = Chariots([train, pred], op_store_client=op_store_client, import_name="app")
-        >>> client = TestClient(app)
+        >>> app = PipelinesServer([train, pred], op_store_client=op_store_client, import_name="app")
+        >>> client = TestPipelinesClient(app)
 
     and then to train your pipelines and make some predictions:
 
     .. doctest::
 
-        >>> client.call_pipeline(train)
+        >>> response = client.call_pipeline(train)
         >>> client.save_pipeline(train)
         >>> client.load_pipeline(pred)
         >>> response = client.call_pipeline(pred, [[1, 2, 3, 4]])

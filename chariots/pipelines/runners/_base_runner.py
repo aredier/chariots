@@ -9,9 +9,9 @@ class BaseRunner(ABC):  # pylint: disable=too-few-public-methods
 
     .. testsetup::
 
-        >>> from chariots import Pipeline
-        >>> from chariots.nodes import Node
-        >>> from chariots.runners import SequentialRunner
+        >>> from chariots.pipelines import Pipeline, PipelinesServer
+        >>> from chariots.pipelines.nodes import Node
+        >>> from chariots.pipelines.runners import SequentialRunner
         >>> from chariots._helpers.doc_utils import IsOddOp
         >>> is_odd_pipeline = Pipeline([
         ...     Node(IsOddOp(), input_nodes=["__pipeline_input__"], output_nodes=["__pipeline_output__"])
@@ -28,7 +28,7 @@ class BaseRunner(ABC):  # pylint: disable=too-few-public-methods
     """
 
     @abstractmethod
-    def run(self, pipeline: 'chariots.Pipeline', pipeline_input: Optional[Any] = None):
+    def run(self, pipeline: 'chariots.pipelines.Pipeline', pipeline_input: Optional[Any] = None):
         """
         runs a pipeline, provides it with the correct input and extracts the results if any
 

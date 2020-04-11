@@ -4,8 +4,8 @@ ouptuts:
 
 .. testsetup::
 
-    >>> from chariots import Pipeline
-    >>> from chariots.nodes import Node
+    >>> from chariots.pipelines import Pipeline
+    >>> from chariots.pipelines.nodes import Node
     >>> from chariots._helpers.doc_utils import IrisFullDataSet, PCAOp, MLMode, LogisticOp
 
 .. doctest::

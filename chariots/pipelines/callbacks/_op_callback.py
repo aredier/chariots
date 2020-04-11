@@ -1,6 +1,7 @@
 """op callbacks module"""
 from typing import List, Any
 
+from .. import ops
 
 class OpCallBack:
     """
@@ -12,10 +13,10 @@ class OpCallBack:
 
     .. testsetup::
 
-        >>> from chariots import Pipeline
-        >>> from chariots.callbacks import OpCallBack
-        >>> from chariots.nodes import Node
-        >>> from chariots.runners import SequentialRunner
+        >>> from chariots.pipelines import Pipeline
+        >>> from chariots.pipelines.callbacks import OpCallBack
+        >>> from chariots.pipelines.nodes import Node
+        >>> from chariots.pipelines.runners import SequentialRunner
         >>> from chariots._helpers.doc_utils import IsOddOp, AddOneOp
 
         >>> runner = SequentialRunner()
@@ -39,7 +40,7 @@ class OpCallBack:
         False
     """
 
-    def before_execution(self, callback_op: 'base.BaseOp', args: List[Any]):
+    def before_execution(self, callback_op: 'ops.BaseOp', args: List[Any]):
         """
         called before the operation is executed (and before the operation's `before_execution`'s method).
 
@@ -48,7 +49,7 @@ class OpCallBack:
                      as this might cause some undefined behavior
         """
 
-    def after_execution(self, callback_op: 'base.BaseOp', args: List[Any], output: Any):
+    def after_execution(self, callback_op: 'ops.BaseOp', args: List[Any], output: Any):
         """
         called after the operation has been executed (and after it's `after_execution`'s method).
 

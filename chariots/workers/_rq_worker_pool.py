@@ -39,10 +39,10 @@ class RQWorkerPool(BaseWorkerPool):
 
         >>> from redis import Redis
         >>> from chariots import workers
-        >>> from chariots.pipelines import Chariots
+        >>> from chariots.pipelines import PipelinesServer
         ...
         ...
-        >>> app = Chariots(
+        >>> app = PipelinesServer(
         ...     my_pipelines,
         ...     op_store_client=op_store_client,
         ...     worker_pool=workers.RQWorkerPool(redis=Redis()),
