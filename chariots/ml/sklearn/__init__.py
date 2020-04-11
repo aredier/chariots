@@ -3,7 +3,7 @@ the sklearn module provides support for the scikit-learn framework.
 
 this module provides two main classes (`SKSupervisedOp`, `SKUnsupervisedOp`) that need to be subclassed to be used. to
 do so you will need to set the `model_class` class attribute and potentially the `model_parameters` class attribute.
-this should be a :doc:`VersionedFieldDict<./chariots.versioning>` which defines the parameters your model should be
+this should be a :doc:`VersionedFieldDict<../chariots.versioning>` which defines the parameters your model should be
 initialized with. As for other machine learning ops, you can override the `training_update_version` class attribute to
 define which version will be changed when the operation is retrained:
 
@@ -24,7 +24,7 @@ define which version will be changed when the operation is retrained:
     ...     model_parameters = VersionedFieldDict(VersionType.MAJOR, {"n_components": 2,})
     ...     model_class = VersionedField(PCA, VersionType.MAJOR)
 
-Once your op class is define, you can use it as any MLOp choosing your :doc:`MLMode<./chariots>` to define the behavior
+Once your op class is define, you can use it as any MLOp choosing your :doc:`MLMode<../ml/ml>` to define the behavior
 of your operation (fit and/or predict):
 
 .. doctest::

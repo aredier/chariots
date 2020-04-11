@@ -25,8 +25,9 @@ First we will need an op that downloads the dataset, so in `iris/ops/data_ops/do
 .. doctest::
 
     >>> import pandas as pd
-    >>> from chariots.base import BaseOp
     >>> from sklearn import datasets
+    ...
+    >>> from chariots.pipelines.ops import BaseOp
     ...
     ...
     >>> class DownloadIris(BaseOp):
@@ -46,7 +47,7 @@ Random Forest in our pipeline. We will place those ops in the `iris.ops.model_op
 
     >>> from sklearn.decomposition import PCA
     >>> from chariots.versioning import VersionType, VersionedFieldDict
-    >>> from chariots.sklearn import SKUnsupervisedOp
+    >>> from chariots.ml.sklearn import SKUnsupervisedOp
     ...
     ...
     >>> class IrisPCA(SKUnsupervisedOp):
@@ -62,7 +63,7 @@ Random Forest in our pipeline. We will place those ops in the `iris.ops.model_op
 .. doctest::
 
     >>> from chariots.versioning import VersionType, VersionedFieldDict
-    >>> from chariots.sklearn import SKSupervisedOp
+    >>> from chariots.ml.sklearn import SKSupervisedOp
     >>> from sklearn.ensemble import RandomForestClassifier
     ...
     ...
@@ -80,7 +81,7 @@ as otherwise we will not be able to separate the two.
 
 .. doctest::
 
-    >>> from chariots.base import BaseOp
+    >>> from chariots.pipelines.ops import BaseOp
     ...
     ...
     >>> class XYSplit(BaseOp):
@@ -108,9 +109,10 @@ this by writing a training pipeline.
 
 .. doctest::
 
-    >>> from chariots import MLMode, Pipeline
-    >>> from chariots.nodes import Node
-    >>> from chariots.serializers import CSVSerializer
+    >>> from chariots.pipelines import Pipeline
+    >>> from chariots.pipelines.nodes import Node
+    >>> from chariots.ml import MLMode
+    >>> from chariots.ml.serializers import CSVSerializer
     ...
     ...
     >>> train_iris = Pipeline(
@@ -128,11 +130,13 @@ will create a pipeline that takes some user provided values (raws of the iris fo
 user:
 
 .. doctest::
-    >>> from chariots import MLMode, Pipeline
-    >>> from chariots.nodes import Node
+
+    >>> from chariots.pipelines import Pipeline
+    >>> from chariots.pipelines.nodes import Node
+    >>> from chariots.ml import MLMode
+    ...
+    ...
     >>> pred_iris = Pipeline(
-    ...
-    ...
     ...     [
     ...         Node(IrisPCA(MLMode.PREDICT), input_nodes=["__pipeline_input__"],
     ...              output_nodes="x_pca"),
@@ -152,17 +156,18 @@ Once our pipelines are all done, we will only need to create `Chariots` server t
 
     >>> import tempfile
     >>> import shutil
-    >>> from chariots.op_store._op_store_client import TestOpStoreClient
+    >>> from chariots.testing import TestOpStoreClient
+    ...
     >>> app_path = tempfile.mkdtemp()
     >>> op_store_client = TestOpStoreClient(app_path)
     >>> op_store_client.server.db.create_all()
 
 .. doctest::
 
-    >>> from chariots import Chariots
+    >>> from chariots.pipelines import PipelinesServer
     ...
     ...
-    >>> app = Chariots(
+    >>> app = PipelinesServer(
     ...     [train_iris, pred_iris],
     ...     op_store_client=op_store_client,
     ...     import_name="iris_app"
@@ -179,16 +184,16 @@ our server is now running and we can execute our pipelines using the chariots cl
 
 .. doctest::
 
-    >>> from chariots import Client
+    >>> from chariots.pipelines import PipelinesClient
     ...
     ...
-    >>> client = Client()
+    >>> client = PipelinesClient()
     ...
 
 .. testsetup::
 
-    >>> from chariots import TestClient
-    >>> client = TestClient(app)
+    >>> from chariots.testing import TestPipelinesClient
+    >>> client = TestPipelinesClient(app)
 
 we will need to execute several steps before getting to a prediction:
 

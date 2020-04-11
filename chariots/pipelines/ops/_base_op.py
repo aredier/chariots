@@ -47,7 +47,9 @@ class BaseOp(metaclass=versioning.VersionableMeta):  # pylint: disable=no-member
         >>> runner.run(pipeline, 3)  # of course you can use a `Chariots` server to serve our pipeline and op(s)
         4
 
-    The `BaseOp` class is a versioned class (see  the :doc:`versioning <./chariots.versioning>` module for more info)
+    The `BaseOp` class is a versioned class (see  the :doc:`versioning <../chariots.versioning>`
+    module for more info).
+
     so you can use `VersionedField` with it
 
     .. testsetup::
@@ -83,7 +85,7 @@ class BaseOp(metaclass=versioning.VersionableMeta):  # pylint: disable=no-member
         <Version, major:8ad66, minor: 94e72, patch: 94e72>
 
 
-    :param op_callbacks: :doc:`OpCallbacks objects<./chariots.callbacks>` to change the behavior of the op by
+    :param op_callbacks: :doc:`OpCallbacks objects<./callbacks>` to change the behavior of the op by
                          executing some action before or after the op'execution
     """
 
@@ -92,7 +94,7 @@ class BaseOp(metaclass=versioning.VersionableMeta):  # pylint: disable=no-member
 
     def before_execution(self, args: List[Any]):
         """
-        method used to create a one-off (compared to using a :doc:`callback<chariots.callbacks>`) custom behavior that
+        method used to create a one-off (compared to using a :doc:`callback<./callbacks>`) custom behavior that
         gets executed before the the op itself
 
         :param args: the arguments that are going to be passed to the operation
@@ -108,7 +110,7 @@ class BaseOp(metaclass=versioning.VersionableMeta):  # pylint: disable=no-member
 
     def after_execution(self, args: List[Any], output: Any) -> Any:
         """
-        method used to create a one-off (compared to using a :doc:`callback<chariots.callbacks>`) custom behavior that
+        method used to create a one-off (compared to using a :doc:`callback<./callbacks>`) custom behavior that
         gets executed after the the op itself
 
         :param args: the arguments that were passed to the op

@@ -88,7 +88,7 @@ This module also provides a helper for creating versioned `dict` (where each val
     10
 
 
-this is for instance used for the `model_parameters` attribute of the :doc:`sci-kit learn ops <./chariots.sklearn>`
+this is for instance used for the `model_parameters` attribute of the :doc:`sci-kit learn ops <./ml/sklearn>`
 """
 
 from ._version import Version
