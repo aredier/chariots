@@ -4,10 +4,8 @@ import os
 
 import pytest
 
-from chariots import Pipeline
-from chariots.nodes import Node
-from chariots.nodes import ReservedNodes
-from chariots.serializers import JSONSerializer
+from chariots.pipelines import Pipeline
+from chariots.pipelines.nodes import Node, ReservedNodes
 
 
 @pytest.fixture

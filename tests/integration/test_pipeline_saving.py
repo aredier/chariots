@@ -2,8 +2,7 @@
 import json
 import os
 
-from chariots.runners import SequentialRunner
-from chariots.savers import FileSaver
+from chariots.pipelines.runners import SequentialRunner
 
 
 def test_savable_pipeline(pipe_generator, tmpdir, opstore_func):

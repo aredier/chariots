@@ -5,11 +5,11 @@ from typing import Optional, Any, List
 import pytest
 import numpy as np
 
-from chariots import Pipeline
-from chariots.base import BaseOp
-from chariots.callbacks import OpCallBack, PipelineCallback
-from chariots.nodes import Node
-from chariots.runners import SequentialRunner
+from chariots.pipelines import Pipeline
+from chariots.pipelines.ops import BaseOp
+from chariots.pipelines.callbacks import OpCallBack, PipelineCallback
+from chariots.pipelines.nodes import Node
+from chariots.pipelines.runners import SequentialRunner
 
 
 class TimerOp(BaseOp):

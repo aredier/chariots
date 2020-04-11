@@ -4,16 +4,16 @@ from typing import List, Optional
 import pytest
 import numpy as np
 
-from chariots import MLMode, Pipeline
-from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp, FromArray
-from chariots.base import BaseOp
-from chariots.callbacks import OpCallBack
-from chariots.nodes import Node
-from chariots.op_store._op_store_client import TestOpStoreClient
-from chariots.ops import LoadableOp
-from chariots.savers import FileSaver
-from chariots.serializers import DillSerializer
+from chariots.pipelines import Pipeline
+from chariots.pipelines.ops import BaseOp, LoadableOp
+from chariots.pipelines.callbacks import OpCallBack
+from chariots.pipelines.nodes import Node
+from chariots.op_store.savers import FileSaver
+from chariots.testing import TestOpStoreClient
+from chariots.ml import MLMode
+from chariots.ml.serializers import DillSerializer
 from chariots.versioning import VersionType, VersionedField
+from chariots._helpers.test_helpers import XTrainOpL, PCAOp, SKLROp, YOp, FromArray
 
 
 @pytest.fixture

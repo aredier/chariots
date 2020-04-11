@@ -6,8 +6,8 @@ import random
 
 import dill
 
-from chariots.savers import FileSaver
-from chariots.serializers import DillSerializer, JSONSerializer
+from chariots.op_store.savers import FileSaver
+from chariots.ml.serializers import DillSerializer, JSONSerializer
 
 
 def test_file_saver(tmpdir):

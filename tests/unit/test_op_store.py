@@ -5,10 +5,10 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from chariots import versioning, base, Pipeline, nodes
+from chariots import versioning
+from chariots.pipelines import Pipeline, nodes, ops
 from chariots.op_store import models
-from chariots.op_store import OpStoreServer
-from chariots.op_store._op_store_client import TestOpStoreClient
+from chariots.testing import TestOpStoreClient
 
 
 class FakeOp:
@@ -16,7 +16,7 @@ class FakeOp:
     def __init__(self, name):
         self.name = name
 
-class DumbOp(base.BaseOp):
+class DumbOp(ops.BaseOp):
 
     def execute(self):
         return 'Samwise Gamgee'

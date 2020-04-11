@@ -7,11 +7,11 @@ import pytest
 from flaky import flaky
 from redis import Redis
 
-from chariots import Chariots, Pipeline, TestClient
-from chariots.workers import JobStatus
-from chariots.workers import RQWorkerPool
+from chariots.pipelines import Chariots, Pipeline
+from chariots.pipelines.nodes import Node
+from chariots.testing import TestClient
+from chariots.workers import JobStatus, RQWorkerPool
 from chariots.errors import VersionError
-from chariots.nodes import Node
 from chariots._helpers.test_helpers import IsPair, RQWorkerContext, build_keras_pipeline, \
     do_keras_pipeline_predictions_test
 

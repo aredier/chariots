@@ -14,3 +14,7 @@ __all__ = [
     'op_store',
     'workers'
 ]
+
+__author__ = """Antoine Redier"""
+__email__ = 'antoine.redier2@gmail.com'
+__version__ = '0.2.4'
