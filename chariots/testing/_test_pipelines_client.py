@@ -4,7 +4,7 @@ from typing import Any
 from .. import pipelines
 
 
-class TestClient(pipelines.AbstractClient):
+class TestPipelinesClient(pipelines.AbstractPipelinesClient):
     """mock up of the client to test a full app without having to create a server"""
 
     def __init__(self, app: pipelines.Chariots):

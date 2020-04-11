@@ -8,12 +8,12 @@ from typing import Any, Optional, Mapping
 
 import requests
 
-from . import Chariots, PipelineResponse, Pipeline
+from . import PipelinesServer, PipelineResponse, Pipeline
 from chariots.versioning import Version
 from chariots.errors import VersionError
 
 
-class AbstractClient(ABC):
+class AbstractPipelinesClient(ABC):
     """
     base class for the chariots Clients. it defines the base behaviors and routes available
     """
@@ -61,7 +61,7 @@ class AbstractClient(ABC):
             >>> import time
 
             >>> from redis import Redis
-            >>> from chariots.pipelines import Pipeline, Chariots
+            >>> from chariots.pipelines import Pipeline, PipelinesServer
             >>> from chariots.testing import TestClient
             >>> from chariots.workers import RQWorkerPool
             >>> from chariots._helpers.doc_utils import is_odd_pipeline
@@ -71,7 +71,7 @@ class AbstractClient(ABC):
             >>> app_path = tempfile.mkdtemp()
             >>> op_store_client = TestOpStoreClient(app_path)
             >>> op_store_client.server.db.create_all()
-            >>> app = Chariots([is_odd_pipeline], op_store_client=op_store_client, import_name='simple_app',
+            >>> app = PipelinesServer([is_odd_pipeline], op_store_client=op_store_client, import_name='simple_app',
             ...                worker_pool=RQWorkerPool(Redis()))
             >>> client = TestClient(app)
 
@@ -183,7 +183,7 @@ class AbstractClient(ABC):
         }
 
 
-class Client(AbstractClient):
+class PipelinesClient(AbstractPipelinesClient):
     """
     Client to query/save/load the pipelines served by a (remote) `Chariots` app.
 
@@ -194,10 +194,9 @@ class Client(AbstractClient):
         >>> import tempfile
         >>> import shutil
 
-        >>> from chariots.pipelines import Pipeline, Chariots, nodes
+        >>> from chariots.pipelines import Pipeline, PipelinesServer, nodes
         >>> from chariots.ml import MLMode
-        >>> from chariots.testing import TestClient
-        >>> from chariots.op_store._op_store_client import TestOpStoreClient
+        >>> from chariots.testing import TestPipelinesClient, TestOpStoreClient
         >>> from chariots._helpers.doc_utils import IrisXDataSet, PCAOp, IrisFullDataSet, LogisticOp
         >>> from chariots._helpers.test_helpers import FromArray
 
@@ -222,7 +221,7 @@ class Client(AbstractClient):
         ...     nodes.Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
         ... ], "pred")
 
-        >>> app = Chariots([train_pca, train_logistic, pred], op_store_client=op_store_client, import_name="iris_app")
+        >>> app = PipelinesServer([train_pca, train_logistic, pred], op_store_client=op_store_client, import_name="iris_app")
 
     .. testsetup::
 
