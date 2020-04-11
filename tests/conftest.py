@@ -8,7 +8,6 @@ from chariots.pipelines import Pipeline
 from chariots.pipelines.ops import BaseOp, LoadableOp
 from chariots.pipelines.callbacks import OpCallBack
 from chariots.pipelines.nodes import Node
-from chariots.op_store.savers import FileSaver
 from chariots.testing import TestOpStoreClient
 from chariots.ml import MLMode
 from chariots.ml.serializers import DillSerializer

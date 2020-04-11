@@ -1,7 +1,4 @@
 """module to test the saving and loading behavior"""
-import json
-import os
-
 from chariots.pipelines.runners import SequentialRunner
 
 
