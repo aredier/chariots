@@ -18,7 +18,7 @@ class SequentialRunner(BaseRunner):  # pylint: disable=too-few-public-methods
             pipelines.nodes.ReservedNodes.pipeline_input.reference: pipeline_input
         } if pipeline_input is not None else {}
 
-        for node in pipeline.nodes:
+        for node in pipeline.pipeline_nodes:
             temp_results = pipeline.execute_node(node, temp_results, self)
 
         results = {key: value for key, value in temp_results.items() if value is not None}
