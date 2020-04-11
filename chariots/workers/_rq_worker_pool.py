@@ -72,7 +72,7 @@ class RQWorkerPool(BaseWorkerPool):
             worker.work()
 
     def execute_pipeline_async(self, pipeline: 'pipelines.Pipeline', pipeline_input: Any,
-                               app: pipelines.Chariots) -> str:
+                               app: pipelines.PipelinesServer) -> str:
         if not self.n_workers:
             raise ValueError('async job requested but it seems no workers are available')
         rq_job = self._queue.enqueue(_inner_pipe_execution, kwargs={

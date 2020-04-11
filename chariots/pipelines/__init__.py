@@ -5,14 +5,14 @@ from ._pipeline import Pipeline
 from . import callbacks
 
 # TODO rename
-from .app import Chariots, PipelineResponse
-from .client import Client, AbstractClient
+from .pipelines_server import PipelinesServer, PipelineResponse
+from .pipelines_client import PipelinesClient, AbstractPipelinesClient
 
 __all__ = [
     'Pipeline',
-    'Chariots',
-    'Client',
-    'AbstractClient',
+    'PipelinesServer',
+    'PipelinesClient',
+    'AbstractPipelinesClient',
     'PipelineResponse',
     'ops',
     'nodes',
