@@ -2,19 +2,12 @@ Api Docs
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   chariots.op_store
-   chariots.base
-   chariots.callbacks
+   pipelines/pipelines
+   ml/ml
+   op_store/op_store
    chariots.workers
-   chariots.nodes
-   chariots.ops
-   chariots.runners
-   chariots.savers
-   chariots.serializers
-   chariots.sklearn
-   chariots.keras
    chariots.versioning
    chariots.cli
    chariots.errors
@@ -23,17 +16,3 @@ Api Docs
    :undoc-members:
    :show-inheritance:
    :members:
-   :exclude-members: Client, Pipeline, TestClient, Chariots, OpStore
-
-   .. autoclass::  Pipeline
-      :members:
-
-   .. autoclass::  Chariots
-      :members:
-
-   .. autoclass::  Client
-      :members:
-      :inherited-members:
-
-   .. autoclass::  TestClient
-      :members:

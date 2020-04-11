@@ -14,7 +14,7 @@ from . import serializers, MLMode
 class BaseMLOp(ops.LoadableOp):
     """
     an BaseMLOp are ops designed specifically to be machine learning models (whether for training or inference). You
-    can initialize the op in three distinctive :doc:`ml mode <./chariots>`:
+    can initialize the op in three distinctive :doc:`ml mode <../ml/ml>`:
 
     - `FIT` for training the model
     - `PREDICT` to perform inference
@@ -85,7 +85,7 @@ class BaseMLOp(ops.LoadableOp):
 
     and eventually you can change the `serializer_cls` class attribute to change the serialization format of your model
 
-    :param op_callbacks: :doc:`OpCallbacks objects<./chariots.callbacks>` to change the behavior of the op by
+    :param op_callbacks: :doc:`OpCallbacks objects<../pipelines/callbacks>` to change the behavior of the op by
                          executing some action before or after the op's execution
     """
 

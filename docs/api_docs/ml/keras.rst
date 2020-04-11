@@ -1,7 +1,7 @@
-chariots.runners
+chariots.keras
 ================
 
-.. automodule:: chariots.runners
+.. automodule:: chariots.ml.keras
    :members:
    :undoc-members:
    :show-inheritance:

@@ -7,17 +7,17 @@ Once you have built your app you might want to deploy it using
 
     >>> import tempfile
     >>> import shutil
-    >>> from chariots.op_store._op_store_client import TestOpStoreClient
+    >>> from chariots.testing import TestOpStoreClient
     >>> app_path = tempfile.mkdtemp()
     >>> op_store_client = TestOpStoreClient(app_path)
     >>> my_pipelines = []
 
 .. doctest::
 
-    >>> from chariots import Chariots
+    >>> from chariots.pipelines import PipelinesServer
     ...
     ...
-    >>> app = Chariots(
+    >>> app = PipelinesServer(
     ...     my_pipelines,
     ...     op_store_client=op_store_client,
     ...     import_name="my_app"
@@ -46,7 +46,8 @@ such:
 
     >>> import tempfile
     >>> import shutil
-    >>> from chariots.op_store._op_store_client import TestOpStoreClient
+    >>> from chariots.testing import TestOpStoreClient
+    ...
     >>> app_path = tempfile.mkdtemp()
     >>> my_pipelines = []
     >>> op_store_client = TestOpStoreClient(app_path)
@@ -55,10 +56,12 @@ such:
 .. doctest::
 
     >>> from redis import Redis
-    >>> from chariots import Chariots, workers, savers, op_store
+    >>> from chariots import workers, op_store
+    >>> from chariots.op_store import savers
+    >>> from chariots.pipelines import PipelinesServer
     ...
     ...
-    >>> app = Chariots(
+    >>> app = PipelinesServer(
     ...     my_pipelines,
     ...     op_store_client=op_store_client,
     ...     import_name="my_app",
@@ -67,15 +70,18 @@ such:
 
 you than have several options:
 
+    >>> from chariots.testing import TestOpStoreClient
+
 **using workers for all the pipelines in the app:**
 
 .. doctest::
 
     >>> from redis import Redis
-    >>> from chariots import Chariots, workers
+    >>> from chariots import workers
+    >>> from chariots.pipelines import PipelinesServer
     ...
     ...
-    >>> app = Chariots(
+    >>> app = PipelinesServer(
     ...     my_pipelines,
     ...     op_store_client=op_store_client,
     ...     import_name="my_app",
@@ -87,8 +93,9 @@ you than have several options:
 **using workers for all the calls to a specific pipeline**
 
 .. testsetup::
-    >>> from chariots import Pipeline
-    >>> from chariots.nodes import Node
+
+    >>> from chariots.pipelines import Pipeline
+    >>> from chariots.pipelines.nodes import Node
     >>> from chariots._helpers.doc_utils import AddOneOp, IsOddOp
 
 .. doctest::
@@ -105,13 +112,13 @@ you than have several options:
     >>> import time
 
     >>> from redis import Redis
-    >>> from chariots import Pipeline, Chariots, TestClient
     >>> from chariots.workers import RQWorkerPool
+    >>> from chariots.testing import TestPipelinesClient
     >>> from chariots._helpers.doc_utils import is_odd_pipeline
     >>> from chariots._helpers.test_helpers import RQWorkerContext
-    >>> app = Chariots([is_odd_pipeline], op_store_client=op_store_client,
-    ...                 import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
-    >>> client = TestClient(app)
+    >>> app = PipelinesServer([is_odd_pipeline], op_store_client=op_store_client,
+    ...                        import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
+    >>> client = TestPipelinesClient(app)
 
 
 .. doctest::

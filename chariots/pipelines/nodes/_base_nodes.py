@@ -61,7 +61,7 @@ class BaseNode(ABC):
         ...     Node(LogisticOp(MLMode.PREDICT), input_nodes=["x_transformed"], output_nodes=['__pipeline_output__'])
         ... ], 'pred')
 
-    Here we are showing the behavior of nodes using the :doc:`Node subclass <./chariots.nodes>` (used with ops).
+    Here we are showing the behavior of nodes using the Node subclass (used with ops).
 
     If you want to create your own Node you will need to define the
 

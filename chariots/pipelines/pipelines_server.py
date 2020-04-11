@@ -72,15 +72,19 @@ class PipelinesServer(Flask):  # pylint: disable=too-many-instance-attributes
 
     .. doctest::
 
-        >>> my_app = PipelinesServer(app_pipelines=[is_odd_pipeline],op_store_client=op_store_client, import_name='my_app')
+        >>> my_app = PipelinesServer(
+        ...                          app_pipelines=[is_odd_pipeline],
+        ...                          op_store_client=op_store_client,
+        ...                          import_name='my_app'
+        ...                         )
 
-    you can then deploy the app as you would with the flask comand:
+    you can then deploy the app as you would with the flask command:
 
     .. code-block:: console
 
         $ flask
 
-    or if you have used :doc:`the chariots' template <../template>`, you can use the predefined cli once the project is
+    or if you have used :doc:`the chariots' template <.../template>`, you can use the predefined cli once the project is
     installed:
 
     .. code-block:: console

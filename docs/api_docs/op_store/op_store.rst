@@ -1,11 +1,15 @@
-chariots.op_store
+chariots Op Store
 =================
+.. toctree::
+   :maxdepth: 2
+
+   savers
 
 .. automodule:: chariots.op_store
    :undoc-members:
    :show-inheritance:
    :members:
-   :exclude-members: OpStoreServer, OpStoreClient
+   :exclude-members: OpStoreServer, OpStoreClient, BaseOpStoreClient
 
    .. autoclass::  OpStoreServer
 
