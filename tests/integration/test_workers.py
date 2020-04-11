@@ -7,9 +7,9 @@ import pytest
 from flaky import flaky
 from redis import Redis
 
-from chariots.pipelines import Chariots, Pipeline
+from chariots.pipelines import PipelinesServer, Pipeline
 from chariots.pipelines.nodes import Node
-from chariots.testing import TestClient
+from chariots.testing import TestPipelinesClient
 from chariots.workers import JobStatus, RQWorkerPool
 from chariots.errors import VersionError
 from chariots._helpers.test_helpers import IsPair, RQWorkerContext, build_keras_pipeline, \
@@ -33,10 +33,10 @@ def test_app_async(tmpdir, opstore_func):
             Node(IsPair(), input_nodes=['__pipeline_input__'], output_nodes='__pipeline_output__'),
         ], name='inner_pipe')
 
-        app = Chariots([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
-                       worker_pool=RQWorkerPool(redis=Redis()),
-                       use_workers=True)
-        test_client = TestClient(app)
+        app = PipelinesServer([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
+                              worker_pool=RQWorkerPool(redis=Redis()),
+                              use_workers=True)
+        test_client = TestPipelinesClient(app)
         do_async_pipeline_test(test_client, pipe1)
 
 
@@ -47,9 +47,9 @@ def test_app_async_pipeline(tmpdir, opstore_func):
             Node(IsPair(), input_nodes=['__pipeline_input__'], output_nodes='__pipeline_output__')
         ], name='inner_pipe', use_worker=True)
 
-        app = Chariots([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
-                       worker_pool=RQWorkerPool(redis=Redis()))
-        test_client = TestClient(app)
+        app = PipelinesServer([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
+                              worker_pool=RQWorkerPool(redis=Redis()))
+        test_client = TestPipelinesClient(app)
 
         do_async_pipeline_test(test_client, pipe1)
 
@@ -61,9 +61,9 @@ def test_app_async_request(tmpdir, opstore_func):
             Node(IsPair(), input_nodes=['__pipeline_input__'], output_nodes='__pipeline_output__')
         ], name='inner_pipe')
 
-        app = Chariots([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
-                       worker_pool=RQWorkerPool(redis=Redis()))
-        test_client = TestClient(app)
+        app = PipelinesServer([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
+                              worker_pool=RQWorkerPool(redis=Redis()))
+        test_client = TestPipelinesClient(app)
 
         do_async_pipeline_test(test_client, pipe1, use_worker=True)
 
@@ -77,9 +77,9 @@ def test_app_async_conflicting_config(tmpdir, opstore_func):
             Node(IsPair(), input_nodes=['__pipeline_input__'], output_nodes='__pipeline_output__')
         ], name='inner_pipe', use_worker=True)
 
-        app = Chariots([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
-                       worker_pool=RQWorkerPool(redis=Redis()), use_workers=False)
-        test_client = TestClient(app)
+        app = PipelinesServer([pipe1], op_store_client=opstore_func(tmpdir), import_name='some_app',
+                              worker_pool=RQWorkerPool(redis=Redis()), use_workers=False)
+        test_client = TestPipelinesClient(app)
 
         response = test_client.call_pipeline(pipe1, pipeline_input=list(range(20)), use_worker=True)
         assert response.job_status == JobStatus.done
@@ -95,10 +95,11 @@ def test_complex_sk_training_pipeline_async(complex_sk_pipelines, tmpdir, opstor
         train_transform.use_worker = True
         train_pipe.use_worker = True
 
-        my_app = Chariots(app_pipelines=[train_transform, train_pipe, pred_pipe],
-                          op_store_client=opstore_func(tmpdir), import_name='my_app', worker_pool=RQWorkerPool(redis=Redis()))
+        my_app = PipelinesServer(app_pipelines=[train_transform, train_pipe, pred_pipe],
+                                 op_store_client=opstore_func(tmpdir), import_name='my_app',
+                                 worker_pool=RQWorkerPool(redis=Redis()))
 
-        test_client = TestClient(my_app)
+        test_client = TestPipelinesClient(my_app)
         response = test_client.call_pipeline(train_transform)
         time.sleep(5.)
         response = test_client.fetch_job(response.job_id, train_transform)
@@ -133,9 +134,9 @@ def test_train_keras_pipeline_async(tmpdir, opstore_func):
     """test the workers with a keras pipeline"""
     with RQWorkerContext():
         train_pipeline, pred_pipeline = build_keras_pipeline(train_async=True)
-        my_app = Chariots(app_pipelines=[train_pipeline, pred_pipeline], op_store_client=opstore_func(tmpdir),
-                          import_name='my_app', worker_pool=RQWorkerPool(redis=Redis()))
-        client = TestClient(my_app)
+        my_app = PipelinesServer(app_pipelines=[train_pipeline, pred_pipeline], op_store_client=opstore_func(tmpdir),
+                                 import_name='my_app', worker_pool=RQWorkerPool(redis=Redis()))
+        client = TestPipelinesClient(my_app)
         client.call_pipeline(train_pipeline)
         response = client.call_pipeline(train_pipeline)
         time.sleep(10)

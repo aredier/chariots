@@ -7,7 +7,7 @@ from .. import pipelines
 class TestPipelinesClient(pipelines.AbstractPipelinesClient):
     """mock up of the client to test a full app without having to create a server"""
 
-    def __init__(self, app: pipelines.Chariots):
+    def __init__(self, app: pipelines.PipelinesServer):
         self._test_client = app.test_client()
 
     def _post(self, route: str, data: Any):

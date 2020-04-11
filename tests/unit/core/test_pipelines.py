@@ -1,7 +1,7 @@
 """module to test the behavior of the `Pipeline` class"""
 import pytest
 
-from chariots.pipelines import Chariots, Pipeline
+from chariots.pipelines import Pipeline
 from chariots.pipelines.ops import BaseOp
 from chariots.pipelines.nodes import ReservedNodes, Node
 from chariots.pipelines.runners import SequentialRunner

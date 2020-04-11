@@ -3,13 +3,13 @@ import numpy as np
 from flaky import flaky
 from keras import models, layers, optimizers, callbacks
 
-from chariots.pipelines import Pipeline, Chariots
+from chariots.pipelines import Pipeline, PipelinesServer
 from chariots.pipelines.nodes import Node
 from chariots.pipelines.ops import BaseOp
 from chariots.ml import MLMode
 from chariots.ml.keras import KerasOp
 from chariots.versioning import VersionedFieldDict, VersionType
-from chariots.testing import TestClient
+from chariots.testing import TestPipelinesClient
 from chariots._helpers.test_helpers import FromArray, ToArray, LinearDataSet, KerasLogistic
 
 
@@ -27,9 +27,9 @@ def test_train_keras_pipeline(tmpdir, opstore_func):
         Node(KerasLogistic(MLMode.PREDICT), input_nodes=['X'], output_nodes='pred'),
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
-    my_app = Chariots(app_pipelines=[train, pred],
-                      op_store_client=opstore_func(tmpdir), import_name='my_app')
-    client = TestClient(my_app)
+    my_app = PipelinesServer(app_pipelines=[train, pred],
+                             op_store_client=opstore_func(tmpdir), import_name='my_app')
+    client = TestPipelinesClient(my_app)
     client.call_pipeline(train)
     client.save_pipeline(train)
     client.load_pipeline(pred)
@@ -79,6 +79,7 @@ class MultiInputKeras(KerasOp):
 @flaky(5, 1)
 def test_keras_multiple_datasets(tmpdir, opstore_func):
     """tests keras with a multi-input model (build using the functional API)"""
+
     class CreateInputs(BaseOp):
         """op that creates inputs for the pipeline"""
 
@@ -95,9 +96,9 @@ def test_keras_multiple_datasets(tmpdir, opstore_func):
         Node(MultiInputKeras(MLMode.PREDICT), input_nodes=['X'], output_nodes='pred'),
         Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
     ], 'pred')
-    my_app = Chariots(app_pipelines=[train, pred, ],
-                      op_store_client=opstore_func(tmpdir), import_name='my_app')
-    client = TestClient(my_app)
+    my_app = PipelinesServer(app_pipelines=[train, pred, ],
+                             op_store_client=opstore_func(tmpdir), import_name='my_app')
+    client = TestPipelinesClient(my_app)
     client.call_pipeline(train)
     client.save_pipeline(train)
     client.load_pipeline(pred)

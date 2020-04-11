@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from chariots.pipelines import Pipeline, Chariots
-from chariots.testing import TestClient, TestOpStoreClient
+from chariots.pipelines import Pipeline, PipelinesServer
+from chariots.testing import TestPipelinesClient, TestOpStoreClient
 from chariots.op_store import models
 
 
@@ -80,7 +80,7 @@ def do_pipeline_initialization_test(train, pred, session, ops_path):
 def test_pipeline_initialization(basic_sk_pipelines: Pipeline, op_store_client: TestOpStoreClient,
                                  session_func: sessionmaker, ops_path: str):
     train, pred = basic_sk_pipelines
-    Chariots([train, pred], op_store_client=op_store_client, import_name='app')
+    PipelinesServer([train, pred], op_store_client=op_store_client, import_name='app')
 
     session = session_func()
     do_pipeline_initialization_test(train, pred, session, ops_path)
@@ -89,9 +89,9 @@ def test_pipeline_initialization(basic_sk_pipelines: Pipeline, op_store_client: 
 def test_pipeline_initialization_already_initialized(basic_sk_pipelines: Pipeline, op_store_client: TestOpStoreClient,
                                                      session_func: sessionmaker, ops_path):
     train, pred = basic_sk_pipelines
-    app = Chariots([train, pred], op_store_client=op_store_client, import_name='app')
+    app = PipelinesServer([train, pred], op_store_client=op_store_client, import_name='app')
     del app
-    app = Chariots([train, pred], op_store_client=op_store_client, import_name='app')
+    app = PipelinesServer([train, pred], op_store_client=op_store_client, import_name='app')
 
     session = session_func()
     do_pipeline_initialization_test(train, pred, session, ops_path)
@@ -102,9 +102,9 @@ def test_pipeline_saving(basic_sk_pipelines: Pipeline, op_store_client: TestOpSt
     train, pred = basic_sk_pipelines
 
     old_version = train.node_for_name['sklrop'].node_version
-    app = Chariots([train, pred], op_store_client=op_store_client, import_name='app')
+    app = PipelinesServer([train, pred], op_store_client=op_store_client, import_name='app')
 
-    test_client = TestClient(app)
+    test_client = TestPipelinesClient(app)
 
     response = test_client.call_pipeline(train)
     test_client.save_pipeline(train)
