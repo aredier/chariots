@@ -160,7 +160,7 @@ class BaseNode(ABC):
         if validated_links is None:
             return
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
-            raise versioning.VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
+            raise errors.VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
 
     @property
     def is_loadable(self) -> bool:
