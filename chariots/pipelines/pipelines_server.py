@@ -62,8 +62,8 @@ class PipelinesServer(Flask):  # pylint: disable=too-many-instance-attributes
 
         >>> import tempfile
         >>> import shutil
-        >>> from chariots.pipelines import Pipeline, Chariots
-        >>> from chariots.op_store._op_store_client import TestOpStoreClient
+        >>> from chariots.pipelines import Pipeline, PipelinesServer
+        >>> from chariots.testing import TestOpStoreClient
         >>> from chariots._helpers.doc_utils import is_odd_pipeline
         ...
         >>> app_path = tempfile.mkdtemp()
@@ -72,7 +72,7 @@ class PipelinesServer(Flask):  # pylint: disable=too-many-instance-attributes
 
     .. doctest::
 
-        >>> my_app = Chariots(app_pipelines=[is_odd_pipeline],op_store_client=op_store_client, import_name='my_app')
+        >>> my_app = PipelinesServer(app_pipelines=[is_odd_pipeline],op_store_client=op_store_client, import_name='my_app')
 
     you can then deploy the app as you would with the flask comand:
 
@@ -92,8 +92,8 @@ class PipelinesServer(Flask):  # pylint: disable=too-many-instance-attributes
 
     .. testsetup::
 
-        >>> from chariots.testing import TestClient
-        >>> client = TestClient(my_app)
+        >>> from chariots.testing import TestPipelinesClient
+        >>> client = TestPipelinesClient(my_app)
 
     .. doctest::
 

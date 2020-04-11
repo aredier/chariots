@@ -62,18 +62,17 @@ class AbstractPipelinesClient(ABC):
 
             >>> from redis import Redis
             >>> from chariots.pipelines import Pipeline, PipelinesServer
-            >>> from chariots.testing import TestClient
+            >>> from chariots.testing import TestPipelinesClient, TestOpStoreClient
             >>> from chariots.workers import RQWorkerPool
             >>> from chariots._helpers.doc_utils import is_odd_pipeline
             >>> from chariots._helpers.test_helpers import RQWorkerContext
-            >>> from chariots.op_store._op_store_client import TestOpStoreClient
 
             >>> app_path = tempfile.mkdtemp()
             >>> op_store_client = TestOpStoreClient(app_path)
             >>> op_store_client.server.db.create_all()
             >>> app = PipelinesServer([is_odd_pipeline], op_store_client=op_store_client, import_name='simple_app',
             ...                worker_pool=RQWorkerPool(Redis()))
-            >>> client = TestClient(app)
+            >>> client = TestPipelinesClient(app)
 
         .. doctest::
 
@@ -225,7 +224,7 @@ class PipelinesClient(AbstractPipelinesClient):
 
     .. testsetup::
 
-        >>> client = TestClient(app)
+        >>> client = TestPipelinesClient(app)
 
     you can then train save and load your pipelines remotely from the client
 

@@ -8,7 +8,7 @@ cluster computing one) in future releases.
 You can use runners directly if you want to execute your pipeline manually:
 
 .. testsetup::
-    >>> from chariots.runners import SequentialRunner
+    >>> from chariots.pipelines.runners import SequentialRunner
     >>> from chariots._helpers.doc_utils import is_odd_pipeline
 
 .. doctest::
@@ -21,17 +21,20 @@ or you can set the default runner of your app and it will be used every time a p
 
 .. testsetup::
 
-    >>> from chariots.testing._test_op_store_client import TestOpStoreClient    >>> import tempfile
+    >>> import tempfile
     >>> import shutil
-    >>> from chariots import Chariots
+    >>> from chariots.pipelines import PipelinesServer
+    >>> from chariots.testing import TestOpStoreClient
+
     >>> app_path = tempfile.mkdtemp()
     >>> op_store_client = TestOpStoreClient(app_path)
     >>> op_store_client.server.db.create_all()
 
 .. doctest::
 
-    >>> my_app = Chariots(app_pipelines=[is_odd_pipeline], runner=SequentialRunner(), op_store_client=op_store_client,
-    ...                   import_name="my_app")
+    >>> my_app = PipelinesServer(app_pipelines=[is_odd_pipeline], runner=SequentialRunner(),
+    ...                          op_store_client=op_store_client,
+    ...                          import_name="my_app")
 
 .. testsetup::
 

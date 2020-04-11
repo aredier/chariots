@@ -9,11 +9,12 @@ define which version will be changed when the operation is retrained:
 
 .. testsetup::
 
-    >>> from chariots import Pipeline, MLMode
-    >>> from chariots.nodes import Node
-    >>> from sklearn.decomposition import PCA
-    >>> from chariots.sklearn import SKUnsupervisedOp
+    >>> from chariots.pipelines import Pipeline
+    >>> from chariots.pipelines.nodes import Node
+    >>> from chariots.ml import MLMode
+    >>> from chariots.ml.sklearn import SKUnsupervisedOp
     >>> from chariots.versioning import VersionType, VersionedFieldDict, VersionedField
+    >>> from sklearn.decomposition import PCA
     >>> from chariots._helpers.doc_utils import IrisXDataSet
 
 .. doctest::

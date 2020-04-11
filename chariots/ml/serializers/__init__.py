@@ -8,10 +8,8 @@ there are for instance used to serialize the inner models of the machine learnin
 
     >>> from sklearn.decomposition import PCA
 
-    >>> from chariots.sklearn import SKSupervisedOp
-    >>> from chariots.base import BaseSerializer
-    >>> from chariots.sklearn import SKSupervisedOp
-    >>> from chariots.base import BaseSerializer
+    >>> from chariots.ml.sklearn import SKSupervisedOp, SKSupervisedOp
+    >>> from chariots.ml.serializers import BaseSerializer, BaseSerializer
     >>> class MySerializerCls(BaseSerializer):
     ...
     ...     def serialize_object(self, target: Any) -> bytes:

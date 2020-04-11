@@ -32,7 +32,7 @@ class OpStoreServer:
 
     .. doctest::
 
-        >>> from chariots import savers
+        >>> from chariots.op_store import savers
         ...
         >>> saver = savers.FileSaver(saver_path)
         >>> op_store_client = OpStoreServer(saver=saver, db_url=my_url)

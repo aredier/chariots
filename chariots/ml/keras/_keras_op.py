@@ -59,7 +59,7 @@ class KerasOp(BaseMLOp):
         >>> import shutil
         ...
         >>> import numpy as np
-        >>> from chariots.pipelines import Chariots
+        >>> from chariots.pipelines import PipelinesServer
         >>> from chariots.pipelines.runners import SequentialRunner
         >>> from chariots.testing import TestOpStoreClient
         ...
@@ -80,7 +80,7 @@ class KerasOp(BaseMLOp):
 
     .. doctest::
 
-        >>> app = Chariots([train, pred], op_store_client=op_store_client, import_name='my_app')
+        >>> app = PipelinesServer([train, pred], op_store_client=op_store_client, import_name='my_app')
 
     .. testsetup::
 

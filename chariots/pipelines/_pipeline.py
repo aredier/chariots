@@ -22,7 +22,7 @@ class Pipeline(ops.BaseOp):
 
         >>> from chariots.pipelines import Pipeline
         >>> from chariots.pipelines.nodes import Node
-        >>> from chariots.op_store._op_store_client import TestOpStoreClient
+        >>> from chariots.testing import TestOpStoreClient
         >>> from chariots._helpers.doc_utils import AddOneOp, IsOddOp
         >>> app_path = tempfile.mkdtemp()
         >>> op_store_client = TestOpStoreClient(app_path)
@@ -51,15 +51,15 @@ class Pipeline(ops.BaseOp):
 
     .. doctest::
 
-        >>> from chariots.pipelines import Chariots
-        >>> app = Chariots([pipeline], op_store_client=op_store_client, import_name="simple_app")
+        >>> from chariots.pipelines import PipelinesServer
+        >>> app = PipelinesServer([pipeline], op_store_client=op_store_client, import_name="simple_app")
 
     Once this is done you can deploy your app as a flask app and get the result of the pipeline using a client:
 
     .. testsetup::
 
-        >>> from chariots.testing import TestClient
-        >>> client = TestClient(app)
+        >>> from chariots.testing import TestPipelinesClient
+        >>> client = TestPipelinesClient(app)
 
     .. doctest::
 
