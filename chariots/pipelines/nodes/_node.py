@@ -2,7 +2,7 @@
 from typing import Optional, List, Union, Text, Any
 
 # use the main package to resolve circular imports with root objects (Pipleine, ...)
-from ... import versioning, op_store, pipelines
+from ... import versioning, op_store, pipelines  # pylint: disable=unused-import; # noqa
 from .. import ops, runners
 from . import BaseNode
 

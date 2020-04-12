@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from redis import Redis
 from rq import Queue, Connection, Worker
 
-from .. import pipelines, op_store
+from .. import pipelines, op_store  # pylint: disable=unused-import; # noqa
 from . import BaseWorkerPool, JobStatus
 
 
