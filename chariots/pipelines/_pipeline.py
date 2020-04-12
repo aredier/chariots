@@ -3,7 +3,7 @@ from typing import List, Optional, Set, Dict, Any, Mapping, Text, Tuple
 
 from .. import op_store
 from ..versioning import Version
-from . import nodes, callbacks, ops, runners
+from . import nodes, callbacks, ops, runners  # pylint: disable=unused-import; # noqa
 from .nodes._base_nodes import NodeReference
 from .._helpers.typing import SymbolicToRealMapping, ResultDict
 

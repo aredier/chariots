@@ -4,7 +4,7 @@ from enum import Enum
 
 from typing import Any, Union, Optional, List, Text
 
-from ... import versioning, errors, op_store
+from ... import versioning, errors, op_store  # pylint: disable=unused-import; # noqa
 from ..._helpers.typing import SymbolicToRealMapping
 
 
@@ -160,7 +160,8 @@ class BaseNode(ABC):
         if validated_links is None:
             return
         if upstream_node.node_version.major not in {version.major for version in validated_links}:
-            raise errors.VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name, self.name))
+            raise errors.VersionError('cannot find a validated link from {} to {}'.format(upstream_node.name,
+                                                                                          self.name))
 
     @property
     def is_loadable(self) -> bool:

@@ -1,7 +1,8 @@
 """op callbacks module"""
 from typing import List, Any
 
-from .. import ops
+from .. import ops  # pylint: disable=unused-import; # noqa
+
 
 class OpCallBack:
     """

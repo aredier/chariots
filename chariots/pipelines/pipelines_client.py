@@ -1,6 +1,6 @@
 """
 module for the different clients (test and python) available to call the backend in python direcly
-(rahter than HTTP)
+(rather than HTTP)
 """
 import json
 from abc import abstractmethod, ABC
@@ -8,9 +8,9 @@ from typing import Any, Optional, Mapping
 
 import requests
 
-from . import PipelinesServer, PipelineResponse, Pipeline
-from chariots.versioning import Version
-from chariots.errors import VersionError
+from ..versioning import Version
+from ..errors import VersionError
+from . import PipelineResponse, Pipeline
 
 
 class AbstractPipelinesClient(ABC):
@@ -220,7 +220,8 @@ class PipelinesClient(AbstractPipelinesClient):
         ...     nodes.Node(FromArray(), input_nodes=['pred'], output_nodes='__pipeline_output__')
         ... ], "pred")
 
-        >>> app = PipelinesServer([train_pca, train_logistic, pred], op_store_client=op_store_client, import_name="iris_app")
+        >>> app = PipelinesServer([train_pca, train_logistic, pred], op_store_client=op_store_client,
+        ...                       import_name="iris_app")
 
     .. testsetup::
 

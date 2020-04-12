@@ -6,7 +6,7 @@ from typing import Text, Set, Optional
 
 import requests
 
-from .. import versioning, pipelines
+from .. import versioning, pipelines  # pylint: disable=unused-import; # noqa
 
 
 class BaseOpStoreClient(abc.ABC):
