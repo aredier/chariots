@@ -10,15 +10,17 @@ from .workers import BaseWorkerPool, RQWorkerPool
 class PipelinesConfig:
     _sequential_runner_str = ['SequentialRunner', 'sequential_runner', 'sequential-runner']
 
-    def __init__(self, runner: Optional[Union[str, runners.BaseRunner]] = None, server_url: Optional[str] = None,
-                 server_port: Optional[str] = None, pipelines: Optional[List[Pipeline]] = None,
-                 pipeline_callbacks: Optional[callbacks.PipelineCallback] = None):
+    def __init__(self, runner: Optional[Union[str, runners.BaseRunner]] = None, server_host: Optional[str] = None,
+                 server_port: Optional[Union[str, int]] = None, pipelines: Optional[List[Pipeline]] = None,
+                 pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None,
+                 import_name: Optional[str] = None):
         self._check_runner(runner)
         self.runner = runner
-        self.server_url = server_url
+        self.server_host = server_host
         self.server_port = server_port
         self.pipelines = pipelines or []
         self.pipeline_callbacks = pipeline_callbacks or []
+        self.import_name = import_name
 
     @classmethod
     def _check_runner(cls, runner):
@@ -32,9 +34,9 @@ class PipelinesConfig:
 
     @property
     def _backend_full_url(self) -> str:
-        if self.server_url.startswith('http'):
-            return '{}:{}'.format(self.server_url, self.server_port)
-        return 'http://{}:{}'.format(self.server_url, self.server_port)
+        if self.server_host.startswith('http'):
+            return '{}:{}'.format(self.server_host, self.server_port)
+        return 'http://{}:{}'.format(self.server_host, self.server_port)
 
     def get_runner(self) -> runners.BaseRunner:
         if isinstance(self.runner, runners.BaseRunner):
@@ -55,7 +57,7 @@ class WorkersConfig(object):
         self.use_for_all = use_for_all
         self._check_worker_type(worker_type)
         self.worker_type = worker_type
-        self.worker_pool_kwargs = worker_pool_kwargs
+        self.worker_pool_kwargs = worker_pool_kwargs or {}
 
     @classmethod
     def _check_worker_type(cls, worker_type: str):
@@ -70,13 +72,13 @@ class WorkersConfig(object):
 
 class OpStoreConfig(object):
     _file_saver_str = ['FileSaver', 'file_saver', 'file-saver']
-    _google_cloud_saver_str = ['GoogleCloud', 'google_cloud', 'google-cloud', 'GoogleCloudSaver', 'google_cloud_saver',
-                               'google-cloud-saver']
+    _google_cloud_saver_str = ['GoogleStorage', 'google_storage', 'google-storage', 'GoogleStorageSaver',
+                               'google_storage_saver', 'google-storage-saver']
 
-    def __init__(self, server_url: Optional[str] = None, server_port: Optional[Union[str, int]] = None,
+    def __init__(self, server_host: Optional[str] = None, server_port: Optional[Union[str, int]] = None,
                  saver_type: Optional[str] = None, saver_kwargs: Optional[Dict[str, Any]] = None,
                  op_store_db_url: Optional[str] = None):
-        self.server_url = server_url
+        self.server_host = server_host
         self.server_port = server_port
         self._check_saver_type(saver_type)
         self.saver_type = saver_type
@@ -90,9 +92,9 @@ class OpStoreConfig(object):
 
     @property
     def _full_server_url(self) -> str:
-        if self.server_url.startswith('http'):
-            return '{}:{}'.format(self.server_url, self.server_port)
-        return 'http://{}:{}'.format(self.server_url, self.server_port)
+        if self.server_host.startswith('http'):
+            return '{}:{}'.format(self.server_host, self.server_port)
+        return 'http://{}:{}'.format(self.server_host, self.server_port)
 
     def get_client(self) -> OpStoreClient:
         return OpStoreClient(url=self._full_server_url)
@@ -131,7 +133,7 @@ class ChariotsConfig:
             config = yaml.safe_load(config_file)
         return (
             PipelinesConfig(**config['pipelines']),
-            WorkersConfig(**config['workers']),
+            WorkersConfig(**config['pipelines_workers']),
             OpStoreConfig(**config['op_store']),
         )
 
@@ -140,12 +142,13 @@ class ChariotsConfig:
 
     def get_pipelines_server(self) -> PipelinesServer:
         return PipelinesServer(
-            op_store_client=self.get_op_store_client,
+            op_store_client=self.get_op_store_client(),
             runner=self.pipelines_config.get_runner(),
             default_pipeline_callbacks=self.pipelines_config.pipeline_callbacks,
             worker_pool=self.pipelines_workers_config.get_worker_pool(),
             use_workers=self.pipelines_workers_config.use_for_all,
-            app_pipelines=self.pipelines_config.pipelines
+            app_pipelines=self.pipelines_config.pipelines,
+            import_name=self.pipelines_config.import_name
         )
 
     def get_op_store_server(self) -> OpStoreServer:

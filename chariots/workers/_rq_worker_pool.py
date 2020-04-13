@@ -58,9 +58,10 @@ class RQWorkerPool(BaseWorkerPool):
                          be aware that the `connection` and `name` arguments will be overridden.
     """
 
-    def __init__(self, redis_kwargs: Optional[Dict[str, Any]], redis: Optional[Redis],
+    def __init__(self, redis_kwargs: Optional[Dict[str, Any]] = None, redis: Optional[Redis] = None,
                  queue_kwargs: Optional[Dict[str, Any]] = None):
         self._queue_name = 'chariots_workers'
+        redis_kwargs = redis_kwargs or {}
         self._redis = redis or Redis(**redis_kwargs)
         queue_kwargs = queue_kwargs or {}
         queue_kwargs['connection'] = self._redis
