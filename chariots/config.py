@@ -76,8 +76,9 @@ class PipelinesConfig:
     """Configuration of the pipelines. This mainly describes what and how your pipelines should be run and served"""
     _sequential_runner_str = ['SequentialRunner', 'sequential_runner', 'sequential-runner']
 
-    def __init__(self, runner: Optional[Union[str, runners.BaseRunner]] = None, server_host: Optional[str] = None,
-                 server_port: Optional[Union[str, int]] = None, pipelines: Optional[List[Pipeline]] = None,
+    def __init__(self, runner: Optional[Union[str, runners.BaseRunner]] = None,   # pylint: disable=too-many-arguments
+                 server_host: Optional[str] = None, server_port: Optional[Union[str, int]] = None,
+                 pipelines: Optional[List[Pipeline]] = None,
                  pipeline_callbacks: Optional[List[callbacks.PipelineCallback]] = None,
                  import_name: Optional[str] = None):
         """
@@ -129,7 +130,7 @@ class PipelinesConfig:
         return PipelinesClient(backend_url=self._backend_full_url)
 
 
-class WorkersConfig(object):
+class WorkersConfig:  # pylint: disable=too-few-public-methods
     """the configuration of Chariots Workerpolls"""
     _rq_workers_str = ['RQ', 'rq']
 
@@ -157,15 +158,15 @@ class WorkersConfig(object):
         raise ValueError('worker type {} not understood'.format(self.worker_type))
 
 
-class OpStoreConfig(object):
+class OpStoreConfig:
     """configuration for the Op Store server and client"""
     _file_saver_str = ['FileSaver', 'file_saver', 'file-saver']
     _google_cloud_saver_str = ['GoogleStorage', 'google_storage', 'google-storage', 'GoogleStorageSaver',
                                'google_storage_saver', 'google-storage-saver']
 
-    def __init__(self, server_host: Optional[str] = None, server_port: Optional[Union[str, int]] = None,
-                 saver_type: Optional[str] = None, saver_kwargs: Optional[Dict[str, Any]] = None,
-                 op_store_db_url: Optional[str] = None):
+    def __init__(self, server_host: Optional[str] = None,  # pylint: disable=too-many-arguments
+                 server_port: Optional[Union[str, int]] = None, saver_type: Optional[str] = None,
+                 saver_kwargs: Optional[Dict[str, Any]] = None, op_store_db_url: Optional[str] = None):
         """
         :param server_host: the host of the server (where the client should try to contact)
         :param server_port: the port the server should be run at
