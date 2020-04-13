@@ -42,12 +42,19 @@ Once you have loaded the configuration, you can always modify it programatically
 
     .. testsetup::
 
-        >>> my_config = ChariotsConfig()
+        >>> pipelines_kwargs = {'runner': 'sequential-runner'}
+        >>> pipelines_workers_kwargs = {'worker_type': 'rq'}
+        >>> op_store_kwargs = {'saver_type': 'file-saver'}
+        >>> my_config = ChariotsConfig(
+        ...     pipelines_config=PipelinesConfig(**pipelines_kwargs),
+        ...     pipelines_worker_config=WorkersConfig(**pipelines_workers_kwargs),
+        ...     op_store_config=OpStoreConfig(**op_store_kwargs),
+        ... )
         >>> some_pipeline = None
 
     .. doctest::
 
-        >>> my_config.pipelines_configuration.pipelines.append(some_pipeline)
+        >>> my_config.pipelines_config.pipelines.append(some_pipeline)
 
 
 You can than get the clients or servers you want to deploy/use:
@@ -220,9 +227,9 @@ class ChariotsConfig:
 
     .. testsetup::
         >>> from chariots.config import ChariotsConfig
-        >>> pipelines_kwargs = {}
-        >>> pipelines_workers_kwargs = {}
-        >>> op_store_kwargs = {}
+        >>> pipelines_kwargs = {'runner': 'sequential-runner'}
+        >>> pipelines_workers_kwargs = {'worker_type': 'rq'}
+        >>> op_store_kwargs = {'saver_type': 'file-saver'}
 
     .. doctest::
 
@@ -236,8 +243,7 @@ class ChariotsConfig:
         ...     pipelines_config=PipelinesConfig(**pipelines_kwargs),
         ...     pipelines_worker_config=WorkersConfig(**pipelines_workers_kwargs),
         ...     op_store_config=OpStoreConfig(**op_store_kwargs),
-        ... ) # doctest: +ELLIPSIS
-        <chariots.config.ChariotsConfig at ...>
+        ... )
     """
 
     def __init__(self, config_file=None, pipelines_config: Optional[PipelinesConfig] = None,

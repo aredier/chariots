@@ -71,7 +71,7 @@ class AbstractPipelinesClient(ABC):
             >>> op_store_client = TestOpStoreClient(app_path)
             >>> op_store_client.server.db.create_all()
             >>> app = PipelinesServer([is_odd_pipeline], op_store_client=op_store_client, import_name='simple_app',
-            ...                worker_pool=RQWorkerPool(Redis()))
+            ...                worker_pool=RQWorkerPool(redis=Redis()))
             >>> client = TestPipelinesClient(app)
 
         .. doctest::
