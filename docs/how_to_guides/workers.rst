@@ -117,7 +117,7 @@ you than have several options:
     >>> from chariots._helpers.doc_utils import is_odd_pipeline
     >>> from chariots._helpers.test_helpers import RQWorkerContext
     >>> app = PipelinesServer([is_odd_pipeline], op_store_client=op_store_client,
-    ...                        import_name='simple_app', worker_pool=RQWorkerPool(Redis()))
+    ...                        import_name='simple_app', worker_pool=RQWorkerPool(redis=Redis()))
     >>> client = TestPipelinesClient(app)
 
 
