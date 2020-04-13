@@ -51,14 +51,17 @@ class RQWorkerPool(BaseWorkerPool):
         ... )
 
 
-    :param redis: the redis connection that will be used by RQ
+    :param redis: the redis connection that will be used by RQ. overrides any redis_kwargs arguments if present
+    :param redis_kwargs: keyword arguments to be passed to the Redis classed constructor. this will only be used
+                         if the redis argument is unset
     :param queue_kwargs: additional keyword arguments that will get passed to the `rq.Queue` object at init
                          be aware that the `connection` and `name` arguments will be overridden.
     """
 
-    def __init__(self, redis: Redis, queue_kwargs: Optional[Dict[str, Any]] = None):
+    def __init__(self, redis_kwargs: Optional[Dict[str, Any]], redis: Optional[Redis],
+                 queue_kwargs: Optional[Dict[str, Any]] = None):
         self._queue_name = 'chariots_workers'
-        self._redis = redis
+        self._redis = redis or Redis(**redis_kwargs)
         queue_kwargs = queue_kwargs or {}
         queue_kwargs['connection'] = self._redis
         queue_kwargs['name'] = self._queue_name
