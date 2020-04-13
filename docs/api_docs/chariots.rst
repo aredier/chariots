@@ -9,6 +9,7 @@ Api Docs
    op_store/op_store
    chariots.workers
    chariots.versioning
+   config
    chariots.cli
    chariots.errors
 
