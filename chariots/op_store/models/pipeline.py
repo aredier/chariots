@@ -9,4 +9,3 @@ class DBPipeline(db.Model):
 
     id = Column(Integer, primary_key=True)
     pipeline_name = Column(String)
-    last_op_id = Column(Integer, ForeignKey(DBOp.id))

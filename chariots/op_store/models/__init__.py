@@ -7,6 +7,7 @@ from .pipeline import DBPipeline  # noqa
 from .version import DBVersion  # noqa
 from .validated_link import DBValidatedLink  # noqa
 from .op import DBOp  # noqa
+from .pipeline_link import DBPipelineLink
 
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     'SQLAlchemy',
     'DBValidatedLink',
     'DBValidatedLink',
-    'DBOp'
+    'DBOp',
+    'DBPipelineLink'
 ]

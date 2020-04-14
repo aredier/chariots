@@ -1,8 +1,9 @@
 import os
+from collections import Counter
 from typing import Type
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, alias
 from sqlalchemy.orm import sessionmaker
 
 from chariots import versioning
@@ -194,6 +195,24 @@ def small_test_pipeline():
     ], name='cooking_pipeline')
 
 
+def get_all_links(session, pipeline_id):
+    links = session.query(
+       models.DBPipelineLink, models.DBOp
+    ).filter(
+        models.DBPipelineLink.pipeline_id == pipeline_id
+    ).filter(
+        models.DBPipelineLink.upstream_op_id == models.DBOp.id
+    ).all()
+    res = []
+    for link, upstream in links:
+        if link.downstream_op_id is None:
+            res.append((link, upstream.op_name, None))
+            continue
+        downstream = session.query(models.DBOp).filter(models.DBOp.id == link.downstream_op_id).one()
+        res.append((link, upstream.op_name, downstream.op_name))
+    return res
+
+
 def test_register_new_pipeline(op_store_client: TestOpStoreClient, small_test_pipeline: Pipeline,
                                session_func: sessionmaker):
 
@@ -207,7 +226,50 @@ def test_register_new_pipeline(op_store_client: TestOpStoreClient, small_test_pi
     db_op = session.query(models.DBOp).one()
     db_pipeline = session.query(models.DBPipeline).one()
     assert db_pipeline.pipeline_name == 'cooking_pipeline'
-    assert db_pipeline.last_op_id == db_op.id
+
+    all_ops = get_all_links(session, db_pipeline.id)
+    assert len(all_ops) == 1
+    op_link, upstream_op_name, downstream_op_name = all_ops[0]
+    assert upstream_op_name == db_op.op_name
+    assert downstream_op_name == None
+
+
+def test_register_new_pipeline_complex_dag(op_store_client: TestOpStoreClient, session_func: sessionmaker):
+
+    # defining the necesasry op and pipeline
+    class OpwithInput(ops.BaseOp):
+
+        def execute(self, input1='sad', input2=None):
+            if input2 is None:
+                return input1 + '_foo'
+            return input1 + input2 + '_bar'
+
+    test_pipeline = Pipeline([
+        nodes.Node(OpwithInput(), input_nodes=['__pipeline_input__'], output_nodes=['input_1']),
+        nodes.Node(OpwithInput(), output_nodes=['input_2']),
+        nodes.Node(OpwithInput(), input_nodes=['input_1', 'input_2'], output_nodes=['__pipeline_output__']),
+    ], name='complex_dag_pipeline')
+
+    # registering the ops and pipeline
+    for upstream_node, downstream_node in test_pipeline.get_all_op_links():
+        if downstream_node:
+            op_store_client.register_valid_link(downstream_node.name, upstream_node.name, upstream_node.node_version)
+    op_store_client.register_new_pipeline(test_pipeline)
+
+    # test the registration
+    session = session_func()
+    db_op = session.query(models.DBOp).one()
+    assert db_op.op_name == 'opwithinput'
+    db_pipeline = session.query(models.DBPipeline).one()
+    assert db_pipeline.pipeline_name == 'complex_dag_pipeline'
+
+    all_links = get_all_links(session, db_pipeline.id)
+    assert len(all_links) == 3
+    assert Counter([(link[1], link[2]) for link in all_links]) == {
+        ('opwithinput', 'opwithinput'): 2,
+        ('opwithinput', None): 1
+    }
+
 
 
 def test_pipeline_exists(op_store_client: TestOpStoreClient, small_test_pipeline: Pipeline):
