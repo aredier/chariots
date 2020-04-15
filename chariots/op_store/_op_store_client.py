@@ -145,7 +145,7 @@ class OpStoreClient(BaseOpStoreClient):
 
     def post(self, route, arguments_json):
         response = requests.post(
-            route,
+            self.url + route,
             headers={'Content-Type': 'application/json'},
             data=json.dumps(arguments_json)
         )
