@@ -11,6 +11,7 @@ from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
 
 from chariots import op_store
 
+
 class MetadataServer:
     """
     The Metadata server allows you to store and retrieve information about your pipelines, versions and runs

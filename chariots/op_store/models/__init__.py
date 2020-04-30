@@ -1,5 +1,6 @@
 """the module for all the DB models of the op store"""
-# pylint: disable=wrong-import-position, missing-module-docstring, missing-class-docstring, too-few-public-methods
+# pylint: disable=wrong-import-position, missing-module-docstring, missing-class-docstring, too-few-public-methods; # noqa
+# flake8: noqa
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()  # pylint: disable=invalid-name
 
