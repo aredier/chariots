@@ -184,7 +184,6 @@ class OpStoreServer:
         registers a link between an upstream and a downstream op. This means that in future relaods the downstream op
         will whitelist this version for this upstream op
         """
-        old_db_link = self._session.query(DBValidatedLink)
         downstream_op_name = request.json['downstream_op_name']
         upstream_op_name = request.json['upstream_op_name']
         upstream_op_version = Version.parse(request.json['upstream_op_version'])
@@ -199,7 +198,6 @@ class OpStoreServer:
             DBValidatedLink.downstream_op_id == downstream_op_id,
             DBValidatedLink.upstream_op_version_id == upstream_version_id,
         )
-        old_db_link = self._session.query(DBValidatedLink)
         if exists_query.one_or_none() is not None:
             return jsonify({})
         validated_link = DBValidatedLink(

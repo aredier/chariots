@@ -132,7 +132,6 @@ class BaseOpStoreClient(abc.ABC):
                 for upstream_node, downstream_node in pipeline.get_all_op_links()
             ]
         })
-        return
 
 
 class OpStoreClient(BaseOpStoreClient):

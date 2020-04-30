@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, too-few-public-methods
-from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from ..models import db, DBPipelineLink
