@@ -30,10 +30,12 @@ from ._base_serializer import BaseSerializer
 from ._csv_serialzer import CSVSerializer
 from ._dill_serializer import DillSerializer
 from ._json_serializer import JSONSerializer
+from ._keras_serializer import KerasSerializer
 
 __all__ = [
     'BaseSerializer',
     'DillSerializer',
     'JSONSerializer',
     'CSVSerializer',
+    'KerasSerializer'
 ]

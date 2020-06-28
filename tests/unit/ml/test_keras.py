@@ -13,7 +13,7 @@ from chariots.testing import TestPipelinesClient
 from chariots._helpers.test_helpers import FromArray, ToArray, LinearDataSet, KerasLogistic
 
 
-@flaky(5, 1)
+@flaky(2, 1)
 def test_train_keras_pipeline(tmpdir, opstore_func):
     """tests using an op in training and testing"""
 
@@ -76,7 +76,7 @@ class MultiInputKeras(KerasOp):
         return model
 
 
-@flaky(5, 1)
+@flaky(2, 1)
 def test_keras_multiple_datasets(tmpdir, opstore_func):
     """tests keras with a multi-input model (build using the functional API)"""
 

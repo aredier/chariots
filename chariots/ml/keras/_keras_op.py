@@ -5,6 +5,7 @@ import numpy as np
 
 from ...versioning import VersionedFieldDict
 from .. import MLMode, BaseMLOp
+from ..serializers import KerasSerializer
 
 
 class KerasOp(BaseMLOp):
@@ -89,6 +90,7 @@ class KerasOp(BaseMLOp):
     """
 
     input_params = VersionedFieldDict()
+    serializer_cls = KerasSerializer
 
     def __init__(self, mode: MLMode, verbose: Optional[int] = 1):
         super().__init__(mode)
