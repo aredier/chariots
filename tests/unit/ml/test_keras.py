@@ -1,7 +1,7 @@
 """module that tests the Keras integration"""
 import numpy as np
 from flaky import flaky
-from keras import models, layers, optimizers, callbacks
+from tensorflow.keras import models, layers, optimizers, callbacks
 
 from chariots.pipelines import Pipeline, PipelinesServer
 from chariots.pipelines.nodes import Node

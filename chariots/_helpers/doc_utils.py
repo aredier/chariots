@@ -4,7 +4,7 @@ module with some example nodes, operations ... to produce beautifull doctests :)
 """
 from collections import Counter
 
-from keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 from sklearn import datasets
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression

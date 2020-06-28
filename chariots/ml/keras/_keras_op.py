@@ -26,7 +26,7 @@ class KerasOp(BaseMLOp):
         >>> from chariots.pipelines.nodes import Node
         >>> from chariots.ml import MLMode
         >>> from chariots.versioning import VersionType, VersionedFieldDict
-        >>> from keras import models, layers
+        >>> from tensorflow.keras import models, layers
         ...
         ...
         >>> class KerasLinear(KerasOp):
