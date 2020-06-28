@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 """
 module that provides importable and picklable ops for tests that need them
 """
