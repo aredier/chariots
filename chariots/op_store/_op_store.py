@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from sqlalchemy.orm import aliased
 
-from .models import db
+from .models import db, DBPipelineLink
 from .models.version import DBVersion
 from .models.op import DBOp
 from .models.validated_link import DBValidatedLink
@@ -193,11 +193,19 @@ class OpStoreServer:
         if downstream_op_name is None:
             return jsonify({})
         downstream_op_id = self.get_or_register_db_op(downstream_op_name).id
+        exists_query = self._session.query(DBValidatedLink).filter(
+            DBValidatedLink.upstream_op_id == upstream_op_id,
+            DBValidatedLink.downstream_op_id == downstream_op_id,
+            DBValidatedLink.upstream_op_version_id == upstream_version_id,
+        )
+        if exists_query.one_or_none() is not None:
+            return jsonify({})
         validated_link = DBValidatedLink(
             upstream_op_id=upstream_op_id,
             downstream_op_id=downstream_op_id,
             upstream_op_version_id=upstream_version_id
         )
+
         self._session.add(validated_link)
         self._session.commit()
 
@@ -287,16 +295,22 @@ class OpStoreServer:
         """endpoint ot register a new pipeline"""
 
         pipeline_name = request.json['pipeline_name']
-        last_op_name = request.json['last_op_name']
-
-        last_node_id = self.get_or_register_db_op(last_op_name).id
+        pipeline_links = request.json['pipeline_links']
 
         db_pipeline = DBPipeline(
             pipeline_name=pipeline_name,
-            last_op_id=last_node_id,
         )
         self._session.add(db_pipeline)
         self._session.commit()
+        for upstream_node_name, downstream_node_name in pipeline_links:
+            upstream_op_id = self.get_or_register_db_op(upstream_node_name).id
+            downstream_op_id = self.get_or_register_db_op(downstream_node_name).id if downstream_node_name else None
+            self._session.add(
+                DBPipelineLink(pipeline_id=db_pipeline.id, upstream_op_id=upstream_op_id,
+                               downstream_op_id=downstream_op_id)
+            )
+            self._session.commit()
+
         return jsonify({})
 
     def _init_routes(self):

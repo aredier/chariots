@@ -5,6 +5,7 @@ import numpy as np
 
 from ...versioning import VersionedFieldDict
 from .. import MLMode, BaseMLOp
+from ..serializers import KerasSerializer
 
 
 class KerasOp(BaseMLOp):
@@ -26,7 +27,7 @@ class KerasOp(BaseMLOp):
         >>> from chariots.pipelines.nodes import Node
         >>> from chariots.ml import MLMode
         >>> from chariots.versioning import VersionType, VersionedFieldDict
-        >>> from keras import models, layers
+        >>> from tensorflow.keras import models, layers
         ...
         ...
         >>> class KerasLinear(KerasOp):
@@ -89,6 +90,7 @@ class KerasOp(BaseMLOp):
     """
 
     input_params = VersionedFieldDict()
+    serializer_cls = KerasSerializer
 
     def __init__(self, mode: MLMode, verbose: Optional[int] = 1):
         super().__init__(mode)

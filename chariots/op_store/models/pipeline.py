@@ -1,12 +1,13 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, too-few-public-methods
-from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 
-from .op import DBOp
-from ..models import db
+from ..models import db, DBPipelineLink
 
 
 class DBPipeline(db.Model):
 
     id = Column(Integer, primary_key=True)
     pipeline_name = Column(String)
-    last_op_id = Column(Integer, ForeignKey(DBOp.id))
+
+    links = relationship(DBPipelineLink, backref='pipeline')

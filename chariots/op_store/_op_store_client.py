@@ -125,15 +125,13 @@ class BaseOpStoreClient(abc.ABC):
 
         :param pipeline: the pipeline to register
         """
-
-        for upstream_node, downstream_node in pipeline.get_all_op_links():
-            if downstream_node is None:
-                self.post('/v1/register_new_pipeline', {
-                    'pipeline_name': pipeline.name,
-                    'last_op_name': upstream_node.name
-                })
-                return
-        raise ValueError('did not manage to find last node of the pipeline')
+        self.post('/v1/register_new_pipeline', {
+            'pipeline_name': pipeline.name,
+            'pipeline_links': [
+                (upstream_node.name, downstream_node.name if downstream_node is not None else None)
+                for upstream_node, downstream_node in pipeline.get_all_op_links()
+            ]
+        })
 
 
 class OpStoreClient(BaseOpStoreClient):
@@ -146,7 +144,7 @@ class OpStoreClient(BaseOpStoreClient):
 
     def post(self, route, arguments_json):
         response = requests.post(
-            route,
+            self.url + route,
             headers={'Content-Type': 'application/json'},
             data=json.dumps(arguments_json)
         )

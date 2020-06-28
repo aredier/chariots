@@ -1,15 +1,15 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, too-few-public-methods
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
 
 from chariots import versioning
-from .op import DBOp
-from ..models import db
+from ..models import db, DBValidatedLink
 
 
 class DBVersion(db.Model):
 
     id = Column(Integer, primary_key=True)
-    op_id = Column(Integer, ForeignKey(DBOp.id))
+    op_id = Column(Integer, ForeignKey('db_op.id'))
     version_time = Column(DateTime)
 
     major_hash = Column(String)
@@ -20,6 +20,8 @@ class DBVersion(db.Model):
 
     patch_hash = Column(String)
     patch_version_number = Column(Integer)
+
+    validated_downstream_links = relationship(DBValidatedLink, backref='upstream_version')
 
     def to_chariots_version(self):
         """converts DBVersion to equivalent `chariots.versioning.Version`"""
