@@ -8,9 +8,12 @@ dill==0.2.9
 flake8==3.5.0
 flaky==3.6.1
 flask==1.0.3
+Flask-GraphQL>=2.0.1
 flask-migrate>=2.5.3
 flask-sqlalchemy>=2.4.1
 google-cloud-storage==1.26.0
+graphene-sqlalchemy>=2.2.2
+graphene>=2.1.8
 Keras>=2.0.0
 
 # ml stuff
