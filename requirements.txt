@@ -14,7 +14,7 @@ google-cloud-storage==1.26.0
 Keras>=2.0.0
 
 # ml stuff
-numpy==1.16.4
+numpy==1.22.0
 pandas==0.24.2
 pip==18.1
 
